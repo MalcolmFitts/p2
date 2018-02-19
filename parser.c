@@ -1,54 +1,75 @@
+/*  (Version: p2)
+ *  parser.c 
+ *    - created for use with "bbbserver.c"
+ *    - implementations of string parsing functions
+ *    - documentation/usage notes in "parser.h"
+ *    - constants defined in "parser.h"
+ */
+
 #include "parser.h"
 
-/*                WANT TO CHANGE RETURN VALUES 
- * parse_get_request
- *    - parses requested file path from HTTP/1.1 GET request
- *		- stores file path in path ptr
- *		- returns 0 on success, -1 on fail
- */
+int check_request_type(char* buf) {
+  char b1[MINLINE], b2[MINLINE], b3[MINLINE];
+  char b4[MINLINE], b5[MINLINE], b6[MINLINE];
+  char b7[MINLINE], b8[MINLINE], b9[MINLINE];
+
+  if(parse_get_request(buf, b1)) {
+    if(parse_peer_add(buf, b2, b3, b4, b5)) {
+      return RQT_P_ADD;     /*          Peer node ADD Request */
+    }
+    else if(parse_peer_view_content(buf, b6)) {
+      return RQT_P_VIEW;    /*         Peer node VIEW Request */
+    }
+    else if(parse_peer_config_rate(buf, b7)) {
+      return RQT_P_RATE;    /*  Peer node CONFIG RATE Request */
+    }
+    else if(parse_range_request(buf, b8, b9)) {
+      return RQT_C_RNG;     /*           Client Range Request */
+    }
+    else{
+      return RQT_GET;       /*              Valid GET Request */
+    }
+  }
+  return RQT_INV;           /*            Invalid GET Request */
+}
+
+
 int parse_get_request(char* buf, char *path) {
   char extrabuf[MAXLINE];
+  char bufcopy[MAXLINE];
+  strcpy(bufcopy, buf);
 
   int numscanned = sscanf (buf, "GET %s HTTP/1.1%s", path, extrabuf);
   if (numscanned != 2) {
-    printf("500: Malformed Request. Server has recieved a malformed request.\n");
-    return -1;
+    printf("{500} Server has recieved a malformed request.\n");
+    return 0;
   }
 
-  int len = sprintf (buf, "GET %s HTTP/1.1\r\n", path);
+  int len = sprintf (bufcopy, "GET %s HTTP/1.1\r\n", path);
   if(len >= MAXLINE) {
-    printf("500: Malformed Request. Server has recieved a malformed request.\n");
-    return -1;
+    printf("{500} Server has recieved a malformed request.\n");
+    return 0;
   }
-  return 0;
+  return 1;
 }
 
 
-
-/*                WANT TO CHANGE RETURN VALUES 
- * parse_file_type - parses file type from a full file path
- *    - stores file type in buf
- *    - returns 0 on success, -1 on fail
- */
 int parse_file_type(char* filepath, char* buf) {
   char garbage[MAXLINE];
   if(sscanf(filepath, "%[^.].%s", garbage, buf) != 2) {
-    return -1;
+    return 0;
   }
-  return 0;
+  return 1;
 }
 
-/*
- * parse_range_request 
- *    - parses range request from full HTTP/1.1 GET request buffer
- *    - stores start and end bytes in char pointers
- *    - returns 1 on full success, i.e. parsed start and end bytes
- *    - return 0 on partial success, i.e. parsed start bytes
- *    - return -1 on fail
- */
+
 int parse_range_request(char* buf, char* start_bytes, char* end_bytes) {
   char *rangeptr;
-  rangeptr = strstr(buf, "Range:");
+  
+  char bufcopy[MAXLINE];
+  strcpy(bufcopy, buf);
+
+  rangeptr = strstr(bufcopy, "Range:");
 
   if(rangeptr) {
     char extrabuf[MAXLINE];
@@ -59,59 +80,45 @@ int parse_range_request(char* buf, char* start_bytes, char* end_bytes) {
     sprintf(start_bytes, "%d", sb);
     sprintf(end_bytes, "%d", eb);
 
-    if((scanned == 2 || scanned == 1) && eb == -1) return 0;
+    if((scanned == 2 || scanned == 1) && eb == -1) return 1;
     
-    if(scanned == 0) return -1;
+    if(scanned == 0) return 0;
   }
-  else { return -1; }
-
-  return 1;
-}
-
-/*                    UNTESTED!!
- *  parse_peer_add
- *      - parse peer add requests for back-end functionality
- *      - stores filename, ip/hostname, port and rate in ptrs 
- *      - return 1 on success, 0 on fail
- */
-int parse_peer_add(char* buf, char* filepath, char* ip_hostname,
-    int* port, int* rate) {
-
-  char extrabuf[MAXLINE], portbuf[MAXLINE];
-  int n = sscanf(buf, "GET /peer/add?path=%[^&]&host=%[^&]&port=%[^&]&rate=%d %s",
-            filepath, ip_hostname, portbuf, *rate, extrabuf);
-
-  if(n != 5) { /* not a peer add request */
+  else {
     return 0;
   }
 
-  *port = atoi(portbuf);
+  return 2;
+}
+
+
+int parse_peer_add(char* buf, char* fp, char* ip_hostname, char* port, char* rate) {
+  char extrabuf[MAXLINE];
+
+  int n = sscanf(buf, "GET /peer/add?path=%[^&]&host=%[^&]&port=%[^&]&rate=%s %s",
+    fp, ip_hostname, port, rate, extrabuf);
+
+  /* not a peer add request */
+  if(n != 5) return 0;
+  
   return 1;
 }
 
-/*                    UNTESTED!!
- *  parse_peer_view_content
- *      - parse peer view requests for back-end functionality
- *      - stores filepath in ptr
- *      - returns 1 on success, 0 on fail
- */
+
 int parse_peer_view_content(char* buf, char* filepath) {
   char extrabuf[MAXLINE];
+
   if(sscanf(buf, "GET /peer/view/%s %s", filepath, extrabuf) != 2) {
     return 0;
   }
   return 1;
 }
 
-/*                    UNTESTED!!
- *  parse_peer_config_rate
- *      - parse configure back-end transfer rate requests for peer nodes
- *      - stores rate in ptr
- *      - returns 1 on success, 0 on fail
- */
-int parse_peer_config_rate(char* buf, int* rate) {
+
+int parse_peer_config_rate(char* buf, char* rate) {
   char extrabuf[MAXLINE];
-  if(sscanf(buf, "GET /peer/config?rate=%d %s", *rate, extrabuf) != 2) {
+
+  if(sscanf(buf, "GET /peer/config?rate=%s %s", rate, extrabuf) != 2) {
     return 0;
   }
   return 1;

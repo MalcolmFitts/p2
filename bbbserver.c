@@ -2,6 +2,7 @@
  * bbbserver.c - The Server For Big Ballers
  * usage: ./bbbserver <port>
  * Authors: Malcolm Fitts (mfitts) & Sam Adams (sjadams)
+ * Version: Project 2
  */
 
 #include "datawriter.h"
@@ -28,11 +29,18 @@
 #define MAX_RANGE_NUM_LEN 64
 #define SERVER_NAME "BBBserver"
 
+/* debug flags for server log (LOG) and debugging log (DB_LOG)
+ *    -set value 0 to turn off flag, 1 to turn on
+ *    -DB_LOG overrides LOG flag 
+ */
+#define DB_LOG 1
+#define LOG 1
 
 struct cthread_data {
   struct sockaddr_in c_addr;  /* client address struct */
   int connfd;                 /* connection fd */
   int tid;                    /* thread id tag */
+  int num;                    /* DEBUG - overall connected num */
 };
 
 /* Function prototype(s): */
@@ -59,8 +67,8 @@ int main(int argc, char **argv) {
   int optval; /* flag value for setsockopt */
 
   /* check command line args */
-  if (argc != 2) {
-    fprintf(stderr, "usage: %s <port>\n", argv[0]);
+  if (argc != 3) {
+    fprintf(stderr, "usage: %s <port> <port>\n", argv[0]);
     exit(1);
   }
   portno = atoi(argv[1]);
@@ -97,23 +105,31 @@ int main(int argc, char **argv) {
   numthreads = 0;
 
   /* main loop: */
+  int ctr = 1;
   while (1) {
     pthread_t tid;
     struct cthread_data *ct = malloc(sizeof(struct cthread_data));
 
     /* accept: wait for a connection request */
-    printf("Waiting for a connection request... \n");
+    if(DB_LOG) printf("db_(m:%d):  Waiting for a connection request... \n", ctr);
+    else if(LOG) printf("Waiting for a connection request... \n");
+
     connfd = accept(listenfd, (struct sockaddr *) &clientaddr, &clientlen);
-    printf("Establishing connection...\n");
+
+    if(DB_LOG) printf("db_(m:%d):  Establishing connection...\n", ctr);
+    else if(LOG) printf("Establishing connection...\n");
+
     if (connfd < 0) { error("ERROR on accept"); }
       
     /* storing info in struct for use in thread */
     ct->c_addr = clientaddr;
     ct->connfd = connfd;
     ct->tid = numthreads + 1;
+    ct->num = ctr;
 
     /* spin off thread */
     pthread_create(&(tid), NULL, serve_client_thread, ct);
+    ctr++;
   }
 }
      
@@ -162,9 +178,15 @@ void *serve_client_thread(void *ptr) {
     server_error("ERROR on inet_ntoa\n", connfd); 
   }
     
-  printf("Server established connection with %s (%s)\n", hostp->h_name,
-      hostaddrp);
-  printf("Connected client id: %d\n", tid);
+  if(DB_LOG) {
+    printf("db_(m:%d)(t:%d):  Server established connection with %s (%s)\n", 
+      ct->num, tid, hostp->h_name, hostaddrp);
+    printf("db_(m:%d)(t:%d):  Connected client id: %d\n", ct->num, tid, tid);
+  }
+  else if(LOG) { 
+    printf("Server established connection with %s (%s)\n", hostp->h_name, hostaddrp);
+    printf("Connected client id: %d\n", tid);
+  }
 
   /* read: read input string from the client */
   bzero(buf, BUFSIZE);
@@ -174,8 +196,16 @@ void *serve_client_thread(void *ptr) {
     server_error("ERROR reading from socket", connfd); 
   }
 
-  printf("Server received %d Bytes\n", n);
-  printf("%s\n", buf);
+  if(DB_LOG) {
+    printf("db_(m:%d)(t:%d)(r:%d):  Server received %d Bytes\n", 
+      ct->num, tid, reqnum, n);
+    printf("db_(m:%d)(t:%d)(r:%d):  GET Request Raw Headers:\n%s", 
+      ct->num, tid, reqnum, buf);
+  }
+  else if(LOG) {
+    printf("Server received %d Bytes\n", n);
+    printf("GET Request Raw Headers:\n%s", buf);
+  }
 
   /* making copy of buffer to check for range requests */
   bzero(bufcopy, BUFSIZE);
@@ -183,7 +213,7 @@ void *serve_client_thread(void *ptr) {
   
   /* parsing get request */
   bzero(path, MAXLINE);
-  if(parse_get_request(buf, path) < 0) {
+  if(parse_get_request(buf, path) == 0) {
     error("ERROR Parsing get request");
   }
 
@@ -197,7 +227,11 @@ void *serve_client_thread(void *ptr) {
     write_headers_404(connfd, SERVER_NAME);
   }
   else{
-    printf("Found file: %s\n", fname);
+    if(DB_LOG)
+      printf("db_(m:%d)(t:%d)(r:%d):  Found file: %s\n",
+        ct->num, tid, reqnum, fname);
+    else if(LOG)
+      printf("Found file: %s\n", fname);
 
     /* getting file size and last modified time */
     fStat = malloc(sizeof(struct stat));
@@ -208,50 +242,57 @@ void *serve_client_thread(void *ptr) {
 
     /* getting file type (extension) */
     char fileExt[MAXLINE] = {0};
-    if(parse_file_type(path, fileExt) < 0) {
+    if(parse_file_type(path, fileExt) == 0) {
       error("File path error");
     }
 
-    /* checking for range request:
-     * range_scan_res =	1 if valid range request
-     *			  	  = 0 if range request only has start byte 
-     * 				  = -1 if no range request */
-    int range_flag = 0;
-    int range_scan_res = parse_range_request(bufcopy, sbyte, ebyte);
-    if(range_scan_res == 1) 	 { range_flag = 2; }
-    else if(range_scan_res == 0) { range_flag = 1; }
+    /* range_flag value (parse_range_request return val):
+     *    2 --> valid range request, the end byte was sent with range request
+     *	  1 --> range request only has start byte, the end byte was NOT sent with request
+     *            so default range to EOF 
+     *    0 --> not a valid range request */
+    int range_flag = parse_range_request(bufcopy, sbyte, ebyte);
 
-    
-
-  	if((strcmp(fileExt, "mp4") == 0) || range_flag > 0) {
-  	  printf("Sending partial content to {Client %d}...\n", tid);
-  	  /* this is a 206 status code */
+  	if(range_flag > 0) {
+      /* this is a 206 status code */
+  	  if(DB_LOG)
+        printf("db_(m:%d)(t:%d)(r:%d):  Sending partial content to {Client %d}...\n",
+          ct->num, tid, reqnum, tid);
+      else if(LOG)
+        printf("Sending partial content to {Client %d}...\n", tid);
+  	  
+      /* assigning values for start and end bytes based on range flag */
       sb = atoi(sbyte);
-
-      /* range_flag = 2 --> the end byte was sent with range request */
-  	  if(range_flag == 2) { eb = atoi(ebyte); }
-
-  	  /* range_flag = 1 --> the end byte was NOT sent with request
-  	   * 					so default range to EOF 
-  	   * range_flag = 0 --> client requested mp4 file initially so
-  	   * 					we are sending range response */
-  	  else { eb = content_size - 1; }
+      if(range_flag == 2) { eb = atoi(ebyte); }
+  	  else                { eb = content_size - 1; }
 
   	  write_partial_content(connfd, fp, fileExt, sb, eb,
   	  	content_size, last_modified);
 
   	  int sent = eb - sb + 1;
-  	  printf("Sent %d bytes to {Client %d}!\n", sent, tid);
+  	  if(DB_LOG)
+        printf("db_(m:%d)(t:%d)(r:%d):  Sent %d bytes to {Client %d}!\n", 
+          ct->num, tid, reqnum, sent, tid);
+      else if(LOG)
+        printf("Sent %d bytes to {Client %d}!\n", sent, tid);
   	}
   	else {
-  	  printf("Sending content to {Client %d}...\n", tid);
-  	  /* this is a 200 status code */
+      /* this is a 200 status code */
+  	  if(DB_LOG)
+        printf("db_(m:%d)(t:%d)(r:%d):  Sending content to {Client %d}...\n", 
+          ct->num, tid, reqnum, tid);
+      else if(LOG)
+        printf("Sending content to {Client %d}...\n", tid);
+  	  
   	  write_full_content(connfd, fp, fileExt,
   	  	content_size, last_modified);
-  	  printf("Sent %d bytes to {Client %d}!\n", content_size, tid);
-  	}
 
-  	//printf("Sent to {Client %d}!\n", tid);
+  	  if(DB_LOG)
+        printf("db_(m:%d)(t:%d)(r:%d):  Sent %d bytes to {Client %d}!\n", 
+          ct->num, tid, reqnum, content_size, tid);
+      else if(LOG)
+        printf("Sent %d bytes to {Client %d}!\n", content_size, tid);
+  	}
     
     /* closing file*/
     fclose(fp);
@@ -260,7 +301,11 @@ void *serve_client_thread(void *ptr) {
   /* closing client connection and freeing struct */
   close(connfd);
   free(ct);
-  printf("Connection with {Client %d} closed.\n\n", tid);
+  if(DB_LOG)
+    printf("db_(m:%d)(t:%d):  Connection with {Client %d} closed.\n",
+      ct->num, tid, tid);
+  else if(LOG) 
+    printf("Connection with {Client %d} closed.\n", tid);
   
   /* decrement num threads and return */
   numthreads--;
