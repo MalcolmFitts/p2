@@ -226,9 +226,9 @@ void *serve_client_thread(void *ptr) {
   	if((strcmp(fileExt, "mp4") == 0) || range_flag > 0) {
   	  printf("Sending partial content to {Client %d}...\n", tid);
   	  /* this is a 206 status code */
-      sb = atoi(sbyte);
+	  sb = atoi(sbyte);
 
-      /* range_flag = 2 --> the end byte was sent with range request */
+	  /* range_flag = 2 --> the end byte was sent with range request */
   	  if(range_flag == 2) { eb = atoi(ebyte); }
 
   	  /* range_flag = 1 --> the end byte was NOT sent with request
