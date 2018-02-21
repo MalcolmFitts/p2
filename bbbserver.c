@@ -3,10 +3,26 @@
  * usage: ./bbbserver <port>
  * Authors: Malcolm Fitts (mfitts) & Sam Adams (sjadams)
  * Version: Project 2
+ *
+ *  (notes)
+ * 1. CHECK   
+ *      - put in comments, search file for this keyword
+ *      - used to indicate code that should be reviewed
+ * 2. TODO   
+ *      - put in comments, search file for this keyword
+ *      - used to indicate things to do
+ *
+ * 3. Server log
+ *      - check file "serverlog.h" for info on server log (printing) 
+ *  
  */
 
 #include "datawriter.h"
 #include "parser.h"
+#include "serverlog.h"
+#include "backend.h"
+
+
 
 #include <stdio.h>
 #include <unistd.h>
@@ -26,21 +42,18 @@
 #define MAX_FILEPATH_LEN 512
 #define MAXLINE 8192
 #define BUFSIZE 1024
-#define MAX_RANGE_NUM_LEN 64
+#define MAX_RANGE_NUM_LEN 32
 #define SERVER_NAME "BBBserver"
 
-/* debug flags for server log (LOG) and debugging log (DB_LOG)
- *    -set value 0 to turn off flag, 1 to turn on
- *    -DB_LOG overrides LOG flag 
- */
-#define DB_LOG 1
-#define LOG 1
 
-struct cthread_data {
+// TODO - make this thread_data struct
+//      - add fields for back-end data
+struct thread_data {
   struct sockaddr_in c_addr;  /* client address struct */
   int connfd;                 /* connection fd */
   int tid;                    /* thread id tag */
   int num;                    /* DEBUG - overall connected num */
+  int listenfd_be;            /* back end listening socket */
 };
 
 /* Function prototype(s): */
@@ -58,74 +71,109 @@ int numthreads;
 
 
 int main(int argc, char **argv) {
-  int listenfd; /* listening socket */
-  int connfd; /* connection socket */
-  int portno; /* port to listen on */
-  unsigned int clientlen; /* byte size of client's address */
-  struct sockaddr_in serveraddr; /* server's addr */
-  struct sockaddr_in clientaddr; /* client's addr */
-  int optval; /* flag value for setsockopt */
+  /* front-end (client) vars */
+  int listenfd_fe;                  /* listening socket */
+  int connfd;                       /* connection socket */
+  int portno_fe;                    /* client port to listen on */
+  unsigned int clientlen;           /* byte size of client's address */
+  struct sockaddr_in serveraddr_fe; /* server's front-end addr */
+  struct sockaddr_in clientaddr;    /* client's addr */
+  int optval_fe;                    /* flag value for setsockopt */
+
+  /* back-end (node) vars */
+  int listenfd_be;                  /* listening socket */
+  int portno_be;                    /* back-end port to use */
+  struct sockaddr_in serveraddr_be; /* server's back-end addr */
+  int optval_be;                    /* flag value for setsockopt */
+
+  // CHECK
+  //unsigned int nodelen;             /* byte size of client's address */
+  //struct sockaddr_in nodeaddr;      /* node's addr */
+
+  char lb[MAX_PRINT_LEN];           /* buffer for logging */
+  
 
   /* check command line args */
   if (argc != 3) {
     fprintf(stderr, "usage: %s <port> <port>\n", argv[0]);
     exit(1);
   }
-  portno = atoi(argv[1]);
+  portno_fe = atoi(argv[1]);
+  portno_be = atoi(argv[2]);
 
-  /* socket: create a socket */
-  listenfd = socket(AF_INET, SOCK_STREAM, 0);
-  if (listenfd < 0)
-    error("ERROR opening socket");
+  /* socket: create front and back end sockets */
+  listenfd_fe = socket(AF_INET, SOCK_STREAM, 0);
+  if (listenfd_fe < 0)
+    error("ERROR opening front-end socket");
+
+  listenfd_be = socket(AF_INET, SOCK_DGRAM, 0);
+  if(listenfd_be < 0)
+    error("ERROR opening back-end socket");
 
   /* setsockopt: Handy debugging trick that lets
    * us rerun the server immediately after we kill it;
    * otherwise we have to wait about 20 secs.
    * Eliminates "ERROR on binding: Address already in use" error.
    */
-  optval = 1;
-  setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval, sizeof(int));
+  optval_fe = 1;
+  optval_be = 1;
+  setsockopt(listenfd_fe, SOL_SOCKET, SO_REUSEADDR, 
+    (const void *)&optval_fe, sizeof(int));
+  setsockopt(listenfd_be, SOL_SOCKET, SO_REUSEADDR, 
+    (const void *)&optval_be, sizeof(int));
 
-  /* build the server's internet address */
-  bzero((char *) &serveraddr, sizeof(serveraddr));
-  serveraddr.sin_family = AF_INET; /* we are using the Internet */
-  serveraddr.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
-  serveraddr.sin_port = htons((unsigned short)portno); /* port to listen on */
+  /* build the server's front end internet address */
+  bzero((char *) &serveraddr_fe, sizeof(serveraddr_fe));
+  serveraddr_fe.sin_family = AF_INET; /* we are using the Internet */
+  serveraddr_fe.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
+  serveraddr_fe.sin_port = htons((unsigned short)portno_fe); /* port to listen on */
+
+  /* build the server's back end internet address */
+  bzero((char *) &serveraddr_be, sizeof(serveraddr_be));
+  serveraddr_be.sin_family = AF_INET; /* we are using the Internet */
+  serveraddr_be.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
+  serveraddr_be.sin_port = htons((unsigned short)portno_be); /* port to listen on */
 
   /* bind: associate the listening socket with a port */
-  if (bind(listenfd, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) < 0)
-    error("ERROR on binding");
+  if (bind(listenfd_fe, (struct sockaddr *) &serveraddr_fe, sizeof(serveraddr_fe)) < 0)
+    error("ERROR on binding front-end socket with port");
+  if (bind(listenfd_be, (struct sockaddr *) &serveraddr_be, sizeof(serveraddr_be)) < 0)
+    error("ERROR on binding back-end socket with port");
 
-  /* listen: make it a listening socket ready to accept connection requests */
-  if (listen(listenfd, 10000) < 0) /* allow 5 requests to queue up */
+  /* listen: make it a listening socket ready to accept connection requests 
+   *         - only need to listen for front-end
+   */
+  if (listen(listenfd_fe, 10) < 0) /* allow 10 requests to queue up */
     error("ERROR on listen");
 
 
   clientlen = sizeof(clientaddr);
+  // CHECK
+  // nodelen = sizeof(nodeaddr);
   numthreads = 0;
 
   /* main loop: */
   int ctr = 1;
   while (1) {
-    pthread_t tid;
-    struct cthread_data *ct = malloc(sizeof(struct cthread_data));
+    sprintf(lb, "Waiting for a connection request...");
+    log_main(lb, ctr);
 
     /* accept: wait for a connection request */
-    if(DB_LOG) printf("db_(m:%d):  Waiting for a connection request... \n", ctr);
-    else if(LOG) printf("Waiting for a connection request... \n");
+    connfd = accept(listenfd_fe, (struct sockaddr *) &clientaddr, &clientlen);
 
-    connfd = accept(listenfd, (struct sockaddr *) &clientaddr, &clientlen);
-
-    if(DB_LOG) printf("db_(m:%d):  Establishing connection...\n", ctr);
-    else if(LOG) printf("Establishing connection...\n");
+    sprintf(lb, "Establishing connection...");
+    log_main(lb, ctr);
 
     if (connfd < 0) { error("ERROR on accept"); }
       
     /* storing info in struct for use in thread */
+    pthread_t tid;
+    struct thread_data *ct = malloc(sizeof(struct thread_data));
     ct->c_addr = clientaddr;
     ct->connfd = connfd;
     ct->tid = numthreads + 1;
     ct->num = ctr;
+    ct->listenfd_be = listenfd_be;
 
     /* spin off thread */
     pthread_create(&(tid), NULL, serve_client_thread, ct);
@@ -139,7 +187,7 @@ void *serve_client_thread(void *ptr) {
   numthreads++;
 
   /* parse data back out of the ptr*/
-  struct cthread_data *ct = ptr;
+  struct thread_data *ct = ptr;
   struct sockaddr_in clientaddr = ct->c_addr;
   int connfd = ct->connfd;
   int tid = ct->tid;
@@ -147,21 +195,21 @@ void *serve_client_thread(void *ptr) {
   /* defining local vars */
   char content_filepath[MAX_FILEPATH_LEN] = "./content";
   char path[MAXLINE];
-  struct hostent *hostp; /* client host info */
-  char *hostaddrp; /* dotted decimal host addr string */
-  char buf[BUFSIZE]; /* message buffer */
-  char bufcopy[BUFSIZE]; /* copy of message buffer */
-  int n; /* message byte size */
+  struct hostent *hostp;          /* client host info */
+  char *hostaddrp;                /* dotted decimal host addr string */
+  char buf[BUFSIZE];              /* message buffer */
+  char bufcopy[BUFSIZE];          /* copy of message buffer */
+  int n;                          /* message byte size */
   struct stat *fStat;
   int content_size;
   time_t last_modified;
 
-  char sbyte[MAX_RANGE_NUM_LEN]; /* holders for range request bytes */
-  char ebyte[MAX_RANGE_NUM_LEN]; /* holders for range request bytes */
+  char lb[MAX_PRINT_LEN];         /* buffer for logging */
+
+  char sbyte[MAX_RANGE_NUM_LEN];  /* holders for range request bytes */
+  char ebyte[MAX_RANGE_NUM_LEN];  /* holders for range request bytes */
   int sb, eb;
 
-  /* think this ensures good memory usage ... 
-     look into pthread_detach further */
   pthread_detach(pthread_self());
 
   /* gethostbyaddr: determine who sent the message */
@@ -177,16 +225,13 @@ void *serve_client_thread(void *ptr) {
     numthreads--;
     server_error("ERROR on inet_ntoa\n", connfd); 
   }
-    
-  if(DB_LOG) {
-    printf("db_(m:%d)(t:%d):  Server established connection with %s (%s)\n", 
-      ct->num, tid, hostp->h_name, hostaddrp);
-    printf("db_(m:%d)(t:%d):  Connected client id: %d\n", ct->num, tid, tid);
-  }
-  else if(LOG) { 
-    printf("Server established connection with %s (%s)\n", hostp->h_name, hostaddrp);
-    printf("Connected client id: %d\n", tid);
-  }
+
+  sprintf(lb, "Server established connection with %s (%s)",
+    hostp->h_name, hostaddrp);
+  log_thr(lb, ct->num, tid);
+
+  sprintf(lb, "Connected client id: %d.", tid);
+  log_thr(lb, ct->num, tid);
 
   /* read: read input string from the client */
   bzero(buf, BUFSIZE);
@@ -196,24 +241,38 @@ void *serve_client_thread(void *ptr) {
     server_error("ERROR reading from socket", connfd); 
   }
 
-  if(DB_LOG) {
-    printf("db_(m:%d)(t:%d)(r:%d):  Server received %d Bytes\n", 
-      ct->num, tid, reqnum, n);
-    printf("db_(m:%d)(t:%d)(r:%d):  GET Request Raw Headers:\n%s", 
-      ct->num, tid, reqnum, buf);
-  }
-  else if(LOG) {
-    printf("Server received %d Bytes\n", n);
-    printf("GET Request Raw Headers:\n%s", buf);
-  }
+  sprintf(lb, "Server received %d Bytes", n);
+  log_thr(lb, ct->num, tid);
+  sprintf(lb, "Get Request Raw Headers:");
+  log_thr(lb, ct->num, tid);
+  log_msg(buf);
 
   /* making copy of buffer to check for range requests */
+  bzero(bufcopy, BUFSIZE);
+  strcpy(bufcopy, buf);
+
+  int rqt = check_request_type(bufcopy);
+
+  if(rqt == RQT_INV) {
+    numthreads--;
+    error("ERROR Invalid GET request");
+  }
+
+  //  TODO
+  if(rqt == RQT_P_ADD || rqt == RQT_P_VIEW || rqt == RQT_P_RATE) {
+    /* back-end request
+     * not yet implemented */
+  }
+
+  /* else this is a regular client request */
+
   bzero(bufcopy, BUFSIZE);
   strcpy(bufcopy, buf);
   
   /* parsing get request */
   bzero(path, MAXLINE);
   if(parse_get_request(buf, path) == 0) {
+    numthreads--;
     error("ERROR Parsing get request");
   }
 
@@ -223,15 +282,14 @@ void *serve_client_thread(void *ptr) {
 
   if(fp == NULL) { 
     /* this is a 404 status code */
-    printf("File (%s) not found\n", fname);
+    sprintf(lb, "File (%s) not found", fname);
+    log_thr(lb, ct->num, tid);
+
     write_headers_404(connfd, SERVER_NAME);
   }
   else{
-    if(DB_LOG)
-      printf("db_(m:%d)(t:%d)(r:%d):  Found file: %s\n",
-        ct->num, tid, reqnum, fname);
-    else if(LOG)
-      printf("Found file: %s\n", fname);
+    sprintf(lb, "Found file: %s", fname);
+    log_thr(lb, ct->num, tid);
 
     /* getting file size and last modified time */
     fStat = malloc(sizeof(struct stat));
@@ -255,11 +313,8 @@ void *serve_client_thread(void *ptr) {
 
   	if(range_flag > 0) {
       /* this is a 206 status code */
-  	  if(DB_LOG)
-        printf("db_(m:%d)(t:%d)(r:%d):  Sending partial content to {Client %d}...\n",
-          ct->num, tid, reqnum, tid);
-      else if(LOG)
-        printf("Sending partial content to {Client %d}...\n", tid);
+      sprintf(lb, "Sending partial content to {Client %d}...", tid);
+      log_thr(lb, ct->num, tid);
   	  
       /* assigning values for start and end bytes based on range flag */
       sb = atoi(sbyte);
@@ -270,28 +325,20 @@ void *serve_client_thread(void *ptr) {
   	  	content_size, last_modified);
 
   	  int sent = eb - sb + 1;
-  	  if(DB_LOG)
-        printf("db_(m:%d)(t:%d)(r:%d):  Sent %d bytes to {Client %d}!\n", 
-          ct->num, tid, reqnum, sent, tid);
-      else if(LOG)
-        printf("Sent %d bytes to {Client %d}!\n", sent, tid);
+
+      sprintf(lb, "Sent %d bytes to {Client %d}!", sent, tid);
+      log_thr(lb, ct->num, tid);
   	}
   	else {
       /* this is a 200 status code */
-  	  if(DB_LOG)
-        printf("db_(m:%d)(t:%d)(r:%d):  Sending content to {Client %d}...\n", 
-          ct->num, tid, reqnum, tid);
-      else if(LOG)
-        printf("Sending content to {Client %d}...\n", tid);
+      sprintf(lb, "Sending content to {Client %d}...", tid);
+      log_thr(lb, ct->num, tid);
   	  
   	  write_full_content(connfd, fp, fileExt,
   	  	content_size, last_modified);
 
-  	  if(DB_LOG)
-        printf("db_(m:%d)(t:%d)(r:%d):  Sent %d bytes to {Client %d}!\n", 
-          ct->num, tid, reqnum, content_size, tid);
-      else if(LOG)
-        printf("Sent %d bytes to {Client %d}!\n", content_size, tid);
+      sprintf(lb, "Sent %d bytes to {Client %d}!", content_size, tid);
+      log_thr(lb, ct->num, tid);
   	}
     
     /* closing file*/
@@ -301,22 +348,21 @@ void *serve_client_thread(void *ptr) {
   /* closing client connection and freeing struct */
   close(connfd);
   free(ct);
-  if(DB_LOG)
-    printf("db_(m:%d)(t:%d):  Connection with {Client %d} closed.\n",
-      ct->num, tid, tid);
-  else if(LOG) 
-    printf("Connection with {Client %d} closed.\n", tid);
+
+  sprintf(lb, "Connection with {Client %d} closed.", tid);
+  log_thr(lb, ct->num, tid);
   
   /* decrement num threads and return */
   numthreads--;
   return NULL;
 }
 
+
+
 /*
  * error - wrapper for perror 
  *       - where we will handle 500 error codes
  */
-
 void error(char *msg) {
   perror(msg);
   exit(1);
