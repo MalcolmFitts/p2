@@ -65,9 +65,10 @@ Node_Dir* create_node_dir(int max) {
 int add_node(Node_Dir* nd, Node* node) {
 	if((nd->cur_nodes) < (nd->max_nodes)) {
 		/* directory not full - add the node */
-		nd->cur_nodes++;
-		nd->(n_array[cur_nodes]) = node;
+		int n = (nd->cur_nodes) + 1;
+		nd->n_array[n] = node;
 
+		nd->cur_nodes = n;
 		return 1;
 	}
 
