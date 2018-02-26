@@ -54,15 +54,6 @@ typedef struct Node_Directory {
 #define PKT_FLAG_FRAG 
 */
 
-/* CHECK - not sure i need these anymore <<<<<<<<<<<<<<<------------- */
-
-/* intial value for creating ACK packet "ack" value */
-#define ACK_MASK_INIT 0xFFFFAAAA
-
-/* value of ack in ACK packet that didnt lose any files */
-#define ACK_NO_LOSS 0x8888FFFF
-
-/* CHECK - not sure i need these anymore <<<<<<<<<<<<<<<------------- */
 
 /* ACK field default values */
 #define PKT_ACK 	0x0000AAAA  /* "true" ack flag  */
@@ -99,11 +90,6 @@ typedef struct Packet {
 
 
 /*
- *
- *  TODO 4.) write request_content
- *
- * Pkt_t* request_content (Node* n)
- *		- attempts to request and receive data packet from node
  *
  *	TODO 5.) write serve_content
  *
@@ -250,6 +236,15 @@ uint16_t calc_checksum(P_Hdr* hdr);
 Pkt_t* parse_packet (char* buf);
 
 
+/*  
+ *  writeable_packet
+ *		- takes packet and creates char array filled copy with packet byte data
+ *
+ *
+ */
+char* writeable_packet(Pkt_t* packet);
+
+
 /*  TODO  --  CHECK
  *  
  *  get_packet_type
@@ -265,7 +260,9 @@ Pkt_t* parse_packet (char* buf);
  *		=  4 --> SYN-ACK packet
  *
  */
-int get_packet_type (Pkt_t *packet);
+int get_packet_type (Pkt_t* packet);
+
+
 
 
 /*  TODO  --  CHECK
