@@ -4,12 +4,21 @@
  *
  *
  */
-
-#include <string.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
+#include <netdb.h>
+#include <sys/types.h> 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/stat.h>
 
+
+#include "serverlog.h"
+
+/* Peer Node Constant(s) */
 #define MAX_NODES 50
 
 /* Peer Node struct */
@@ -34,16 +43,18 @@ typedef struct Node_Directory {
 #define MAX_DATA_SIZE 65519
 #define MAX_PACKET_SIZE 65535 
 
-/* Packet constants and definitions */
-#define SHORT_INT_MASK 0x0000FFFF
-
-/* ACK field default values */
-#define PKT_DAT 0xAAAAAAAA
-#define PKT_ACK 0x8888FFFF
 
 /* Packet type (creation) flags */
-#define PKT_FLAG_DATA 1
-#define PKT_FLAG_ACK  2
+#define PKT_FLAG_DATA    1
+#define PKT_FLAG_ACK     2
+#define PKT_FLAG_SYN 	 3
+#define PKT_FLAG_SYN_ACK 4
+
+/*	possible future flag(s):
+#define PKT_FLAG_FRAG 
+*/
+
+/* CHECK - not sure i need these anymore <<<<<<<<<<<<<<<------------- */
 
 /* intial value for creating ACK packet "ack" value */
 #define ACK_MASK_INIT 0xFFFFAAAA
@@ -51,13 +62,20 @@ typedef struct Node_Directory {
 /* value of ack in ACK packet that didnt lose any files */
 #define ACK_NO_LOSS 0x8888FFFF
 
-/*	possible future flag(s):
-#define PKT_FLAG_FRAG 3
-*/
+/* CHECK - not sure i need these anymore <<<<<<<<<<<<<<<------------- */
 
+/* ACK field default values */
+#define PKT_ACK 	0x0000AAAA  /* "true" ack flag  */
+#define PKT_ACK_NAN 0x00005555  /* "false" ack flag */
 
+/* SYN field default values */
+#define PKT_SYN 	0x0000AAAA  /* "true" syn flag  */
+#define PKT_SYN_NAN 0x00005555  /* "false" syn flag */
 
-/* Packet Header struct */
+/* Misc. Packet Constant(s) */
+#define S_INT_MASK 0x0000FFFF
+
+/* Packet Header Struct */
 typedef struct Packet_Header {
 	uint16_t source_port;		/* source port 	- 2 bytes */
 	uint16_t dest_port;			/* dest port 	- 2 bytes */
@@ -65,12 +83,15 @@ typedef struct Packet_Header {
 	uint16_t length;			/* length		- 2 bytes */
 	uint16_t checksum;			/* checksum		- 2 bytes */
 
-	unsigned int seq_num;		/* sequence num - 4 bytes */
+	uint16_t syn;				/* sync  		- 2 bytes */
+	uint16_t ack;				/* acknowledge  - 2 bytes */
 
-	unsigned int ack;			/* acknowledge  - 4 bytes */
+	//unsigned int ack;			
+
+	uint32_t seq_num;			/* sequence num - 4 bytes */
 } P_Hdr;
 
-/* Packet struct */
+/* Packet Struct */
 typedef struct Packet {
 	P_Hdr header;				/* Packet Header */
 	char buf[MAX_DATA_SIZE];	/* Packet Data   */
@@ -78,38 +99,21 @@ typedef struct Packet {
 
 
 /*
- *  TODO 3.) write parse_packet
- *
- * Pkt_t* parse_packet (char* buf)
- *		- creates packet struct by parsing input buffer
- *
- *	(things i need)
- *		- parse header data
- *			-- source port --> buf { 0,  1}
- *			-- dest port   --> buf { 2,  3}
- *			-- length      --> buf { 4,  5}
- *			-- check sum   --> buf { 6,  7}
- *			-- seq num     --> buf { 8, 11}
- *			-- ack    	   --> buf {12, 15}
- *
- *		- data (rest)
- *
- *
- *
  *
  *  TODO 4.) write request_content
  *
  * Pkt_t* request_content (Node* n)
  *		- attempts to request and receive data packet from node
  *
- *	TODO 5.) deal with receiving requests
+ *	TODO 5.) write serve_content
  *
  *
  */
 
 
-/*
- * create_node
+/*  TODO  --  CHECK
+ *
+ *  create_node
  *		- allocates memory for and returns Node with values assigned
  *
  *	~param: path
@@ -122,8 +126,9 @@ typedef struct Packet {
 Node* create_node(char* path, char* name, int port, int rate);
 
 
-/*
- * check_node_content
+/*  TODO  --  CHECK
+ *
+ *  check_node_content
  *		- checks peer_node for content defined by filename
  *
  *	~param: filename
@@ -137,8 +142,10 @@ Node* create_node(char* path, char* name, int port, int rate);
  */
 int check_node_content(Node* pn, char* filename);
 
-/*
- * create_node_dir
+
+/*  TODO  --  CHECK
+ *
+ *  create_node_dir
  *		- allocates memory for and returns pointer to Node Directory
  *			with 0 initial Nodes
  *
@@ -152,8 +159,13 @@ int check_node_content(Node* pn, char* filename);
  */
 Node_Dir* create_node_dir(int max);
 
-/*
- * add_node
+
+
+
+
+/*  TODO  --  CHECK
+ *
+ *  add_node
  *		- adds node to node directory, given directory is not full
  *
  *	~return values:
@@ -165,35 +177,38 @@ int add_node(Node_Dir* nd, Node* node);
 
 /*  TODO  --  CHECK
  *
- * create_packet 
+ *  create_packet 
  *		- creates packet struct to be sent/received by nodes
  *  
- *  ~param: ack_mask
- *		- if this is an acknowledgement, this should indicate which packets
- *			were received
- *		- acknowledge 16 packets at a time
- *		- normal value: 
- *			0xFFFFAAAA (last 16 bits alternate)
- *		- bad packet: 
- *			bit representing which packet was bad is flipped (in last 16 bits)
- *
  *  ~param: flag
- *		= 1 (PKT_FLAG_DATA) --> create a data packet
- *		= 2 (PKT_FLAG_ACK)  --> create an acknowledge packet
- *
+ *		= 1 (PKT_FLAG_DATA) 	--> creates data packet
+ *		= 2 (PKT_FLAG_ACK)  	--> creates ack (received) packet
+ *		= 3 (PKT_FLAG_SYN) 		--> creates syn (request) packet
+ *		= 4 (PKT_FLAG_SYN_ACK)  --> creates syn-ack (request accepted) packet
+ *										
  *	~return values:
  *		- returns packet with correct content on success
  *		- returns NULL pointer on fail
  *
  */
-
-
 Pkt_t* create_packet (Node* n, uint16_t s_port, unsigned int s_num, 
-  char* filename, int flag, unsigned int ack_mask);
+  char* filename, int flag);
 
 
+/*  TODO  --  CHECK
+ *
+ *  discard_packet 
+ *		- discards packet by freeing memory
+ *
+ *	~notes:
+ *		- WARNING: packet data will be GONE FOREVER
+ *		- should only be used when you DO NOT need packet contents
+ */
+void discard_packet(Pkt_t *packet);
 
-/*
+
+/*  TODO  --  CHECK
+ *
  *  calc_checksum 
  *		- calculates checksum value of a packet header struct
  *		- does this independently of header's checksum value
@@ -202,23 +217,108 @@ Pkt_t* create_packet (Node* n, uint16_t s_port, unsigned int s_num,
  *		- header consists of 7 16-bit values
  *		- checksum will be 8th
  *		- vars:
- *			from hdr: {source_port, dest_port, length}
- *			seq_num1 = (uint16_t) ((seq_num >> 16) & 0xFFFF)
- *			seq_num2 = (uint16_t) ((seq_num & 0xFFFF))
- *			ack1 = (uint16_t) ((ack >> 16) & 0xFFFF)
- *			ack2 = (uint16_t) (ack & 0xFFFF)
+ *			from hdr: {source_port, dest_port, length, ack, syn}
+ *			seq_num1 = (uint16_t) ((seq_num >> 16))
+ *			seq_num2 = (uint16_t) (seq_num)
  *
  *		- calculation:
  *			x = [(s_p) + (d_p) + (l) + (seq_num1) + (seq_num2)
- *					+ (ack1) + (ack2)]
+ *					+ (ack) + (syn)]
  *			checksum = ~ x;
  *
  *
  */
-
 uint16_t calc_checksum(P_Hdr* hdr);
 
 
+/*  TODO  --  CHECK
+ *  
+ *  parse_packet
+ *		- creates packet struct by parsing input buffer
+ *
+ *	~notes:
+ *		- header data
+ *			-- source port --> buf { 0,  1}
+ *			-- dest port   --> buf { 2,  3}
+ *			-- length      --> buf { 4,  5}
+ *			-- check sum   --> buf { 6,  7}
+ *			-- syn    	   --> buf { 8,  9}
+ *			-- ack         --> buf {10, 11}
+ *			-- seq num     --> buf {12, 15}
+ *		- data (rest)
+ */
+Pkt_t* parse_packet (char* buf);
+
+
+/*  TODO  --  CHECK
+ *  
+ *  get_packet_type
+ *		- takes packet and returns (expected) defined type
+ *		- checks header's syn and ack flags
+ *
+ *	~return values:
+ *		= -1 --> corrupted packet (undefined reason)
+ *		=  0 --> corrupted packet (checksum)
+ *		=  1 --> data packet
+ *		=  2 --> ACK packet
+ *		=  3 --> SYN packet
+ *		=  4 --> SYN-ACK packet
+ *
+ */
+int get_packet_type (Pkt_t *packet);
+
+
+/*  TODO  --  CHECK
+ *  
+ *  check_content
+ *		- takes Node Directory and filename and attempts to find content
+ *		
+ *
+ *	~return values:
+ *		- returns pointer to node that should have content
+ *		- returns NULL if no node has content in directory
+ *
+ *	~front-end interaction:
+ *		- front-end should use returned Node for sync_node
+ */
+Node* check_content(Node_Dir* dir, char* filename);
+
+
+/*  TODO  --  CHECK
+ *  
+ *  sync_node
+ *		- attempts to initiate connection with node and receive acknowledgement
+ *
+ *	~return values:
+ *		- returns pointer to Node's SYN-ACK buffer on success
+ *		- returns buffer indicating failure on fail
+ *			-- buffer should have info on failure in this case
+ *
+ *	~front-end interaction:
+ *		- front-end should parse returned buffer 
+ *		- will parse info for headers on successful sync
+ *		
+ */
+char* sync_node(Node* node, uint16_t s_port, int sockfd, 
+	struct sockaddr_in serveraddr);
+
+/*  TODO  --  CHECK
+ *  
+ *  request_content
+ *    - attempts to request content from synced node
+ *
+ *  ~return values:
+ *    - returns pointer to buffer w/ content on success
+ *    - returns buffer indicating failure on fail
+ *      -- buffer should have info on failure in this case
+ *
+ *  ~front-end interaction:
+ *    - front-end should use returned buffer for HTTP response
+ *    - will parse info for headers on successful sync
+ *    
+ */
+char* request_content(Node* node, uint16_t s_port, int sockfd, 
+  struct sockaddr_in serveraddr, uint32_t seq_ack_num);
 
 
 

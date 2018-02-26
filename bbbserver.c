@@ -54,6 +54,7 @@ struct thread_data {
   int tid;                    /* thread id tag */
   int num;                    /* DEBUG - overall connected num */
   int listenfd_be;            /* back end listening socket */
+  int port_be;                /* back end port */
 };
 
 /* Function prototype(s): */
@@ -174,6 +175,7 @@ int main(int argc, char **argv) {
     ct->tid = numthreads + 1;
     ct->num = ctr;
     ct->listenfd_be = listenfd_be;
+    ct->port_be = portno_be;
 
     /* spin off thread */
     pthread_create(&(tid), NULL, serve_client_thread, ct);
@@ -201,7 +203,7 @@ void *serve_client_thread(void *ptr) {
   char bufcopy[BUFSIZE];          /* copy of message buffer */
   int n;                          /* message byte size */
   struct stat *fStat;
-  int content_size;
+  int content_size;  /* CHECK - should this be bigger? */
   time_t last_modified;
 
   char lb[MAX_PRINT_LEN];         /* buffer for logging */
