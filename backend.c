@@ -50,28 +50,35 @@ Node_Dir* create_node_dir(int max) {
   nd->cur_nodes = 0;
   nd->max_nodes = max;
 
-  /* allocate mem for node array */
-  nd->n_array = malloc(max * sizeof(Node*));
 
-  /* checking for successful mem allocation */
-  if(!(nd->n_array)) return NULL;
+  /* allocate mem for node array */
+  /* CHANGE --> backend.c */
+  nd->n_array = malloc(max * sizeof(Node *));
+  for(int i = 0; i < max; i++) {
+    nd->n_array[i] = *((Node*) malloc(sizeof(Node)));
+  }
 
   return nd;
 }
 
 
 int add_node(Node_Dir* nd, Node* node) {
-	if((nd->cur_nodes) < (nd->max_nodes)) {
-		/* directory not full - add the node */
-		int n = (nd->cur_nodes) + 1;
-		nd->n_array[n] = node;
+  if((nd->cur_nodes) < (nd->max_nodes)) {
+    /* directory not full - add the node */
+    int n = (nd->cur_nodes);
 
-		nd->cur_nodes = n;
-		return 1;
-	}
+    /* CHANGE --> backend.c */
+    (nd->n_array[n]).content_path = node->content_path;
+    (nd->n_array[n]).ip_hostname = node->ip_hostname;
+    (nd->n_array[n]).port = node->port;
+    (nd->n_array[n]).content_rate = node->content_rate;
 
-	/* max nbr of nodes in directory already reached */
-	return 0;
+    nd->cur_nodes = n + 1;
+    return 1;
+  }
+
+  /* max nbr of nodes in directory already reached */
+  return 0;
 }
 
 
@@ -299,16 +306,17 @@ int get_packet_type(Pkt_t *packet) {
 Node* check_content(Node_Dir* dir, char* filename) {
   int max = dir->cur_nodes;
   int found = 0;
-  Node* res;
+  Node ref;
 
   /* looping through directory and checking nodes */
   for(int i = 0; i < max; i++) {
-    Node* t = dir->n_array[i];
+    /* CHANGE --> backend.c  */
+    Node t = dir->n_array[i];
 
     /* CHECK TODO - check for content rate too? */
     /* checking node content */
-    if(check_node_content(t, filename) == 1) {
-      res = t;
+    if(check_node_content(&t, filename) == 1 && !found) {
+      ref = dir->n_array[i];
       found = 1;
     }
   }
@@ -316,6 +324,7 @@ Node* check_content(Node_Dir* dir, char* filename) {
   /* did not find content */
   if(!found) return NULL;
 
+  Node* res = create_node(ref.content_path, ref.ip_hostname, ref.port, ref.content_rate);
   return res;
 }
 
