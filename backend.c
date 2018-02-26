@@ -248,9 +248,21 @@ Pkt_t* parse_packet(char* buf) {
 
   /* CHECK - not sure im assigning this correctly */
   char *b_ptr = &(buf[16]);
-  memcpy(pkt->buf, b_ptr, MAX_DATA_SIZE);
+  size_t b_len = sizeof(buf) - 16;
+  memcpy(pkt->buf, b_ptr, b_len);
 
   return pkt;
+}
+
+
+char* writeable_packet(Pkt_t* packet) {
+  /* CHECK - I really just threw this together */
+  char p_buf[MAX_PACKET_SIZE];
+  size_t p_size = sizeof(packet);
+  memcpy(p_buf, packet, p_size);
+
+  char* ref = p_buf;
+  return ref;
 }
 
 
@@ -279,7 +291,7 @@ int get_packet_type(Pkt_t *packet) {
     return PKT_FLAG_DATA;       /* DATA packet    */
   }
   
-  /* not sure what kind of packet */
+  /* should not happen - not sure what kind of packet this is */
   return -1;
 }
 
@@ -321,10 +333,13 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd,
   Pkt_t* syn_packet = create_packet(node, s_port, 0, node->content_path,
    PKT_FLAG_SYN);
 
+  /* creating writeable version of packet */
+  char* pack_write = writeable_packet(syn_packet);
+
   /* sending SYN packet */
   serverlen = sizeof(serveraddr);
-  int p_size = sizeof(syn_packet);
-  n_sent = sendto(sockfd, syn_packet, p_size, 0, (struct sockaddr *) &serveraddr, serverlen);
+  n_sent = sendto(sockfd, pack_write, strlen(pack_write), 0, 
+    (struct sockaddr *) &serveraddr, serverlen);
 
   if(n_sent < 0) {
     /* TODO buffer info: "send SYN fail" */
@@ -349,7 +364,8 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd,
 
   /* storing buf for later return to caller & discarding local packets */
   /* CHECK - memcpy */
-  memcpy(buf, syn_ack_packet->buf, MAX_DATA_SIZE);
+  size_t b_len = strlen(syn_ack_packet->buf);
+  memcpy(buf, syn_ack_packet->buf, b_len);
 
   /* CHECK - not sure i should discard these packets here */
   //discard_packet(syn_packet);
@@ -358,6 +374,7 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd,
   char* ref = buf;
   return ref;
 }
+
 
 char* request_content(Node* node, uint16_t s_port, int sockfd, 
   struct sockaddr_in serveraddr, uint32_t seq_ack_num) {
@@ -372,9 +389,12 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
   Pkt_t* ack_packet = create_packet(node, s_port, seq_ack_num, 
     node->content_path, PKT_FLAG_ACK);
 
+  /* creating writeable version of packet */
+  char* pack_write = writeable_packet(ack_packet);
+
   /* sending ACK packet */
   serverlen = sizeof(serveraddr);
-  n_sent = sendto(sockfd, ack_packet, sizeof(ack_packet), 0,
+  n_sent = sendto(sockfd, pack_write, strlen(pack_write), 0,
     (struct sockaddr *) &serveraddr, serverlen);
 
   if(n_sent < 0) {
@@ -400,7 +420,8 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
 
   /* storing buf for later return to caller & discarding local packets */
   /* CHECK - memcpy */
-  memcpy(buf, dat_packet->buf, MAX_DATA_SIZE);
+  size_t b_len = strlen(dat_packet->buf);
+  memcpy(buf, dat_packet->buf, b_len);
 
   /* CHECK - not sure i should discard these packets here */
   //discard_packet(ack_packet);
