@@ -123,3 +123,30 @@ int parse_peer_config_rate(char* buf, char* rate) {
   }
   return 1;
 }
+
+int parse_str_2_int(char* str){
+  int i = 0;
+  int d = 0;
+  int x = 0;
+  int neg = 1;
+  char c = str[i];
+
+  if (!isdigit(c) && c != '-'){
+    return -1;
+  }
+
+  if(c == '-'){
+    neg = -1;
+    i ++;
+    c = str[i];
+  }
+
+  while(isdigit(c)){
+    d = c - '0';
+    x = (x * 10) + d;
+    i ++;
+    c = str[i];
+  }
+
+  return x * neg;
+}

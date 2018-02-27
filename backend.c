@@ -7,7 +7,6 @@
 
 #include "backend.h"
 
-
 void recieve_pkt(Node* node, int sockfd,
 		 struct sockaddr_in serveraddr){
 
@@ -76,6 +75,37 @@ int serve_content(uint16_t d_port, uint16_t s_port, unsigned int s_num,
 		 (struct sockaddr *) &serveraddr, serverlen);
   
   return n_set;
+}
+
+int init_backend(struct sockaddr_in serveraddr_be, int port_be){
+  int listenfd_be;
+  int optval_be;
+  
+  listenfd_be = socket(AF_INET, SOCK_DGRAM, 0);
+  if(listenfd_be < 0)
+    error("ERROR opening back-end socket");
+
+  /* setsockopt: Handy debugging trick that lets
+   * us rerun the server immediately after we kill it;
+   * otherwise we have to wait about 20 secs.
+   * Eliminates "ERROR on binding: Address already in use" error.
+   */
+  optval_be = 1;
+
+  setsockopt(listenfd_be, SOL_SOCKET, SO_REUSEADDR, 
+    (const void *)&optval_be, sizeof(int));
+
+  /* build the server's back end internet address */
+  bzero((char *) &serveraddr_be, sizeof(serveraddr_be));
+  serveraddr_be.sin_family = AF_INET; /* we are using the Internet */
+  serveraddr_be.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
+  serveraddr_be.sin_port = htons((unsigned short)portno_be); /* port to listen on */
+
+  /* bind: associate the listening socket with a port */
+  if (bind(listenfd_be, (struct sockaddr *) &serveraddr_be, sizeof(serveraddr_be)) < 0)
+    error("ERROR on binding back-end socket with port");
+
+  return listenfd_be;
 }
 
 
@@ -435,6 +465,7 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd,
   }
 
   /* receive SYN-ACK packet */
+
   n_recv = recvfrom(sockfd, p_buf, MAX_PACKET_SIZE, 0,
     (struct sockaddr *) &serveraddr, &serverlen);
 
@@ -521,10 +552,113 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
   return ref;
 }
 
+/*  TODO
+ *  add_response_be
+ */ 
+int peer_add_response(int connfd, char* BUF, struct thread_data *ct){
+  char buf[MAXLINE];
+  char* filepath = malloc(sizeof(char) * MAXLINE);
+  char* hostname = malloc(sizeof(char) * MAXLINE);
+  char* port_c = malloc(sizeof(char) * MAXLINE);
+  char* rate_c = malloc(sizeof(char) * MAXLINE);
 
+  int port;
+  int rate;
 
+  bzero(buf, BUFSIZE);
+  strcpy(buf, BUF);
 
+  /* TODO this returns something */
+  parse_peer_add(BUF, filepath, hostname, port_c, rate_c);
 
+  port = parse_str_2_int(port_c);
+  rate = parse_str_2_int(rate_c);
 
+  free(port_c);
+  free(rate_c);
+
+  Node* n = create_node(filepath, hostname, port, rate);
+
+  if(!add_node(node_dir, n)){
+    /* TODO error checking */
+    write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
+    return 0;
+  }
+  
+  write_status_header(connfd, SC_OK, ST_OK);
+  return 1;
+}
+
+/*  TODO
+ *  view_response_be
+ */
+int peer_view_response(int connfd, char*BUF, struct thread_data *ct){
+  char buf[MAXLINE];
+  char filepath = malloc(sizeof(char) * MAXLINE);
+  char path[MAXLINE];
+  char* file_type = malloc(sizeof(char) * MINLINE);
+  Node* node;
+  int len;
+
+  /* TODO this returns something */
+  parse_peer_view_content(BUF, filepath);
+
+  bzero(path, MAXLINE);
+  strcpy(path, filepath);
+
+  /* TODO this will return something */
+  parse_file_type(path, file_type);
+  
+  bzero(buf, BUFSIZE);
+  strcpy(buf, BUF);
+  
+  if ((node = check_content(node_dir, filepath)) == NULL){
+    write_status_header(connfd, SC_NOT_FOUND, ST_NOT_FOUND);
+    return 0;
+  }
+
+  bzero(buf, BUFSIZE);
+  
+  buf = sync_node(node, ct->port_be, ct->listenfd_be, ct->c_addr);
+
+  /* TODO check if fails */
+
+  len = parse_str_2_int(buf);
+
+  write_status_header(connfd, SC_OK, ST_OK);
+  write_content_length_header(connfd, len);
+  write_content_type_header(connfd, file_type);
+  
+  bzero(buf, BUFSIZE);
+  /* CHECK will not be full len after CP */
+  buf = request_content(node, ct->port_be, ct->listenfd_be, ct->c_addr, len);
+
+  write(connfd, buf, strlen(buf));
+
+  return 1;
+}
+
+/*  TODO
+ *  rate_response_be
+ */
+int peer_rate_response(int connfd, char* BUF, struct thread_data *ct){
+  char buf[MAXLINE];
+  int rate;
+  char* rate_c = malloc(sizeof(char) * MAXLINE);
+    
+  bzero(buf, BUFSIZE);
+  strcpy(buf, BUF);
+
+  /* TODO this returns something */
+  parse_peer_config_rate(BUF, rate);
+  
+  rate = parse_str_to_int(char* rate_c);
+  free(rate_c);
+
+  // CHECK 200 OK response on config_rate
+  write_status_header(connfd, SC_OK, ST_OK);
+
+  return 0;
+}
 
 /* filler end line */
