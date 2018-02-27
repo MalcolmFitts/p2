@@ -7,6 +7,9 @@
  *           Samuel Adams  {sjadams@andrew.cmu.edu}
  **/
 
+#ifndef DATAWRITER_H
+#define DATAWRITER_H
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -174,3 +177,24 @@ void write_headers_206(int connfd, char* name, int full_length,
  *			{start_byte} indicates where in the file this will start writing from
  */
 void write_data(int connfd, FILE* fp, int content_size, long start_byte);
+
+
+void write_partial_content(int connfd, FILE* fp, char* fileExt, 
+			   int sb, int eb, int full_content_size,
+			   time_t last_modified);
+
+void write_full_content(int connfd, FILE* fp, char* fileExt, 
+			int content_size, time_t last_modified);
+
+/*
+ * server_error - server wrapper for perror
+ */
+void server_error(char *msg, int connfd);
+
+/*
+ * error - wrapper for perror 
+ *       - where we will handle 500 error codes
+ */
+void error(char *msg);
+
+#endif

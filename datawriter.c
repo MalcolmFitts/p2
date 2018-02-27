@@ -256,5 +256,42 @@ void write_data(int connfd, FILE* fp, int content_size, long start_byte){
   }
 }
 
+void write_partial_content(int connfd, FILE* fp, char* fileExt, 
+			   int sb, int eb, int full_content_size,
+			   time_t last_modified) {
 
+  /* getting size of requested content */
+  int content_size = eb - sb + 1;
+    
+  /* writing headers and data */
+  write_headers_206(connfd, SERVER_NAME, full_content_size, fileExt, 
+		    last_modified, sb, eb, content_size);
+  write_data(connfd, fp, content_size, (long) sb);
+}
 
+void write_full_content(int connfd, FILE* fp, char* fileExt, 
+			int content_size, time_t last_modified) { 
+
+  /* writing headers and data */
+  write_headers_200(connfd, SERVER_NAME, content_size, fileExt, last_modified);
+  write_data(connfd, fp, content_size, 0L);
+}
+
+/*
+ * server_error - server wrapper for perror
+ */
+void server_error(char *msg, int connfd) {
+  perror(msg);
+  write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
+  write_empty_header(connfd);
+  exit(1);
+}
+
+/*
+ * error - wrapper for perror 
+ *       - where we will handle 500 error codes
+ */
+void error(char *msg) {
+  perror(msg);
+  exit(1);
+}
