@@ -5,6 +5,9 @@
  *    - contains documentation/usage notes and constant definitions
  */
 
+#ifndef SERVERLOG_H
+#define SERVERLOG_H
+
 #include <string.h>
 #include <stdio.h>
 
@@ -61,4 +64,4 @@ void log_req(char* msg, int c, int t, int r);
  */
 void server_log(char* message, char* db);
 
-
+#endif
