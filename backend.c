@@ -8,7 +8,7 @@
 #include "backend.h"
 
 
-xvoid recieve_pkt(Node* node, int sockfd,
+void recieve_pkt(Node* node, int sockfd,
 		 struct sockaddr_in serveraddr){
 
   char p_buf[MAX_PACKET_SIZE] = {0};
