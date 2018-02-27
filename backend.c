@@ -123,29 +123,35 @@ Node_Dir* create_node_dir(int max) {
   nd->max_nodes = max;
 
   /* allocate mem for node array */
-  nd->n_array = malloc(max * sizeof(Node*));
-
-  /* checking for successful mem allocation */
-  if(!(nd->n_array)) return NULL;
+  nd->n_array = malloc(max * sizeof(Node *));
+  for(int i = 0; i < max; i++) {
+    nd->n_array[i] = *((Node*) malloc(sizeof(Node)));
+  }
 
   return nd;
 }
 
 
+
 int add_node(Node_Dir* nd, Node* node) {
   if((nd->cur_nodes) < (nd->max_nodes)) {
     /* directory not full - add the node */
-    int n = (nd->cur_nodes) + 1;
-    nd->n_array[n] = node;
-    
-    nd->cur_nodes = n;
+
+    int n = (nd->cur_nodes);
+
+    (nd->n_array[n]).content_path = node->content_path;
+    (nd->n_array[n]).ip_hostname = node->ip_hostname;
+    (nd->n_array[n]).port = node->port;
+    (nd->n_array[n]).content_rate = node->content_rate;
+
+    nd->cur_nodes = n + 1;
     return 1;
   }
-  
+
+
   /* max nbr of nodes in directory already reached */
   return 0;
 }
-
 
 Pkt_t* create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
   char* filename, int flag) {
@@ -274,67 +280,77 @@ uint16_t calc_checksum(P_Hdr* hdr) {
   uint16_t seq_num2 = (uint16_t) (hdr->seq_num);
 
   /* binary addition of relevant values */
-  uint16_t x = s_p + d_p + len + syn + ack + seq_num1 + seq_num2;
+  uint16_t x = (((((s_p + d_p) + len) + syn)+ ack) + seq_num1) + seq_num2;
 
   /* one's complement of addition */
   uint16_t res = ~x;
-
   return res;
 }
 
 
 Pkt_t* parse_packet(char* buf) {
-  /* ensuring min size of data */
-  if(strlen(buf) < P_HDR_SIZE) return NULL;
-
   /* allocating mem for structs */
   Pkt_t *pkt = malloc(sizeof(Pkt_t));
   P_Hdr *hdr = malloc(sizeof(P_Hdr));
 
-  char sp[2];     /* buf { 0,  1} */
-  char dp[2];     /* buf { 2,  3} */
-  char len[2];    /* buf { 4,  5} */
-  char csum[2];   /* buf { 6,  7} */
-  char ack[2];    /* buf { 8,  9} */
-  char syn[2];    /* buf {10, 11} */
-  char snum[4];   /* buf {12, 15} */
+  /* creating vars to directly parse into */
+  uint16_t sp;     /* buf { 0,  1} */
+  uint16_t dp;     /* buf { 2,  3} */
+  uint16_t len;    /* buf { 4,  5} */
+  uint16_t csum;   /* buf { 6,  7} */
+  uint16_t ack;    /* buf { 8,  9} */
+  uint16_t syn;    /* buf {10, 11} */
+  uint32_t snum;   /* buf {12, 15} */  
 
-  sprintf(sp, "%c%c", buf[0], buf[1]);
-  sprintf(dp, "%c%c", buf[2], buf[3]);
-  sprintf(len, "%c%c", buf[4], buf[5]);
-  sprintf(csum, "%c%c", buf[6], buf[7]);
-  sprintf(ack, "%c%c", buf[8], buf[9]);
-  sprintf(syn, "%c%c", buf[10], buf[11]);
-  sprintf(snum, "%c%c%c%c", buf[12], buf[13], buf[14], buf[15]);
+  /* parsing header data from buf into header*/
+  char* b_ptr = buf;
+  memcpy(&sp, b_ptr, 2);
+  hdr->source_port = sp;
 
-  /* CHECK - make sure this is parsing correctly */
-  hdr->source_port  = (uint16_t) atoi(sp);
-  hdr->dest_port    = (uint16_t) atoi(dp);
-  hdr->length       = (uint16_t) atoi(len);
-  hdr->checksum     = (uint16_t) atoi(csum);
-  hdr->ack          = (uint16_t) atoi(ack);
-  hdr->syn          = (uint16_t) atoi(syn);
-  hdr->seq_num      = (uint32_t) atoi(snum);
+  b_ptr = &(buf[2]);
+  memcpy(&dp, b_ptr, 2);
+  hdr->dest_port = dp;
 
+  b_ptr = &(buf[4]);
+  memcpy(&len, b_ptr, 2);
+  hdr->length = len;
+
+  b_ptr = &(buf[6]);
+  memcpy(&csum, b_ptr, 2);
+  hdr->checksum = csum;
+
+  b_ptr = &(buf[8]);
+  memcpy(&ack, b_ptr, 2);
+  hdr->ack = ack;
+
+  b_ptr = &(buf[10]);
+  memcpy(&syn, b_ptr, 2);
+  hdr->syn = syn;
+
+  b_ptr = &(buf[12]);
+  memcpy(&snum, b_ptr, 4);
+  hdr->seq_num = snum;
+  
+  /* assigning header */
   pkt->header = *hdr;
 
-  /* CHECK - not sure im assigning this correctly */
-  char *b_ptr = &(buf[16]);
-  size_t b_len = sizeof(buf) - 16;
-  memcpy(pkt->buf, b_ptr, b_len);
+  /* copying packet's buffer data */
+  b_ptr = &(buf[16]);
+  /* CHECK - this might copy too much data OR data from outside packet */
+  memcpy(pkt->buf, b_ptr, MAX_DATA_SIZE);
 
   return pkt;
 }
 
 
 char* writeable_packet(Pkt_t* packet) {
-  /* CHECK - I really just threw this together */
-  char p_buf[MAX_PACKET_SIZE];
-  size_t p_size = sizeof(packet);
+  int p_size = sizeof(*packet);
+
+  /* creating buffer and copying all packet data into it (header + buf) */
+  char* p_buf = malloc(p_size * sizeof(char));
   memcpy(p_buf, packet, p_size);
 
-  char* ref = p_buf;
-  return ref;
+  return p_buf;
 }
 
 
@@ -371,16 +387,15 @@ int get_packet_type(Pkt_t *packet) {
 Node* check_content(Node_Dir* dir, char* filename) {
   int max = dir->cur_nodes;
   int found = 0;
-  Node* res;
+  Node ref;
 
   /* looping through directory and checking nodes */
   for(int i = 0; i < max; i++) {
-    Node* t = dir->n_array[i];
+    Node t = dir->n_array[i];
 
-    /* CHECK TODO - check for content rate too? */
-    /* checking node content */
-    if(check_node_content(t, filename) == 1) {
-      res = t;
+    /* checking node content -- CHECK TODO - check for content rate too?  */
+    if(check_node_content(&t, filename) == 1 && !found) {
+      ref = dir->n_array[i];
       found = 1;
     }
   }
@@ -388,6 +403,7 @@ Node* check_content(Node_Dir* dir, char* filename) {
   /* did not find content */
   if(!found) return NULL;
 
+  Node* res = create_node(ref.content_path, ref.ip_hostname, ref.port, ref.content_rate);
   return res;
 }
 
