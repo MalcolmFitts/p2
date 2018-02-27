@@ -22,8 +22,6 @@
 #include "serverlog.h"
 #include "backend.h"
 
-
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdbool.h>

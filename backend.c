@@ -7,6 +7,78 @@
 
 #include "backend.h"
 
+
+xvoid recieve_pkt(Node* node, int sockfd,
+		 struct sockaddr_in serveraddr){
+
+  char p_buf[MAX_PACKET_SIZE] = {0};
+  char* content_path = node->content_path;
+  socklen_t serverlen;
+  int n_sent;
+  int n_recv[MAX_PACKET_SIZE] = {0};
+  uint16_t s_port = node->port;
+  
+
+  while(1){
+    n_recv = recvfrom(sockfd, p_buf, MAX_PACKET_SIZE, 0,
+		      (struct sockaddr *) &serveraddr, &serverlen);
+    if(n_recv < 0) {
+      /* TODO  */
+    }
+
+    Pkt_t* recv_pkt = parse_packet(p_buf);
+
+    int type = get_packet_type(recv_pkt);
+
+    /* CHECK accepted types (SYN and ACK)*/
+    /* TODO add FIN implimentation */
+    if (type != PKT_FLAG_SYN || type != PKT_FLAG_ACK){
+      /* TODO corrupted packet */
+    }
+
+    else{
+      d_port = recv_pkt->header->source_port;
+      s_num = recv_pkt->header->s_num;
+      /* TODO s_num */
+      n_sent = serve_content(d_port, s_port, 0, content_path, sockfd,
+			     serveraddr, type);
+
+      if(n_sent < 0){
+	/* TODO error on send */
+      }
+    }
+  }
+}
+
+int serve_content(uint16_t d_port, uint16_t s_port, unsigned int s_num,
+		  char* filename, int sockfd,
+		  struct sockaddr_in serveraddr, int flag){
+  
+  socklen_t server_len;
+  int n_set;
+  Pkt_t* data_pkt;
+
+  if (flag == PKT_FLAG_ACK){
+    /* Create the packet to be sent */
+    /* CHECK s_num */ 
+    data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_DATA);
+  }
+
+  else /* flag == PKT_FLAG_SYN */ {
+    /* CHECK s_num */ 
+    data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_SYN_ACK);
+  }
+  
+  char* data_pkt_wr = writeable_packet(Pkt_t* data_pkt);
+  
+  server_len = sizeof(serveraddr);
+  n_set = sendto(sockfd, data_pkt_wr, str_len(data_pkt_wr), 0,
+		 (struct sockaddr *) &serveraddr, serverlen);
+  
+  return n_set;
+}
+
+
 Node* create_node(char* path, char* name, int port, int rate) {
   /* allocate mem for struct */
   Node* pn = malloc(sizeof(Node));
@@ -61,21 +133,21 @@ Node_Dir* create_node_dir(int max) {
 
 
 int add_node(Node_Dir* nd, Node* node) {
-	if((nd->cur_nodes) < (nd->max_nodes)) {
-		/* directory not full - add the node */
-		int n = (nd->cur_nodes) + 1;
-		nd->n_array[n] = node;
-
-		nd->cur_nodes = n;
-		return 1;
-	}
-
-	/* max nbr of nodes in directory already reached */
-	return 0;
+  if((nd->cur_nodes) < (nd->max_nodes)) {
+    /* directory not full - add the node */
+    int n = (nd->cur_nodes) + 1;
+    nd->n_array[n] = node;
+    
+    nd->cur_nodes = n;
+    return 1;
+  }
+  
+  /* max nbr of nodes in directory already reached */
+  return 0;
 }
 
 
-Pkt_t* create_packet (Node* n, uint16_t s_port, unsigned int s_num, 
+Pkt_t* create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
   char* filename, int flag) {
 
   Pkt_t *packet = malloc(sizeof(Pkt_t));
@@ -87,13 +159,13 @@ Pkt_t* create_packet (Node* n, uint16_t s_port, unsigned int s_num,
   char f_buf[MAX_DATA_SIZE] = {0};
 
   hdr->source_port = s_port;
-  hdr->dest_port = n->port;
+  hdr->dest_port = dest_port;
   hdr->seq_num = s_num;
 
   /* CHECK - fixing size of packets to max size for now */
   hdr->length = MAX_PACKET_SIZE;
 
-  if(flag == PKT_FLAG_DATA) {  
+  if(flag == PKT_FLAG_DATA) {
     /* data packet */
 
     /* assign ACK & SYN fields */
@@ -243,7 +315,7 @@ Pkt_t* parse_packet(char* buf) {
   hdr->ack          = (uint16_t) atoi(ack);
   hdr->syn          = (uint16_t) atoi(syn);
   hdr->seq_num      = (uint32_t) atoi(snum);
-  
+
   pkt->header = *hdr;
 
   /* CHECK - not sure im assigning this correctly */
@@ -290,7 +362,7 @@ int get_packet_type(Pkt_t *packet) {
   else if((hdr->ack) == ack_nan && (hdr->syn) == syn_nan) {
     return PKT_FLAG_DATA;       /* DATA packet    */
   }
-  
+
   /* should not happen - not sure what kind of packet this is */
   return -1;
 }
@@ -320,7 +392,7 @@ Node* check_content(Node_Dir* dir, char* filename) {
 }
 
 
-char* sync_node(Node* node, uint16_t s_port, int sockfd, 
+char* sync_node(Node* node, uint16_t s_port, int sockfd,
   struct sockaddr_in serveraddr) {
   /* init local vars */
   char p_buf[MAX_PACKET_SIZE] = {0};
@@ -328,9 +400,10 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd,
   socklen_t serverlen;
   int n_sent;
   int n_recv;
+  uint16_t d_port = node->port;
 
   /* create SYN packet to send to node */
-  Pkt_t* syn_packet = create_packet(node, s_port, 0, node->content_path,
+  Pkt_t* syn_packet = create_packet(d_port, s_port, 0, node->content_path,
    PKT_FLAG_SYN);
 
   /* creating writeable version of packet */
@@ -338,7 +411,7 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd,
 
   /* sending SYN packet */
   serverlen = sizeof(serveraddr);
-  n_sent = sendto(sockfd, pack_write, strlen(pack_write), 0, 
+  n_sent = sendto(sockfd, pack_write, strlen(pack_write), 0,
     (struct sockaddr *) &serveraddr, serverlen);
 
   if(n_sent < 0) {
@@ -346,9 +419,9 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd,
   }
 
   /* receive SYN-ACK packet */
-  n_recv = recvfrom(sockfd, p_buf, MAX_PACKET_SIZE, 0, 
+  n_recv = recvfrom(sockfd, p_buf, MAX_PACKET_SIZE, 0,
     (struct sockaddr *) &serveraddr, &serverlen);
-  
+
   if(n_recv < 0) {
     /* TODO buffer info: "recv ACK fail" */
   }
@@ -376,17 +449,18 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd,
 }
 
 
-char* request_content(Node* node, uint16_t s_port, int sockfd, 
+char* request_content(Node* node, uint16_t s_port, int sockfd,
   struct sockaddr_in serveraddr, uint32_t seq_ack_num) {
   /* init local vars */
   char p_buf[MAX_PACKET_SIZE] = {0};
   char buf[MAX_DATA_SIZE] = {0};
-  socklen_t serverlen; 
+  socklen_t serverlen;
   int n_sent;
   int n_recv;
+  uint16_t d_port = node->port;
 
   /* creating ACK packet */
-  Pkt_t* ack_packet = create_packet(node, s_port, seq_ack_num, 
+  Pkt_t* ack_packet = create_packet(d_port, s_port, seq_ack_num,
     node->content_path, PKT_FLAG_ACK);
 
   /* creating writeable version of packet */
@@ -402,7 +476,7 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
   }
 
   /* CHECK - removing cast of serveraddr to (struct sockaddr *) */
-  n_recv = recvfrom(sockfd, p_buf, MAX_PACKET_SIZE, 0, 
+  n_recv = recvfrom(sockfd, p_buf, MAX_PACKET_SIZE, 0,
     (struct sockaddr *) &serveraddr, &serverlen);
 
   if(n_recv < 0) {
