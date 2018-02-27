@@ -22,8 +22,6 @@
 #include "serverlog.h"
 #include "backend.h"
 
-
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdbool.h>
@@ -38,13 +36,11 @@
 #include <pthread.h>
 #include <time.h>
 
- 
 #define MAX_FILEPATH_LEN 512
 #define MAXLINE 8192
 #define BUFSIZE 1024
 #define MAX_RANGE_NUM_LEN 32
 #define SERVER_NAME "BBBserver"
-
 
 // TODO - make this thread_data struct
 //      - add fields for back-end data
@@ -57,42 +53,31 @@ struct thread_data {
   int port_be;                /* back end port */
 };
 
-/* Function prototype(s): */
-void error(char *msg);
-void server_error(char *msg, int connfd);
-void* serve_client_thread(void *ptr);
-void write_partial_content(int connfd, FILE* fp, char* fileExt, 
-	int sb, int eb, int full_content_size, time_t last_modified);
-void write_full_content(int connfd, FILE* fp, char* fileExt, 
-	int content_size, time_t last_modified);
-
-
 /* Global Variable(s): */
-int numthreads; 
-
+int numthreads;
+Node_Dir* node_dir; 
 
 int main(int argc, char **argv) {
   /* front-end (client) vars */
   int listenfd_fe;                  /* listening socket */
   int connfd;                       /* connection socket */
-  int portno_fe;                    /* client port to listen on */
-  unsigned int clientlen;           /* byte size of client's address */
+  int port_fe;                    /* client port to listen on */
   struct sockaddr_in serveraddr_fe; /* server's front-end addr */
-  struct sockaddr_in clientaddr;    /* client's addr */
-  int optval_fe;                    /* flag value for setsockopt */
-
+  
   /* back-end (node) vars */
   int listenfd_be;                  /* listening socket */
   int portno_be;                    /* back-end port to use */
   struct sockaddr_in serveraddr_be; /* server's back-end addr */
-  int optval_be;                    /* flag value for setsockopt */
-
+  
+  /* client vars */
+  unsigned int clientlen;           /* byte size of client's address */
+  struct sockaddr_in clientaddr;    /* client's addr */
+  
   // CHECK
   //unsigned int nodelen;             /* byte size of client's address */
   //struct sockaddr_in nodeaddr;      /* node's addr */
 
   char lb[MAX_PRINT_LEN];           /* buffer for logging */
-  
 
   /* check command line args */
   if (argc != 3) {
@@ -102,52 +87,11 @@ int main(int argc, char **argv) {
   portno_fe = atoi(argv[1]);
   portno_be = atoi(argv[2]);
 
-  /* socket: create front and back end sockets */
-  listenfd_fe = socket(AF_INET, SOCK_STREAM, 0);
-  if (listenfd_fe < 0)
-    error("ERROR opening front-end socket");
+  listenfd_fe = init_frontend(serveraddr_fe, portno_fe);
+  listenfd_be = init_backend(serveraddr_be, portno_be);
 
-  listenfd_be = socket(AF_INET, SOCK_DGRAM, 0);
-  if(listenfd_be < 0)
-    error("ERROR opening back-end socket");
-
-  /* setsockopt: Handy debugging trick that lets
-   * us rerun the server immediately after we kill it;
-   * otherwise we have to wait about 20 secs.
-   * Eliminates "ERROR on binding: Address already in use" error.
-   */
-  optval_fe = 1;
-  optval_be = 1;
-  setsockopt(listenfd_fe, SOL_SOCKET, SO_REUSEADDR, 
-    (const void *)&optval_fe, sizeof(int));
-  setsockopt(listenfd_be, SOL_SOCKET, SO_REUSEADDR, 
-    (const void *)&optval_be, sizeof(int));
-
-  /* build the server's front end internet address */
-  bzero((char *) &serveraddr_fe, sizeof(serveraddr_fe));
-  serveraddr_fe.sin_family = AF_INET; /* we are using the Internet */
-  serveraddr_fe.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
-  serveraddr_fe.sin_port = htons((unsigned short)portno_fe); /* port to listen on */
-
-  /* build the server's back end internet address */
-  bzero((char *) &serveraddr_be, sizeof(serveraddr_be));
-  serveraddr_be.sin_family = AF_INET; /* we are using the Internet */
-  serveraddr_be.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
-  serveraddr_be.sin_port = htons((unsigned short)portno_be); /* port to listen on */
-
-  /* bind: associate the listening socket with a port */
-  if (bind(listenfd_fe, (struct sockaddr *) &serveraddr_fe, sizeof(serveraddr_fe)) < 0)
-    error("ERROR on binding front-end socket with port");
-  if (bind(listenfd_be, (struct sockaddr *) &serveraddr_be, sizeof(serveraddr_be)) < 0)
-    error("ERROR on binding back-end socket with port");
-
-  /* listen: make it a listening socket ready to accept connection requests 
-   *         - only need to listen for front-end
-   */
-  if (listen(listenfd_fe, 10) < 0) /* allow 10 requests to queue up */
-    error("ERROR on listen");
-
-
+  node_dir = create_node_dir(MAX_NODES);
+  
   clientlen = sizeof(clientaddr);
   // CHECK
   // nodelen = sizeof(nodeaddr);
@@ -182,8 +126,7 @@ int main(int argc, char **argv) {
     ctr++;
   }
 }
-     
-  
+
 void *serve_client_thread(void *ptr) {
   /* increment num threads */
   numthreads++;
@@ -260,91 +203,25 @@ void *serve_client_thread(void *ptr) {
     error("ERROR Invalid GET request");
   }
 
+  int flag_be = 0;
+  int flag_fe = 0; 
   //  TODO
-  if(rqt == RQT_P_ADD || rqt == RQT_P_VIEW || rqt == RQT_P_RATE) {
-    /* back-end request
-     * not yet implemented */
+  if(rqt == RQT_P_ADD) {
+    flag_be = peer_add_response(connfd, buf, ct, rqt);
+  }
+
+  else if(rqt == RQT_P_VIEW) {
+    flag_be = peer_view_response(connfd, buf, ct, rqt);
+  }
+
+  else if(rqt == RQT_P_RATE) {
+    flag_be = peer_rate_response(connfd, buf, ct, rqt);
   }
 
   /* else this is a regular client request */
 
-  bzero(bufcopy, BUFSIZE);
-  strcpy(bufcopy, buf);
-  
-  /* parsing get request */
-  bzero(path, MAXLINE);
-  if(parse_get_request(buf, path) == 0) {
-    numthreads--;
-    error("ERROR Parsing get request");
-  }
-
-  /* getting image file and checking for existence */
-  char* fname = strcat(content_filepath, path);
-  FILE *fp = fopen(fname, "r");
-
-  if(fp == NULL) { 
-    /* this is a 404 status code */
-    sprintf(lb, "File (%s) not found", fname);
-    log_thr(lb, ct->num, tid);
-
-    write_headers_404(connfd, SERVER_NAME);
-  }
-  else{
-    sprintf(lb, "Found file: %s", fname);
-    log_thr(lb, ct->num, tid);
-
-    /* getting file size and last modified time */
-    fStat = malloc(sizeof(struct stat));
-    stat(fname, fStat);
-    content_size = fStat->st_size;
-    last_modified = fStat->st_mtime;
-    free(fStat);
-
-    /* getting file type (extension) */
-    char fileExt[MAXLINE] = {0};
-    if(parse_file_type(path, fileExt) == 0) {
-      error("File path error");
-    }
-
-    /* range_flag value (parse_range_request return val):
-     *    2 --> valid range request, the end byte was sent with range request
-     *	  1 --> range request only has start byte, the end byte was NOT sent with request
-     *            so default range to EOF 
-     *    0 --> not a valid range request */
-    int range_flag = parse_range_request(bufcopy, sbyte, ebyte);
-
-  	if(range_flag > 0) {
-      /* this is a 206 status code */
-      sprintf(lb, "Sending partial content to {Client %d}...", tid);
-      log_thr(lb, ct->num, tid);
-  	  
-      /* assigning values for start and end bytes based on range flag */
-      sb = atoi(sbyte);
-      if(range_flag == 2) { eb = atoi(ebyte); }
-  	  else                { eb = content_size - 1; }
-
-  	  write_partial_content(connfd, fp, fileExt, sb, eb,
-  	  	content_size, last_modified);
-
-  	  int sent = eb - sb + 1;
-
-      sprintf(lb, "Sent %d bytes to {Client %d}!", sent, tid);
-      log_thr(lb, ct->num, tid);
-  	}
-  	else {
-      /* this is a 200 status code */
-      sprintf(lb, "Sending content to {Client %d}...", tid);
-      log_thr(lb, ct->num, tid);
-  	  
-  	  write_full_content(connfd, fp, fileExt,
-  	  	content_size, last_modified);
-
-      sprintf(lb, "Sent %d bytes to {Client %d}!", content_size, tid);
-      log_thr(lb, ct->num, tid);
-  	}
-    
-    /* closing file*/
-    fclose(fp);
+  else {
+    flag_fe = frontend_response(connfd, buf, ct);
   }
 
   /* closing client connection and freeing struct */
@@ -358,49 +235,3 @@ void *serve_client_thread(void *ptr) {
   numthreads--;
   return NULL;
 }
-
-
-
-/*
- * error - wrapper for perror 
- *       - where we will handle 500 error codes
- */
-void error(char *msg) {
-  perror(msg);
-  exit(1);
-}
-
-
-/*
- * server_error - server wrapper for perror
- */
-void server_error(char *msg, int connfd) {
-  perror(msg);
-  write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
-  write_empty_header(connfd);
-  exit(1);
-}
-
-void write_partial_content(int connfd, FILE* fp, char* fileExt, 
-	int sb, int eb, int full_content_size, time_t last_modified) {
-
-  /* getting size of requested content */
-  int content_size = eb - sb + 1;
-    
-  /* writing headers and data */
-  write_headers_206(connfd, SERVER_NAME, full_content_size, fileExt, 
-  	last_modified, sb, eb, content_size);
-  write_data(connfd, fp, content_size, (long) sb);
-}
-
-void write_full_content(int connfd, FILE* fp, char* fileExt, 
-	int content_size, time_t last_modified) { 
-
-  /* writing headers and data */
-  write_headers_200(connfd, SERVER_NAME, content_size, fileExt, last_modified);
-  write_data(connfd, fp, content_size, 0L);
-}
-
-
-
-
