@@ -7,8 +7,12 @@
 
 #include "backend.h"
 
-void recieve_pkt(Node* node, int sockfd,
-		 struct sockaddr_in serveraddr){
+void* recieve_pkt(void* ptr) {
+  Recv_t* rec = ptr;
+
+  Node* node = rec->node;
+  int sockfd = rec->sockfd;
+  struct sockaddr_in serveraddr = rec->serveraddr;
 
   char p_buf[MAX_PACKET_SIZE] = {0};
   char* content_path = node->content_path;
@@ -19,6 +23,7 @@ void recieve_pkt(Node* node, int sockfd,
   
 
   while(1){
+
     n_recv = recvfrom(sockfd, p_buf, MAX_PACKET_SIZE, 0,
 		      (struct sockaddr *) &serveraddr, &serverlen);
     if(n_recv < 0) {
@@ -31,13 +36,13 @@ void recieve_pkt(Node* node, int sockfd,
 
     /* CHECK accepted types (SYN and ACK)*/
     /* TODO add FIN implimentation */
-    if (type != PKT_FLAG_SYN || type != PKT_FLAG_ACK){
+    if (type == PKT_FLAG_UNKNOWN || type == PKT_FLAG_CORRUPT){
       /* TODO corrupted packet */
     }
 
     else{
-      d_port = recv_pkt->header->source_port;
-      s_num = recv_pkt->header->s_num;
+      d_port = recv_pkt->header.source_port;
+      s_num = recv_pkt->header.s_num;
       /* TODO s_num */
       n_sent = serve_content(d_port, s_port, 0, content_path, sockfd,
 			     serveraddr, type);
@@ -552,11 +557,12 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
   return ref;
 }
 
-/*  TODO
- *  add_response_be
+/*  TODO - replace writing headers with returning flag values
+ * 
  */ 
-int peer_add_response(int connfd, char* BUF, struct thread_data *ct){
-  char buf[MAXLINE];
+int peer_add_response(int connfd, char* BUF, struct thread_data *ct) {
+  /* initilizing local buf and arrays for use in parsing */
+  char buf[BUFSIZE];
   char* filepath = malloc(sizeof(char) * MAXLINE);
   char* hostname = malloc(sizeof(char) * MAXLINE);
   char* port_c = malloc(sizeof(char) * MAXLINE);
@@ -565,64 +571,98 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct){
   int port;
   int rate;
 
+  /* creating local copy of buf */
   bzero(buf, BUFSIZE);
   strcpy(buf, BUF);
 
-  /* TODO this returns something */
-  parse_peer_add(BUF, filepath, hostname, port_c, rate_c);
+  /* CHECK - why using BUF when we have buf (copy of BUF) */
+  int add_res = parse_peer_add(BUF, filepath, hostname, port_c, rate_c);
+  if(!add_res) {
+    /* 500 Code  --> Failure to parse peer add request 
+     * TODO      --> flag (return) val: parse fail */
+    write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
+    return 0;
+  }
 
+  /* parsing string reps to ints and freeing memory */
   port = parse_str_2_int(port_c);
   rate = parse_str_2_int(rate_c);
-
   free(port_c);
   free(rate_c);
 
+  /* creating node with parsed data */
   Node* n = create_node(filepath, hostname, port, rate);
 
   if(!add_node(node_dir, n)){
-    /* TODO error checking */
+    /* 500 Code  --> Failure to add node to directory
+     * TODO      --> flag (return) val: add node fail */
     write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
     return 0;
   }
   
+  /* 200 Code  --> Success!
+   * TODO      --> flag (return) val: success */
   write_status_header(connfd, SC_OK, ST_OK);
   return 1;
 }
 
-/*  TODO
- *  view_response_be
+/*  TODO - replace writing headers/data with returning flag values
  */
 int peer_view_response(int connfd, char*BUF, struct thread_data *ct){
-  char buf[MAXLINE];
+  char buf[BUFSIZE];
   char filepath = malloc(sizeof(char) * MAXLINE);
   char path[MAXLINE];
   char* file_type = malloc(sizeof(char) * MINLINE);
   Node* node;
   int len;
+  int res;
 
-  /* TODO this returns something */
-  parse_peer_view_content(BUF, filepath);
+  /* return value - will be set bitwise */
+  int ret_flag = 0;
+
+  /* parsing content filepath from original request */
+  res = parse_peer_view_content(BUF, filepath);
+  if(!res) {
+    /* 500 Error --> Failure to parse peer view request 
+     * TODO      --> flag (return) val: parse fail */
+    write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
+    return 0;
+  }
 
   bzero(path, MAXLINE);
   strcpy(path, filepath);
 
-  /* TODO this will return something */
-  parse_file_type(path, file_type);
+  /* parsing file type from filepath */
+  res = parse_file_type(path, file_type);
+  if(!res) {
+    /* 500 Error --> Failure to parse file type
+     * TODO      --> flag (return) val: parse fail */
+    write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
+    return 0;
+  }
   
   bzero(buf, BUFSIZE);
   strcpy(buf, BUF);
   
-  if ((node = check_content(node_dir, filepath)) == NULL){
+  /* finding node with requested content */
+  node = check_content(node_dir, filepath);
+
+  if(!node){
+    /* 500 Error --> Failure to find content in node directory
+     * TODO      --> flag (return) val: no node found */
     write_status_header(connfd, SC_NOT_FOUND, ST_NOT_FOUND);
     return 0;
   }
 
   bzero(buf, BUFSIZE);
   
+  /* TODO - format return value in sync_node */
+  /* initializing connection with node that should have requested content */
   buf = sync_node(node, ct->port_be, ct->listenfd_be, ct->c_addr);
 
   /* TODO check if fails */
 
+  /* TODO - will need to parse this differently once chanced sync_node {658} */
   len = parse_str_2_int(buf);
 
   write_status_header(connfd, SC_OK, ST_OK);
@@ -638,8 +678,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct){
   return 1;
 }
 
-/*  TODO
- *  rate_response_be
+/*  TODO - replace writing headers with returning flag values
  */
 int peer_rate_response(int connfd, char* BUF, struct thread_data *ct){
   char buf[MAXLINE];

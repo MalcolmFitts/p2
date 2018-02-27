@@ -42,8 +42,8 @@
 #define MAX_RANGE_NUM_LEN 32
 #define SERVER_NAME "BBBserver"
 
-// TODO - make this thread_data struct
-//      - add fields for back-end data
+
+/* struct to hold data for initial threads */
 struct thread_data {
   struct sockaddr_in c_addr;  /* client address struct */
   int connfd;                 /* connection fd */
@@ -54,8 +54,10 @@ struct thread_data {
 };
 
 /* Global Variable(s): */
-int numthreads;
-Node_Dir* node_dir; 
+Node_Dir* node_dir;           /* Directory for node referencing   */
+char lb[MAX_PRINT_LEN];       /* buffer for logging               */
+int numthreads;               /* number of current threads        */
+/* -- TODO/CHECK might want to distinguish front-end and back-end threads */
 
 int main(int argc, char **argv) {
   /* front-end (client) vars */
@@ -72,12 +74,6 @@ int main(int argc, char **argv) {
   /* client vars */
   unsigned int clientlen;           /* byte size of client's address */
   struct sockaddr_in clientaddr;    /* client's addr */
-  
-  // CHECK
-  //unsigned int nodelen;             /* byte size of client's address */
-  //struct sockaddr_in nodeaddr;      /* node's addr */
-
-  char lb[MAX_PRINT_LEN];           /* buffer for logging */
 
   /* check command line args */
   if (argc != 3) {
@@ -87,18 +83,31 @@ int main(int argc, char **argv) {
   portno_fe = atoi(argv[1]);
   portno_be = atoi(argv[2]);
 
+  /* initialize front-end and back-end data */
   listenfd_fe = init_frontend(serveraddr_fe, portno_fe);
   listenfd_be = init_backend(serveraddr_be, portno_be);
 
+  /* create node directory */
   node_dir = create_node_dir(MAX_NODES);
   
+
+
+  /* allocating memory for data for thread */
+  Recv_t* ptr = malloc(sizeof(Recv_t));
+  ptr->sockfd = listenfd_be;
+  ptr->serveraddr = serveraddr_be;
+
+  /* spin-off thread for listening on back-end port and serving content */
+  pthread_t tid_be;
+  pthread_create(&(tid_be), NULL, recieve_pkt, ptr);
+  pthread_detach(tid_be);
+
+  /* initializing some local vars */
   clientlen = sizeof(clientaddr);
-  // CHECK
-  // nodelen = sizeof(nodeaddr);
-  numthreads = 0;
+  numthreads = 1;
+  int ctr = 1;
 
   /* main loop: */
-  int ctr = 1;
   while (1) {
     sprintf(lb, "Waiting for a connection request...");
     log_main(lb, ctr);
@@ -149,7 +158,7 @@ void *serve_client_thread(void *ptr) {
   int content_size;               /* CHECK - should this be bigger? */
   time_t last_modified;
 
-  char lb[MAX_PRINT_LEN];         /* buffer for logging */
+  // char lb[MAX_PRINT_LEN];         /* buffer for logging */
 
   char sbyte[MAX_RANGE_NUM_LEN];  /* holders for range request bytes */
   char ebyte[MAX_RANGE_NUM_LEN];  /* holders for range request bytes */
@@ -196,31 +205,39 @@ void *serve_client_thread(void *ptr) {
   bzero(bufcopy, BUFSIZE);
   strcpy(bufcopy, buf);
 
+  /* checking type of received request */
   int rqt = check_request_type(bufcopy);
 
   if(rqt == RQT_INV) {
+    /* Invalid request type */
     numthreads--;
     error("ERROR Invalid GET request");
   }
 
   int flag_be = 0;
   int flag_fe = 0; 
-  //  TODO
+
+  /* TODO 
+   * - implement peer_add_response
+   * - flag responses for peer add, view, and rate requests 
+   */
   if(rqt == RQT_P_ADD) {
+    /* back-end: Peer add request */
     flag_be = peer_add_response(connfd, buf, ct, rqt);
   }
 
   else if(rqt == RQT_P_VIEW) {
+    /* back-end: Peer view content request */
     flag_be = peer_view_response(connfd, buf, ct, rqt);
   }
 
   else if(rqt == RQT_P_RATE) {
+    /* back-end: Set content rate request */
     flag_be = peer_rate_response(connfd, buf, ct, rqt);
   }
 
-  /* else this is a regular client request */
-
   else {
+    /* front-end: HTTP client request */
     flag_fe = frontend_response(connfd, buf, ct);
   }
 

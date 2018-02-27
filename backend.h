@@ -21,7 +21,7 @@
 
 #include "parser.h"
 #include "serverlog.h"
-#include "datawriter.c"
+#include "datawriter.h"
 
 /* Peer Node Constant(s) */
 #define MAX_NODES 50
@@ -50,15 +50,18 @@ typedef struct Node_Directory {
 
 
 /* Packet type (creation) flags */
+#define PKT_FLAG_UNKNOWN -1
+#define PKT_FLAG_CORRUPT 0
 #define PKT_FLAG_DATA    1
 #define PKT_FLAG_ACK     2
 #define PKT_FLAG_SYN 	 3
 #define PKT_FLAG_SYN_ACK 4
 
+/* TODO add FIN implimentation */
+
 /*	possible future flag(s):
 #define PKT_FLAG_FRAG 
 */
-
 
 /* ACK field default values */
 #define PKT_ACK 	0x0000AAAA  /* "true" ack flag  */
@@ -67,9 +70,6 @@ typedef struct Node_Directory {
 /* SYN field default values */
 #define PKT_SYN 	0x0000AAAA  /* "true" syn flag  */
 #define PKT_SYN_NAN 0x00005555  /* "false" syn flag */
-
-/* Misc. Packet Constant(s) */
-#define S_INT_MASK 0x0000FFFF
 
 /* Packet Header Struct */
 typedef struct Packet_Header {
@@ -91,46 +91,61 @@ typedef struct Packet {
 	char buf[MAX_DATA_SIZE];	/* Packet Data   */
 } Pkt_t;
 
-
+/* Struct for threaded function for receiving packets */
+typedef struct Receive_Struct {
+	int sockfd;
+	struct sockaddr_in serveraddr;
+} Recv_t;r
 
 /*
- *
- *	TODO 5.) write serve_content
+ *  recieve_pkt
+ *		- main threaded function to listen on back end port and serve content
  *
  *
  */
+void* recieve_pkt(void* ptr);
+
+
+/*
+ *  serve_content
+ *		- function to 
+ *
+ *
+ */
+int serve_content(uint16_t d_port, uint16_t s_port, unsigned int s_num,
+		  char* filename, int sockfd,
+		  struct sockaddr_in serveraddr, int flag);
 
 /* TODO make sure this works (serveraddr_be prob should be a pointer)
  *
  *  init_backend
- *              - initalizes the backend port for the server node
+ *		- initalizes the backend port for the server node
  *
  */
 int init_backend(struct sockaddr_in serveraddr_be, int port_be);
 
-/*  
- *
+/*
  *  create_node
  *		- allocates memory for and returns Node with values assigned
  *
  *	~param: path
- *		- path should start with /content/
- *		ex: path = "/content/rest/of/path.ogg"
+ *		- path should start with "content/"
+ *		ex: path = "content/rest/of/path.ogg"
  *
  *	~return values:
- *		- returns pointer to allocated node on success, NULL pointer on fail
+ *		- pointer to allocated node on success
+ *		- NULL pointer on fail
  */
 Node* create_node(char* path, char* name, int port, int rate);
 
 
-/*  TODO  --  CHECK
- *
+/*
  *  check_node_content
  *		- checks peer_node for content defined by filename
  *
  *	~param: filename
- *		- filename should start with /content/
- *		ex: filename = "/content/rest/of/path.ogg"
+ *		- filename should start with "content/"
+ *		ex: filename = "content/rest/of/path.ogg"
  *
  *	~return values:
  *		- returns 1 on finding content in node
@@ -140,8 +155,7 @@ Node* create_node(char* path, char* name, int port, int rate);
 int check_node_content(Node* pn, char* filename);
 
 
-/*  TODO  --  CHECK
- *
+/*  
  *  create_node_dir
  *		- allocates memory for and returns pointer to Node Directory
  *			with 0 initial Nodes
@@ -160,8 +174,7 @@ Node_Dir* create_node_dir(int max);
 
 
 
-/*  TODO  --  CHECK
- *
+/*  
  *  add_node
  *		- adds node to node directory, given directory is not full
  *
@@ -172,8 +185,7 @@ Node_Dir* create_node_dir(int max);
 int add_node(Node_Dir* nd, Node* node);
 
 
-/*  TODO  --  CHECK
- *
+/*  
  *  create_packet 
  *		- creates packet struct to be sent/received by nodes
  *  
@@ -204,8 +216,7 @@ Pkt_t* create_packet (Node* n, uint16_t s_port, unsigned int s_num,
 void discard_packet(Pkt_t *packet);
 
 
-/*  TODO  --  CHECK
- *
+/*  
  *  calc_checksum 
  *		- calculates checksum value of a packet header struct
  *		- does this independently of header's checksum value
@@ -228,8 +239,7 @@ void discard_packet(Pkt_t *packet);
 uint16_t calc_checksum(P_Hdr* hdr);
 
 
-/*  TODO  --  CHECK
- *  
+/*  
  *  parse_packet
  *		- creates packet struct by parsing input buffer
  *
@@ -256,8 +266,7 @@ Pkt_t* parse_packet (char* buf);
 char* writeable_packet(Pkt_t* packet);
 
 
-/*  TODO  --  CHECK
- *  
+/*  
  *  get_packet_type
  *		- takes packet and returns (expected) defined type
  *		- checks header's syn and ack flags
@@ -276,8 +285,7 @@ int get_packet_type (Pkt_t* packet);
 
 
 
-/*  TODO  --  CHECK
- *  
+/*  
  *  check_content
  *		- takes Node Directory and filename and attempts to find content
  *		
@@ -342,6 +350,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct);
  *  rate_response_be
  */
 int peer_rate_response(int connfd, char* BUF, struct thread_data *ct);
+
 
 
 /* filler end line */
