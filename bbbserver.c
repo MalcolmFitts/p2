@@ -203,7 +203,7 @@ void *serve_client_thread(void *ptr) {
   char bufcopy[BUFSIZE];          /* copy of message buffer */
   int n;                          /* message byte size */
   struct stat *fStat;
-  int content_size;  /* CHECK - should this be bigger? */
+  int content_size;               /* CHECK - should this be bigger? */
   time_t last_modified;
 
   char lb[MAX_PRINT_LEN];         /* buffer for logging */

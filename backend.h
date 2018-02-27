@@ -34,7 +34,7 @@ typedef struct Peer_Node {
 typedef struct Node_Directory {
 	int cur_nodes;        /* current nbr of nodes             */
 	int max_nodes;        /* max possible nbr of nodes        */
-	Node *(*n_array);     /* array of pointers to nodes       */
+	Node *n_array;     /* array of pointers to nodes       */
 } Node_Dir;
 
 
@@ -75,9 +75,7 @@ typedef struct Packet_Header {
 	uint16_t checksum;			/* checksum		- 2 bytes */
 
 	uint16_t syn;				/* sync  		- 2 bytes */
-	uint16_t ack;				/* acknowledge  - 2 bytes */
-
-	//unsigned int ack;			
+	uint16_t ack;				/* acknowledge  - 2 bytes */		
 
 	uint32_t seq_num;			/* sequence num - 4 bytes */
 } P_Hdr;
@@ -97,7 +95,7 @@ typedef struct Packet {
  */
 
 
-/*  TODO  --  CHECK
+/*  
  *
  *  create_node
  *		- allocates memory for and returns Node with values assigned
@@ -288,7 +286,7 @@ Node* check_content(Node_Dir* dir, char* filename);
  *
  *	~return values:
  *		- returns pointer to Node's SYN-ACK buffer on success
- *		- returns buffer indicating failure on fail
+ *		- (TODO) returns buffer indicating failure on fail
  *			-- buffer should have info on failure in this case
  *
  *	~front-end interaction:
