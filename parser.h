@@ -4,6 +4,8 @@
  *    - prototypes of string parsing functions
  *    - contains documentation/usage notes and constant definitions
  */
+#ifndef PARSER_H
+#define PARSER_H
 
 #include <string.h>
 #include <stdio.h>
@@ -78,3 +80,11 @@ int parse_peer_view_content(char* buf, char* filepath);
  *      - returns 1 on success, 0 on fail
  */
 int parse_peer_config_rate(char* buf, char* rate);
+
+/*
+ *  str_2_int
+ *       - Converts type char* to type int;
+ */
+int parse_str_2_int(char* str);
+
+#endif

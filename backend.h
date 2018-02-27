@@ -4,6 +4,10 @@
  *
  *
  */
+
+#ifndef BACKEND_H
+#define BACKEND_H
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -15,8 +19,9 @@
 #include <arpa/inet.h>
 #include <sys/stat.h>
 
-
+#include "parser.h"
 #include "serverlog.h"
+#include "datawriter.c"
 
 /* Peer Node Constant(s) */
 #define MAX_NODES 50
@@ -87,6 +92,7 @@ typedef struct Packet {
 } Pkt_t;
 
 
+
 /*
  *
  *	TODO 5.) write serve_content
@@ -94,6 +100,13 @@ typedef struct Packet {
  *
  */
 
+/* TODO make sure this works (serveraddr_be prob should be a pointer)
+ *
+ *  init_backend
+ *              - initalizes the backend port for the server node
+ *
+ */
+int init_backend(struct sockaddr_in serveraddr_be, int port_be);
 
 /*  
  *
@@ -315,7 +328,22 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd,
 char* request_content(Node* node, uint16_t s_port, int sockfd, 
   struct sockaddr_in serveraddr, uint32_t seq_ack_num);
 
+/*  TODO
+ *  add_response_be
+ */ 
+int peer_add_response(int connfd, char* BUF, struct thread_data *ct);
 
+/*  TODO
+ *  view_response_be
+ */
+int peer_view_response(int connfd, char*BUF, struct thread_data *ct);
+
+/*  TODO
+ *  rate_response_be
+ */
+int peer_rate_response(int connfd, char* BUF, struct thread_data *ct);
 
 
 /* filler end line */
+
+#endif
