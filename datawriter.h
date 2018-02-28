@@ -25,6 +25,8 @@
 #define MAX_HEADER_LEN 1024
 #define BUFSIZE 1024
 
+#define SERVER_NAME "BBBserver"
+
 #define SC_OK "200"
 #define ST_OK "OK"
 

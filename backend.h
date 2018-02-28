@@ -95,7 +95,7 @@ typedef struct Packet {
 typedef struct Receive_Struct {
 	int sockfd;
 	struct sockaddr_in serveraddr;
-} Recv_t;r
+} Recv_t;
 
 /*
  *  recieve_pkt
@@ -112,9 +112,8 @@ void* recieve_pkt(void* ptr);
  *
  *
  */
-int serve_content(uint16_t d_port, uint16_t s_port, unsigned int s_num,
-		  char* filename, int sockfd,
-		  struct sockaddr_in serveraddr, int flag);
+int serve_content(Pkt_t* packet, int sockfd, struct sockaddr_in serveraddr, int flag);
+
 
 /* TODO make sure this works (serveraddr_be prob should be a pointer)
  *

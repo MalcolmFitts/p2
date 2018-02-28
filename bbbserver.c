@@ -90,8 +90,6 @@ int main(int argc, char **argv) {
   /* create node directory */
   node_dir = create_node_dir(MAX_NODES);
   
-
-
   /* allocating memory for data for thread */
   Recv_t* ptr = malloc(sizeof(Recv_t));
   ptr->sockfd = listenfd_be;
@@ -223,17 +221,17 @@ void *serve_client_thread(void *ptr) {
    */
   if(rqt == RQT_P_ADD) {
     /* back-end: Peer add request */
-    flag_be = peer_add_response(connfd, buf, ct, rqt);
+    flag_be = peer_add_response(connfd, buf, ct);
   }
 
   else if(rqt == RQT_P_VIEW) {
     /* back-end: Peer view content request */
-    flag_be = peer_view_response(connfd, buf, ct, rqt);
+    flag_be = peer_view_response(connfd, buf, ct);
   }
 
   else if(rqt == RQT_P_RATE) {
     /* back-end: Set content rate request */
-    flag_be = peer_rate_response(connfd, buf, ct, rqt);
+    flag_be = peer_rate_response(connfd, buf, ct);
   }
 
   else {

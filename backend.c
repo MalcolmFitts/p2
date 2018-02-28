@@ -10,28 +10,31 @@
 void* recieve_pkt(void* ptr) {
   Recv_t* rec = ptr;
 
-  Node* node = rec->node;
   int sockfd = rec->sockfd;
   struct sockaddr_in serveraddr = rec->serveraddr;
 
   char p_buf[MAX_PACKET_SIZE] = {0};
-  char* content_path = node->content_path;
+  // char* content_path = node->content_path;
   socklen_t serverlen;
   int n_sent;
-  int n_recv[MAX_PACKET_SIZE] = {0};
-  uint16_t s_port = node->port;
+  int n_recv;
+
+  // uint16_t s_port = node->port;
   
 
-  while(1){
+  while(1) {
+    serverlen = sizeof(serverlen);
 
+    /* receiving packet and writing into p_buf */
     n_recv = recvfrom(sockfd, p_buf, MAX_PACKET_SIZE, 0,
 		      (struct sockaddr *) &serveraddr, &serverlen);
+
     if(n_recv < 0) {
-      /* TODO  */
+      /* TODO - Error on receive packet */
     }
 
+    /* parsing received buffer and getting packet type */
     Pkt_t* recv_pkt = parse_packet(p_buf);
-
     int type = get_packet_type(recv_pkt);
 
     /* CHECK accepted types (SYN and ACK)*/
@@ -41,43 +44,57 @@ void* recieve_pkt(void* ptr) {
     }
 
     else{
-      d_port = recv_pkt->header.source_port;
-      s_num = recv_pkt->header.s_num;
-      /* TODO s_num */
-      n_sent = serve_content(d_port, s_port, 0, content_path, sockfd,
-			     serveraddr, type);
+      n_sent = serve_content(recv_pkt, sockfd, serveraddr, type);
 
       if(n_sent < 0){
-	/* TODO error on send */
+	       /* TODO error on send */
       }
     }
   }
 }
 
-int serve_content(uint16_t d_port, uint16_t s_port, unsigned int s_num,
-		  char* filename, int sockfd,
-		  struct sockaddr_in serveraddr, int flag){
-  
+
+int serve_content(Pkt_t* packet, int sockfd, struct sockaddr_in serveraddr, int flag){
+  /* parsing data from packet */
+  P_Hdr hdr = packet->header;
+
+  /* flipping ports to send packet back */
+  uint16_t s_port = hdr.dest_port;
+  uint16_t d_port = hdr.source_port;
+
+  /* CHECK s_num */ 
+  uint32_t s_num = hdr.seq_num;
+
+  /* local vars */
+  char* filename;
   socklen_t server_len;
   int n_set;
   Pkt_t* data_pkt;
 
-  if (flag == PKT_FLAG_ACK){
-    /* Create the packet to be sent */
-    /* CHECK s_num */ 
+  /* Create the packet to be sent */
+  if (flag == PKT_FLAG_ACK) {
+    /* parsing filename from ACK packet buffer */
+    sscanf(packet->buf, "Ready to send: %s\n", filename);
+
+    /* respond to ACK packet with data */
     data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_DATA);
   }
 
-  else /* flag == PKT_FLAG_SYN */ {
-    /* CHECK s_num */ 
+  else {
+    /* parsing filename from SYN packet buffer */
+    sscanf(packet->buf, "Request: %s\n", filename);
+
+    /* respond to SYN packet with SYN-ACK */
     data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_SYN_ACK);
   }
   
-  char* data_pkt_wr = writeable_packet(Pkt_t* data_pkt);
+  /* CHECK - p_size */
+  int p_size = sizeof(*data_pkt);
+  char* data_pkt_wr = writeable_packet(data_pkt);
   
   server_len = sizeof(serveraddr);
-  n_set = sendto(sockfd, data_pkt_wr, str_len(data_pkt_wr), 0,
-		 (struct sockaddr *) &serveraddr, serverlen);
+  n_set = sendto(sockfd, data_pkt_wr, p_size, 0,
+		 (struct sockaddr *) &serveraddr, server_len);
   
   return n_set;
 }
@@ -233,6 +250,7 @@ Pkt_t* create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
     hdr->syn = (uint16_t) PKT_SYN_NAN;
 
     /* CHECK - not sure how to send ACK info - maybe in buffer */
+    sprintf(f_buf, "Ready to send: %s\n", filename);
   }
   else if(flag == PKT_FLAG_SYN) {
     /* SYN packet */
