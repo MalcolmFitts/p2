@@ -602,6 +602,8 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct, Node_Dir* n
     return 0;
   }
 
+  printf("parsed peer add successfully.\n");
+
   /* parsing string reps to ints and freeing memory */
   port = parse_str_2_int(port_c);
   rate = parse_str_2_int(rate_c);
@@ -618,9 +620,13 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct, Node_Dir* n
     return 0;
   }
   
+  printf("created & added node successfully. \n");
+
   /* 200 Code  --> Success!
    * TODO      --> flag (return) val: success */
   write_status_header(connfd, SC_OK, ST_OK);
+
+  printf("wrote headers!\n");
   return 1;
 }
 
@@ -647,6 +653,8 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
     return 0;
   }
 
+  printf("trying to get peer file: %s\n", filepath);
+
   bzero(path, MAXLINE);
   strcpy(path, filepath);
 
@@ -672,6 +680,8 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
     return 0;
   }
 
+  printf("Node with content: %s:%d\n", node->ip_hostname, node->port);
+
   bzero(buf, BUFSIZE);
   
   /* TODO - format return value in sync_node */
@@ -680,18 +690,24 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
 
   /* TODO check if fails */
 
+  printf("synced node!\n");
+
   /* TODO - will need to parse this differently once chanced sync_node {658} */
   len = parse_str_2_int(b);
 
   write_status_header(connfd, SC_OK, ST_OK);
   write_content_length_header(connfd, len);
   write_content_type_header(connfd, file_type);
+
+  printf("wrote headers!\n");
   
   bzero(buf, BUFSIZE);
   /* CHECK will not be full len after CP */
   char* b2 = request_content(node, ct->port_be, ct->listenfd_be, ct->c_addr, len);
 
   write(connfd, b2, strlen(buf));
+
+  printf("wrote data!!@@\n");
 
   return 1;
 }
