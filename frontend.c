@@ -22,7 +22,7 @@ int init_frontend(struct sockaddr_in serveraddr_fe, int port_fe){
   bzero((char *) &serveraddr_fe, sizeof(serveraddr_fe));
   serveraddr_fe.sin_family = AF_INET; /* we are using the Internet */
   serveraddr_fe.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
-  serveraddr_fe.sin_port = htons((unsigned short)portno_fe); /* port to listen on */
+  serveraddr_fe.sin_port = htons((unsigned short)port_fe); /* port to listen on */
 
   /* bind: associate the listening socket with a port */
   if (bind(listenfd_fe, (struct sockaddr *) &serveraddr_fe, sizeof(serveraddr_fe)) < 0)
@@ -38,7 +38,7 @@ int init_frontend(struct sockaddr_in serveraddr_fe, int port_fe){
 }
 
 
-int frontend_response(int connfd, char* BUF, struct thread_data *ct)x{
+int frontend_response(int connfd, char* BUF, struct thread_data *ct) {
   char content_filepath[MAX_FILEPATH_LEN] = "./content";
   char buf[BUFSIZE];              /* message buffer */
   char path[MAXLINE];
@@ -50,6 +50,11 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct)x{
   char sbyte[MAX_RANGE_NUM_LEN];  /* holders for range request bytes */
   char ebyte[MAX_RANGE_NUM_LEN];  /* holders for range request bytes */
   int sb, eb;
+  struct stat *fStat;
+
+  char bufcopy[BUFSIZE];
+
+  int tid = ct->tid;
   
   bzero(buf, BUFSIZE);
   strcpy(buf, BUF);
@@ -58,8 +63,9 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct)x{
   bzero(path, MAXLINE);
   if(parse_get_request(buf, path) == 0) {
     /* CHECK to see if this works with threading */
-    numthreads--;
+    //CHECK numthreads--;
     error("ERROR Parsing get request");
+    return 0;
   }
 
   /* getting image file and checking for existence */
@@ -72,6 +78,8 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct)x{
     log_thr(lb, ct->num, tid);
 
     write_headers_404(connfd, SERVER_NAME);
+    //CHECK
+    return 1;
   }
   else{
     sprintf(lb, "Found file: %s", fname);
@@ -87,8 +95,14 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct)x{
     /* getting file type (extension) */
     char fileExt[MAXLINE] = {0};
     if(parse_file_type(path, fileExt) == 0) {
+      //CHECK
       error("File path error");
+      return 0;
     }
+
+    /* making copy of buffer to check for range requests */
+    bzero(bufcopy, BUFSIZE);
+    strcpy(bufcopy, buf);
 
     /* 
      *    range_flag value (parse_range_request return val):
@@ -97,7 +111,6 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct)x{
      *          with request so default range to EOF 
      *    0 --> not a valid range request 
      */
-    
     int range_flag = parse_range_request(bufcopy, sbyte, ebyte);
 
     if(range_flag > 0) {
@@ -133,5 +146,6 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct)x{
     /* closing file*/
     fclose(fp);
   }
+  return 1;
 }
 

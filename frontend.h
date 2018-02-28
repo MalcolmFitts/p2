@@ -4,6 +4,7 @@
 #include "datawriter.h"
 #include "parser.h"
 #include "serverlog.h"
+#include "backend.h"
 
 #include <stdio.h>
 #include <unistd.h>

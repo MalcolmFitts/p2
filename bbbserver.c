@@ -21,6 +21,7 @@
 #include "parser.h"
 #include "serverlog.h"
 #include "backend.h"
+#include "frontend.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -43,15 +44,18 @@
 #define SERVER_NAME "BBBserver"
 
 
-/* struct to hold data for initial threads */
-struct thread_data {
-  struct sockaddr_in c_addr;  /* client address struct */
-  int connfd;                 /* connection fd */
-  int tid;                    /* thread id tag */
-  int num;                    /* DEBUG - overall connected num */
-  int listenfd_be;            /* back end listening socket */
-  int port_be;                /* back end port */
-};
+/* DEFINED IN backend.h -- struct to hold data for initial threads */
+// struct thread_data {
+//   struct sockaddr_in c_addr;  /* client address struct */
+//   int connfd;                 /* connection fd */
+//   int tid;                    /* thread id tag */
+//   int num;                    /* DEBUG - overall connected num */
+//   int listenfd_be;            /* back end listening socket */
+//   int port_be;                /* back end port */
+// };
+
+/* function prototype */
+void *serve_client_thread(void *ptr);
 
 /* Global Variable(s): */
 Node_Dir* node_dir;           /* Directory for node referencing   */
@@ -63,7 +67,7 @@ int main(int argc, char **argv) {
   /* front-end (client) vars */
   int listenfd_fe;                  /* listening socket */
   int connfd;                       /* connection socket */
-  int port_fe;                    /* client port to listen on */
+  int portno_fe;                    /* client port to listen on */
   struct sockaddr_in serveraddr_fe; /* server's front-end addr */
   
   /* back-end (node) vars */
@@ -145,22 +149,23 @@ void *serve_client_thread(void *ptr) {
   int tid = ct->tid;
   
   /* defining local vars */
-  char content_filepath[MAX_FILEPATH_LEN] = "./content";
-  char path[MAXLINE];
   struct hostent *hostp;          /* client host info */
   char *hostaddrp;                /* dotted decimal host addr string */
   char buf[BUFSIZE];              /* message buffer */
   char bufcopy[BUFSIZE];          /* copy of message buffer */
   int n;                          /* message byte size */
-  struct stat *fStat;
-  int content_size;               /* CHECK - should this be bigger? */
-  time_t last_modified;
+
+  /* unused vars: */
+  // int sb, eb;
+  // char path[MAXLINE];
+  // struct stat *fStat;
+  // char sbyte[MAX_RANGE_NUM_LEN];  /* holders for range request bytes */
+  // char ebyte[MAX_RANGE_NUM_LEN];  /* holders for range request bytes */
+  // int content_size;               /* CHECK - should this be bigger? */
+  // char content_filepath[MAX_FILEPATH_LEN] = "./content";
+  // time_t last_modified;
 
   // char lb[MAX_PRINT_LEN];         /* buffer for logging */
-
-  char sbyte[MAX_RANGE_NUM_LEN];  /* holders for range request bytes */
-  char ebyte[MAX_RANGE_NUM_LEN];  /* holders for range request bytes */
-  int sb, eb;
 
   pthread_detach(pthread_self());
 
@@ -221,12 +226,12 @@ void *serve_client_thread(void *ptr) {
    */
   if(rqt == RQT_P_ADD) {
     /* back-end: Peer add request */
-    flag_be = peer_add_response(connfd, buf, ct);
+    flag_be = peer_add_response(connfd, buf, ct, node_dir);
   }
 
   else if(rqt == RQT_P_VIEW) {
     /* back-end: Peer view content request */
-    flag_be = peer_view_response(connfd, buf, ct);
+    flag_be = peer_view_response(connfd, buf, ct, node_dir);
   }
 
   else if(rqt == RQT_P_RATE) {

@@ -1,7 +1,7 @@
 CC = gcc
 ARGS = -Wall -O2 -I .
 
-all: sl pa dw be bbbserver
+all: clean sl pa dw be fe bbbserver
 
 sl: serverlog.c serverlog.h
 	$(CC) $(ARGS) -o sllib.o -c serverlog.c
@@ -12,11 +12,14 @@ pa: parser.c parser.h
 dw: datawriter.c datawriter.h
 	$(CC) $(ARGS) -o dwlib.o -c datawriter.c
 
-be: backend.c backend.h serverlog.h
+be: backend.c backend.h
 	$(CC) $(ARGS) -o belib.o -c backend.c
 
-bbbserver: bbbserver.c datawriter.h parser.h serverlog.h backend.h
-	$(CC) $(ARGS) -o bbbserver bbbserver.c dwlib.o palib.o sllib.o belib.o
+fe: frontend.c frontend.h
+	$(CC) $(ARGS) -o felib.o -c frontend.c
+
+bbbserver: bbbserver.c datawriter.h parser.h serverlog.h backend.h frontend.h
+	$(CC) $(ARGS) -o bbbserver bbbserver.c dwlib.o palib.o sllib.o belib.o felib.o
 
 clean:
-	rm -f *.o bbbserver palib.o dwlib.o sllib.o belib.o *~
+	rm -f *.o bbbserver palib.o dwlib.o sllib.o belib.o felib.o *~

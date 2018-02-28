@@ -66,7 +66,7 @@ int serve_content(Pkt_t* packet, int sockfd, struct sockaddr_in serveraddr, int 
   uint32_t s_num = hdr.seq_num;
 
   /* local vars */
-  char* filename;
+  char filename[MAX_DATA_SIZE];
   socklen_t server_len;
   int n_set;
   Pkt_t* data_pkt;
@@ -121,7 +121,7 @@ int init_backend(struct sockaddr_in serveraddr_be, int port_be){
   bzero((char *) &serveraddr_be, sizeof(serveraddr_be));
   serveraddr_be.sin_family = AF_INET; /* we are using the Internet */
   serveraddr_be.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
-  serveraddr_be.sin_port = htons((unsigned short)portno_be); /* port to listen on */
+  serveraddr_be.sin_port = htons((unsigned short)port_be); /* port to listen on */
 
   /* bind: associate the listening socket with a port */
   if (bind(listenfd_be, (struct sockaddr *) &serveraddr_be, sizeof(serveraddr_be)) < 0)
@@ -578,7 +578,7 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
 /*  TODO - replace writing headers with returning flag values
  * 
  */ 
-int peer_add_response(int connfd, char* BUF, struct thread_data *ct) {
+int peer_add_response(int connfd, char* BUF, struct thread_data *ct, Node_Dir* node_dir) {
   /* initilizing local buf and arrays for use in parsing */
   char buf[BUFSIZE];
   char* filepath = malloc(sizeof(char) * MAXLINE);
@@ -626,9 +626,9 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct) {
 
 /*  TODO - replace writing headers/data with returning flag values
  */
-int peer_view_response(int connfd, char*BUF, struct thread_data *ct){
+int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* node_dir){
   char buf[BUFSIZE];
-  char filepath = malloc(sizeof(char) * MAXLINE);
+  char* filepath = malloc(sizeof(char) * MAXLINE);
   char path[MAXLINE];
   char* file_type = malloc(sizeof(char) * MINLINE);
   Node* node;
@@ -636,7 +636,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct){
   int res;
 
   /* return value - will be set bitwise */
-  int ret_flag = 0;
+  // int ret_flag = 0;
 
   /* parsing content filepath from original request */
   res = parse_peer_view_content(BUF, filepath);
@@ -676,12 +676,12 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct){
   
   /* TODO - format return value in sync_node */
   /* initializing connection with node that should have requested content */
-  buf = sync_node(node, ct->port_be, ct->listenfd_be, ct->c_addr);
+  char* b = sync_node(node, ct->port_be, ct->listenfd_be, ct->c_addr);
 
   /* TODO check if fails */
 
   /* TODO - will need to parse this differently once chanced sync_node {658} */
-  len = parse_str_2_int(buf);
+  len = parse_str_2_int(b);
 
   write_status_header(connfd, SC_OK, ST_OK);
   write_content_length_header(connfd, len);
@@ -689,9 +689,9 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct){
   
   bzero(buf, BUFSIZE);
   /* CHECK will not be full len after CP */
-  buf = request_content(node, ct->port_be, ct->listenfd_be, ct->c_addr, len);
+  char* b2 = request_content(node, ct->port_be, ct->listenfd_be, ct->c_addr, len);
 
-  write(connfd, buf, strlen(buf));
+  write(connfd, b2, strlen(buf));
 
   return 1;
 }
@@ -707,9 +707,9 @@ int peer_rate_response(int connfd, char* BUF, struct thread_data *ct){
   strcpy(buf, BUF);
 
   /* TODO this returns something */
-  parse_peer_config_rate(BUF, rate);
+  parse_peer_config_rate(BUF, rate_c);
   
-  rate = parse_str_to_int(char* rate_c);
+  rate = parse_str_2_int(rate_c);
   free(rate_c);
 
   // CHECK 200 OK response on config_rate

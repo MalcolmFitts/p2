@@ -97,6 +97,15 @@ typedef struct Receive_Struct {
 	struct sockaddr_in serveraddr;
 } Recv_t;
 
+struct thread_data {
+  struct sockaddr_in c_addr;  /* client address struct */
+  int connfd;                 /* connection fd */
+  int tid;                    /* thread id tag */
+  int num;                    /* DEBUG - overall connected num */
+  int listenfd_be;            /* back end listening socket */
+  int port_be;                /* back end port */
+};
+
 /*
  *  recieve_pkt
  *		- main threaded function to listen on back end port and serve content
@@ -199,7 +208,7 @@ int add_node(Node_Dir* nd, Node* node);
  *		- returns NULL pointer on fail
  *
  */
-Pkt_t* create_packet (Node* n, uint16_t s_port, unsigned int s_num, 
+Pkt_t* create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
   char* filename, int flag);
 
 
@@ -338,12 +347,12 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
 /*  TODO
  *  add_response_be
  */ 
-int peer_add_response(int connfd, char* BUF, struct thread_data *ct);
+int peer_add_response(int connfd, char* BUF, struct thread_data *ct, Node_Dir* node_dir);
 
 /*  TODO
  *  view_response_be
  */
-int peer_view_response(int connfd, char*BUF, struct thread_data *ct);
+int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* node_dir);
 
 /*  TODO
  *  rate_response_be
