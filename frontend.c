@@ -1,9 +1,12 @@
 
 #include "frontend.h"
 
-int init_frontend(struct sockaddr_in serveraddr_fe, int port_fe){
+int init_frontend(struct sockaddr_in* serveraddr_fe, int port_fe){
   int optval_fe = 1;
   int listenfd_fe;
+
+  /* referencing actual memory of serveraddr_fe */
+  struct sockaddr_in serveraddr_local = *serveraddr_fe;
   
   /* socket: create front and back end sockets */
   listenfd_fe = socket(AF_INET, SOCK_STREAM, 0);
@@ -19,13 +22,13 @@ int init_frontend(struct sockaddr_in serveraddr_fe, int port_fe){
 	     (const void *)&optval_fe, sizeof(int));
 
   /* build the server's front end internet address */
-  bzero((char *) &serveraddr_fe, sizeof(serveraddr_fe));
-  serveraddr_fe.sin_family = AF_INET; /* we are using the Internet */
-  serveraddr_fe.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
-  serveraddr_fe.sin_port = htons((unsigned short)port_fe); /* port to listen on */
+  bzero((char *) serveraddr_fe, sizeof(*serveraddr_fe));
+  serveraddr_fe->sin_family = AF_INET; /* we are using the Internet */
+  serveraddr_fe->sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
+  serveraddr_fe->sin_port = htons((unsigned short)port_fe); /* port to listen on */
 
   /* bind: associate the listening socket with a port */
-  if (bind(listenfd_fe, (struct sockaddr *) &serveraddr_fe, sizeof(serveraddr_fe)) < 0)
+  if (bind(listenfd_fe, (struct sockaddr *) serveraddr_fe, sizeof(*serveraddr_fe)) < 0)
     error("ERROR on binding front-end socket with port");
 
   /* listen: make it a listening socket ready to accept connection requests 
