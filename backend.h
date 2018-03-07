@@ -56,6 +56,8 @@ typedef struct Node_Directory {
 #define PKT_FLAG_ACK     2
 #define PKT_FLAG_SYN 	 3
 #define PKT_FLAG_SYN_ACK 4
+#define PKT_FLAG_FIN     5
+
 
 /* TODO add FIN implimentation */
 
@@ -63,38 +65,45 @@ typedef struct Node_Directory {
 #define PKT_FLAG_FRAG 
 */
 
-/* ACK field default values */
-#define PKT_ACK 	0x0000AAAA  /* "true" ack flag  */
-#define PKT_ACK_NAN 0x00005555  /* "false" ack flag */
+/*
+ *  Masks for flag in packet header 
+ *          
+ *  flag = |  DATA  | SYN-ACK |  SYN  | ACK  |
+ */
+#define PKT_CORRUPT_MASK  0x0001    /* CORRUPT mask */
+#define PKT_DATA_MASK     0x0002    /* DATA mask    */
+#define PKT_ACK_MASK      0x0004
+#define PKT_SYN_MASK      0x0008    /* SYN mask     */
+#define PKT_SYN_ACK_MASK  0x0010    /* SYN-ACK mask */
+#define PKT_FIN_MASK      0x0020    /* DATA mask    */
 
-/* SYN field default values */
-#define PKT_SYN 	0x0000AAAA  /* "true" syn flag  */
-#define PKT_SYN_NAN 0x00005555  /* "false" syn flag */
+
 
 /* Packet Header Struct */
 typedef struct Packet_Header {
-	uint16_t source_port;		/* source port 	- 2 bytes */
-	uint16_t dest_port;			/* dest port 	- 2 bytes */
+  uint16_t source_port;		/* source port 	- 2 bytes */
+  uint16_t dest_port;			/* dest port 	- 2 bytes */
+  
+  uint16_t length;			/* length		- 2 bytes */
+  uint16_t checksum;			/* checksum		- 2 bytes */
 
-	uint16_t length;			/* length		- 2 bytes */
-	uint16_t checksum;			/* checksum		- 2 bytes */
+  uint32_t seq_num;                     /* sequence num - 4 bytes */
 
-	uint16_t syn;				/* sync  		- 2 bytes */
-	uint16_t ack;				/* acknowledge  - 2 bytes */		
+  uint16_t flag;
+  uint16_t data_offset;
 
-	uint32_t seq_num;			/* sequence num - 4 bytes */
 } P_Hdr;
 
 /* Packet Struct */
 typedef struct Packet {
-	P_Hdr header;				/* Packet Header */
-	char buf[MAX_DATA_SIZE];	/* Packet Data   */
+  P_Hdr header;				/* Packet Header */
+  char buf[MAX_DATA_SIZE];	/* Packet Data   */
 } Pkt_t;
 
 /* Struct for threaded function for receiving packets */
 typedef struct Receive_Struct {
-	int sockfd;
-	struct sockaddr_in serveraddr;
+  int sockfd;
+  struct sockaddr_in serveraddr;
 } Recv_t;
 
 struct thread_data {
@@ -113,7 +122,6 @@ struct thread_data {
  *
  */
 void* recieve_pkt(void* ptr);
-
 
 /*
  *  serve_content
@@ -155,7 +163,7 @@ Node* create_node(char* path, char* name, int port, int rate);
  *		- filename should start with "content/"
  *		ex: filename = "content/rest/of/path.ogg"
  *
- *	~return values:
+ *	~return values:f
  *		- returns 1 on finding content in node
  *		- returns 0 on failure to find content
  *		- return -1 if node is null

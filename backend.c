@@ -21,7 +21,7 @@ void* recieve_pkt(void* ptr) {
 
   // uint16_t s_port = node->port;
 
- 
+
 
   while(1) {
     serverlen = sizeof(*serveraddr);
@@ -56,7 +56,6 @@ void* recieve_pkt(void* ptr) {
   }
 }
 
-
 int serve_content(Pkt_t* packet, int sockfd, struct sockaddr_in* serveraddr, int flag){
   /* parsing data from packet */
   P_Hdr hdr = packet->header;
@@ -65,7 +64,7 @@ int serve_content(Pkt_t* packet, int sockfd, struct sockaddr_in* serveraddr, int
   uint16_t s_port = hdr.dest_port;
   uint16_t d_port = hdr.source_port;
 
-  /* CHECK s_num */ 
+  /* CHECK s_num */
   uint32_t s_num = hdr.seq_num;
 
   /* local vars */
@@ -90,22 +89,22 @@ int serve_content(Pkt_t* packet, int sockfd, struct sockaddr_in* serveraddr, int
     /* respond to SYN packet with SYN-ACK */
     data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_SYN_ACK);
   }
-  
+
   /* CHECK - p_size */
   int p_size = sizeof(*data_pkt);
   char* data_pkt_wr = writeable_packet(data_pkt);
-  
+
   server_len = sizeof(*serveraddr);
   n_set = sendto(sockfd, data_pkt_wr, p_size, 0,
 		 (struct sockaddr *) serveraddr, server_len);
-  
+
   return n_set;
 }
 
 int init_backend(struct sockaddr_in* serveraddr_be, int port_be){
   int listenfd_be;
   int optval_be;
-  
+
   listenfd_be = socket(AF_INET, SOCK_DGRAM, 0);
   if(listenfd_be < 0)
     error("ERROR opening back-end socket");
@@ -117,7 +116,7 @@ int init_backend(struct sockaddr_in* serveraddr_be, int port_be){
    */
   optval_be = 1;
 
-  setsockopt(listenfd_be, SOL_SOCKET, SO_REUSEADDR, 
+  setsockopt(listenfd_be, SOL_SOCKET, SO_REUSEADDR,
     (const void *)&optval_be, sizeof(int));
 
   /* build the server's back end internet address */
@@ -132,7 +131,6 @@ int init_backend(struct sockaddr_in* serveraddr_be, int port_be){
 
   return listenfd_be;
 }
-
 
 Node* create_node(char* path, char* name, int port, int rate) {
   /* allocate mem for struct */
@@ -163,7 +161,6 @@ int check_node_content(Node* pn, char* filename) {
   return 0;
 }
 
-
 Node_Dir* create_node_dir(int max) {
   /* check for creation of dir larger than defined max */
   if(max > MAX_NODES) max = MAX_NODES;
@@ -185,8 +182,6 @@ Node_Dir* create_node_dir(int max) {
 
   return nd;
 }
-
-
 
 int add_node(Node_Dir* nd, Node* node) {
   if((nd->cur_nodes) < (nd->max_nodes)) {
@@ -229,9 +224,8 @@ Pkt_t* create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
   if(flag == PKT_FLAG_DATA) {
     /* data packet */
 
-    /* assign ACK & SYN fields */
-    hdr->ack = (uint16_t) PKT_ACK_NAN;
-    hdr->syn = (uint16_t) PKT_SYN_NAN;
+    /* set flag to DATA */
+    hdr->flag = (1 << PKT_FLAG_DATA);
 
     /* checking file contents */
     FILE* fp = fopen(filename, "r");
@@ -245,34 +239,37 @@ Pkt_t* create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
     fread(f_buf, 1, MAX_DATA_SIZE, fp);
     fclose(fp);
   }
+
   else if(flag == PKT_FLAG_ACK) {
     /* ACK packet */
 
-    /* assign ACK & SYN fields */
-    hdr->ack = (uint16_t) PKT_ACK;
-    hdr->syn = (uint16_t) PKT_SYN_NAN;
+    /* set flag to ACK */
+    hdr->flag = (1 << PKT_FLAG_ACK);
 
-    /* CHECK - not sure how to send ACK info - maybe in buffer */
+    /*
+     *  CHECK - not sure how to send ACK info - hdr->ACK_NUM (need to impelment)
+     *  NOT in buffer here
+     */
     sprintf(f_buf, "Ready to send: %s\n", filename);
   }
   else if(flag == PKT_FLAG_SYN) {
     /* SYN packet */
 
-    /* assign ACK & SYN fields */
-    hdr->ack = (uint16_t) PKT_ACK_NAN;
-    hdr->syn = (uint16_t) PKT_SYN;
+    /* set flag to SYN */
+    hdr->flag =  (1 << PKT_FLAG_SYN);
 
     /* CHECK - not sure how to send SYN info - maybe in buffer */
+    /* TODO - Data offset here to pass options in the data buffer (hdr->data_offset) */
     sprintf(f_buf, "Request: %s\n", filename);
   }
   else if(flag == PKT_FLAG_SYN_ACK) {
     /* SYN-ACK packet */
 
-    /* assign ACK & SYN fields */
-    hdr->ack = (uint16_t) PKT_ACK;
-    hdr->syn = (uint16_t) PKT_SYN;
+    /* set flag to SYN-ACK */
+    hdr->flag =  (1 << PKT_FLAG_SYN_ACK);
 
     /* CHECK - not sure how to send SYN-ACK info - maybe in buffer */
+    /* TODO - Data offset here to pass options in the data buffer */
 
     /* attempting to find file */
     FILE* fp = fopen(filename, "r");
@@ -290,10 +287,23 @@ Pkt_t* create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
       free(fStat);
       fclose(fp);
     }
+    else if(flag == PKT_FLAG_FIN) {
+
+      /* set flag to FIN */
+      hdr->flag = (1 << PKT_FLAG_FIN);
+
+    }
     else{
       /* info on no file found in buffer */
       sprintf(f_buf, "File: Not Found\nContent Size: -1\n");
     }
+
+  }
+
+  else if (flag == PKT_FLAG_FIN){
+
+    /* set flag to FIN */
+    hdr->flag = PKT_FIN_MASK;
 
   }
   else {
@@ -314,21 +324,18 @@ Pkt_t* create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
   return packet;
 }
 
-
 void discard_packet(Pkt_t *packet) {
   P_Hdr* ref = &(packet->header);
   free(ref);
   free(packet);
 }
 
-
 uint16_t calc_checksum(P_Hdr* hdr) {
   /* parsing source_port, dest_port and length directly */
   uint16_t s_p = hdr->source_port;
   uint16_t d_p = hdr->dest_port;
   uint16_t len = hdr->length;
-  uint16_t syn = hdr->syn;
-  uint16_t ack = hdr->ack;
+  uint16_t flag = hdr->flag;
 
   /* splitting up both seq num and ack into two 16-bit nums */
   /* CHECK - might have to & with S_INT_MASK, but dont think so cause unsigned int */
@@ -336,13 +343,12 @@ uint16_t calc_checksum(P_Hdr* hdr) {
   uint16_t seq_num2 = (uint16_t) (hdr->seq_num);
 
   /* binary addition of relevant values */
-  uint16_t x = (((((s_p + d_p) + len) + syn)+ ack) + seq_num1) + seq_num2;
+  uint16_t x = ((((s_p + d_p) + len) + flag) + seq_num1) + seq_num2;
 
   /* one's complement of addition */
   uint16_t res = ~x;
   return res;
 }
-
 
 Pkt_t* parse_packet(char* buf) {
   /* allocating mem for structs */
@@ -350,13 +356,13 @@ Pkt_t* parse_packet(char* buf) {
   P_Hdr *hdr = malloc(sizeof(P_Hdr));
 
   /* creating vars to directly parse into */
-  uint16_t sp;     /* buf { 0,  1} */
-  uint16_t dp;     /* buf { 2,  3} */
-  uint16_t len;    /* buf { 4,  5} */
-  uint16_t csum;   /* buf { 6,  7} */
-  uint16_t ack;    /* buf { 8,  9} */
-  uint16_t syn;    /* buf {10, 11} */
-  uint32_t snum;   /* buf {12, 15} */  
+  uint16_t sp;     /* buf {0, 1}        */
+  uint16_t dp;     /* buf {2, 3}        */
+  uint16_t len;    /* buf {4, 5}        */
+  uint16_t csum;   /* buf {6, 7}        */
+  uint32_t snum;   /* buf {8, 9, 10, 11} */
+  uint16_t flag;   /* buf {12, 13}      */
+  uint32_t off;    /* buf {14, 15}      */
 
   /* parsing header data from buf into header*/
   char* b_ptr = buf;
@@ -376,17 +382,17 @@ Pkt_t* parse_packet(char* buf) {
   hdr->checksum = csum;
 
   b_ptr = &(buf[8]);
-  memcpy(&ack, b_ptr, 2);
-  hdr->ack = ack;
-
-  b_ptr = &(buf[10]);
-  memcpy(&syn, b_ptr, 2);
-  hdr->syn = syn;
-
-  b_ptr = &(buf[12]);
   memcpy(&snum, b_ptr, 4);
   hdr->seq_num = snum;
-  
+
+  b_ptr = &(buf[12]);
+  memcpy(&flag, b_ptr, 2);
+  hdr->flag = flag;
+
+  b_ptr = &(buf[14]);
+  memcpy(&off, b_ptr, 4);
+  hdr->data_offset = off;
+
   /* assigning header */
   pkt->header = *hdr;
 
@@ -398,7 +404,6 @@ Pkt_t* parse_packet(char* buf) {
   return pkt;
 }
 
-
 char* writeable_packet(Pkt_t* packet) {
   int p_size = sizeof(*packet);
 
@@ -409,36 +414,34 @@ char* writeable_packet(Pkt_t* packet) {
   return p_buf;
 }
 
-
 int get_packet_type(Pkt_t *packet) {
   P_Hdr *hdr = &(packet->header);
+  uint16_t flag = hdr->flag;
 
   /* validating via checksum */
   uint16_t c = calc_checksum(hdr);
   if(c != hdr->checksum) return 0;
 
-  uint16_t syn = (uint16_t) PKT_SYN;
-  uint16_t ack = (uint16_t) PKT_ACK;
-  uint16_t syn_nan = (uint16_t) PKT_SYN_NAN;
-  uint16_t ack_nan = (uint16_t) PKT_ACK_NAN;
-
-  if((hdr->syn) == syn && (hdr->ack) == ack) {
+  if ((flag & PKT_SYN_ACK_MASK) > 0) {
     return PKT_FLAG_SYN_ACK;    /* SYN-ACK packet */
   }
-  else if((hdr->syn) == syn && (hdr->ack) == ack_nan)  {
+  else if ((flag & PKT_SYN_MASK) > 0) {
     return PKT_FLAG_SYN;        /* SYN packet     */
   }
-  else if((hdr->ack) == ack && (hdr->syn) == syn_nan) {
+  else if ((flag & PKT_ACK_MASK) > 0) {
     return PKT_FLAG_ACK;        /* ACK packet     */
   }
-  else if((hdr->ack) == ack_nan && (hdr->syn) == syn_nan) {
+  else if ((flag & PKT_DATA_MASK) > 0){
     return PKT_FLAG_DATA;       /* DATA packet    */
+  }
+
+  else if ((flag & PKT_FIN_MASK) > 0){
+    return PKT_FLAG_FIN;        /* FIN packet */
   }
 
   /* should not happen - not sure what kind of packet this is */
   return -1;
 }
-
 
 Node* check_content(Node_Dir* dir, char* filename) {
   int max = dir->cur_nodes;
@@ -462,7 +465,6 @@ Node* check_content(Node_Dir* dir, char* filename) {
   Node* res = create_node(ref.content_path, ref.ip_hostname, ref.port, ref.content_rate);
   return res;
 }
-
 
 char* sync_node(Node* node, uint16_t s_port, int sockfd,
   struct sockaddr_in serveraddr) {
@@ -521,7 +523,6 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd,
   return ref;
 }
 
-
 char* request_content(Node* node, uint16_t s_port, int sockfd,
   struct sockaddr_in serveraddr, uint32_t seq_ack_num) {
   /* init local vars */
@@ -579,8 +580,9 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
 }
 
 /*  TODO - replace writing headers with returning flag values
- * 
- */ 
+ *
+ */
+
 int peer_add_response(int connfd, char* BUF, struct thread_data *ct, Node_Dir* node_dir) {
   /* initilizing local buf and arrays for use in parsing */
   char buf[BUFSIZE];
@@ -599,7 +601,7 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct, Node_Dir* n
   /* CHECK - why using BUF when we have buf (copy of BUF) */
   int add_res = parse_peer_add(BUF, filepath, hostname, port_c, rate_c);
   if(!add_res) {
-    /* 500 Code  --> Failure to parse peer add request 
+    /* 500 Code  --> Failure to parse peer add request
      * TODO      --> flag (return) val: parse fail */
     write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
     return 0;
@@ -622,7 +624,7 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct, Node_Dir* n
     write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
     return 0;
   }
-  
+
   printf("created & added node successfully. \n");
 
   /* 200 Code  --> Success!
@@ -650,7 +652,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   /* parsing content filepath from original request */
   res = parse_peer_view_content(BUF, filepath);
   if(!res) {
-    /* 500 Error --> Failure to parse peer view request 
+    /* 500 Error --> Failure to parse peer view request
      * TODO      --> flag (return) val: parse fail */
     write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
     return 0;
@@ -669,10 +671,10 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
     write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
     return 0;
   }
-  
+
   bzero(buf, BUFSIZE);
   strcpy(buf, BUF);
-  
+
   /* finding node with requested content */
   node = check_content(node_dir, filepath);
 
@@ -686,7 +688,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   printf("Node with content: %s:%d\n", node->ip_hostname, node->port);
 
   bzero(buf, BUFSIZE);
-  
+
   /* TODO - format return value in sync_node */
   /* initializing connection with node that should have requested content */
   char* b = sync_node(node, ct->port_be, ct->listenfd_be, ct->c_addr);
@@ -703,7 +705,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   write_content_type_header(connfd, file_type);
 
   printf("wrote headers!\n");
-  
+
   bzero(buf, BUFSIZE);
   /* CHECK will not be full len after CP */
   char* b2 = request_content(node, ct->port_be, ct->listenfd_be, ct->c_addr, len);
@@ -721,13 +723,13 @@ int peer_rate_response(int connfd, char* BUF, struct thread_data *ct){
   char buf[MAXLINE];
   int rate;
   char* rate_c = malloc(sizeof(char) * MAXLINE);
-    
+
   bzero(buf, BUFSIZE);
   strcpy(buf, BUF);
 
   /* TODO this returns something */
   parse_peer_config_rate(BUF, rate_c);
-  
+
   rate = parse_str_2_int(rate_c);
   free(rate_c);
 

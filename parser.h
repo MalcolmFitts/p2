@@ -17,12 +17,12 @@
 #define MAXLINE 8192
 
 /* request type flags for check request type func */
-#define RQT_INV 0		/* Invalid GET request 				*/
-#define RQT_GET 1		/* Valid GET request 				*/
+#define RQT_INV 0		/* Invalid GET request 			*/
+#define RQT_GET 1		/* Valid GET request 		        */
 #define RQT_C_RNG 2		/* Client GET request w/ Range req 	*/
-#define RQT_P_ADD 3		/* Peer node ADD request 			*/
-#define RQT_P_VIEW 4	/* Peer node VIEW request 			*/
-#define RQT_P_RATE 5	/* Peer node CONFIG RATE request 	*/
+#define RQT_P_ADD 3		/* Peer node ADD request 		*/
+#define RQT_P_VIEW 4	        /* Peer node VIEW request 		*/
+#define RQT_P_RATE 5	        /* Peer node CONFIG RATE request 	*/
 
 /*
  *	check_request_type
