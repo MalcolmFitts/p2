@@ -68,7 +68,7 @@ typedef struct Node_Directory {
 #define PKT_ACK_NAN 0x00005555  /* "false" ack flag */
 
 /* SYN field default values */
-bbb#define PKT_SYN 	0x0000AAAA  /* "true" syn flag  */
+#define PKT_SYN 	0x0000AAAA  /* "true" syn flag  */
 #define PKT_SYN_NAN 0x00005555  /* "false" syn flag */
 
 /* Packet Header Struct */
@@ -121,7 +121,7 @@ void* recieve_pkt(void* ptr);
  *
  *
  */
-int serve_content(Pkt_t* packet, int sockfd, struct sockaddr_in serveraddr, int flag);
+int serve_content(Pkt_t* packet, int sockfd, struct sockaddr_in* serveraddr, int flag);
 
 
 /* TODO make sure this works (serveraddr_be prob should be a pointer)
@@ -130,7 +130,7 @@ int serve_content(Pkt_t* packet, int sockfd, struct sockaddr_in serveraddr, int 
  *		- initalizes the backend port for the server node
  *
  */
-int init_backend(struct sockaddr_in serveraddr_be, int port_be);
+int init_backend(struct sockaddr_in* serveraddr_be, int port_be);
 
 /*
  *  create_node

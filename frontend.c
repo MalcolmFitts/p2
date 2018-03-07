@@ -4,9 +4,6 @@
 int init_frontend(struct sockaddr_in* serveraddr_fe, int port_fe){
   int optval_fe = 1;
   int listenfd_fe;
-
-  /* referencing actual memory of serveraddr_fe */
-  struct sockaddr_in serveraddr_local = *serveraddr_fe;
   
   /* socket: create front and back end sockets */
   listenfd_fe = socket(AF_INET, SOCK_STREAM, 0);

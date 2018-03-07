@@ -11,7 +11,7 @@ void* recieve_pkt(void* ptr) {
   Recv_t* rec = ptr;
 
   int sockfd = rec->sockfd;
-  struct sockaddr_in* serveraddr = rec->serveraddr;
+  struct sockaddr_in* serveraddr = &rec->serveraddr;
 
   char p_buf[MAX_PACKET_SIZE] = {0};
   // char* content_path = node->content_path;
