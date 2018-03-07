@@ -89,7 +89,6 @@ void write_server_name_header(int fd, char* sn);
  */
 void write_conn_header(int fd, char* conn_type);
 
-
 /* 	  Connection Keep Alive Headers
  *
  * write_conn_header( {fd} , {TIMEOUT} , {MAX} ); 

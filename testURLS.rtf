@@ -46,12 +46,14 @@ http://localhost:9001/videos/video2.mp4\
 
 \b\fs28 Project 2
 \b0\fs24 :\
-(assume running master on 9001/9002 and slave on 9003/9004)\
+(assume running master on 9001/9002 and slave on 128.237.166.75:9003/9004)\
 \
 
 \b peer add
 \b0 :\
 http://localhost:9001/peer/add?path=content/texts/text1.txt&host=localhost&port=9004&rate=1600\
+\
+http://localhost:9001/peer/add?path=content/texts/text1.txt&host=128.237.166.75&port=9004&rate=1600\
 \
 
 \b peer view

@@ -68,12 +68,12 @@ int main(int argc, char **argv) {
   int listenfd_fe;                  /* listening socket */
   int connfd;                       /* connection socket */
   int portno_fe;                    /* client port to listen on */
-  struct sockaddr_in* serveraddr_fe = malloc(sizeof(struct sockaddr_in)); /* server's front-end addr */
+  struct sockaddr_in *serveraddr_fe = malloc(sizeof(struct sockaddr_in)); /* server's front-end addr */
   
   /* back-end (node) vars */
   int listenfd_be;                  /* listening socket */
   int portno_be;                    /* back-end port to use */
-  struct sockaddr_in* serveraddr_be = malloc(sizeof(struct sockaddr_in)); /* server's back-end addr */
+  struct sockaddr_in *serveraddr_be = malloc(sizeof(struct sockaddr_in)); /* server's back-end addr */
   
   /* client vars */
   unsigned int clientlen;           /* byte size of client's address */

@@ -68,7 +68,7 @@ typedef struct Node_Directory {
 #define PKT_ACK_NAN 0x00005555  /* "false" ack flag */
 
 /* SYN field default values */
-#define PKT_SYN 	0x0000AAAA  /* "true" syn flag  */
+bbb#define PKT_SYN 	0x0000AAAA  /* "true" syn flag  */
 #define PKT_SYN_NAN 0x00005555  /* "false" syn flag */
 
 /* Packet Header Struct */

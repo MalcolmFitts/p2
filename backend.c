@@ -11,7 +11,7 @@ void* recieve_pkt(void* ptr) {
   Recv_t* rec = ptr;
 
   int sockfd = rec->sockfd;
-  struct sockaddr_in serveraddr = rec->serveraddr;
+  struct sockaddr_in* serveraddr = rec->serveraddr;
 
   char p_buf[MAX_PACKET_SIZE] = {0};
   // char* content_path = node->content_path;
@@ -24,12 +24,11 @@ void* recieve_pkt(void* ptr) {
  
 
   while(1) {
-    serverlen = sizeof(serverlen);
-    printf("Waiting to recieve...\n");
+    serverlen = sizeof(*serveraddr);
 
     /* receiving packet and writing into p_buf */
     n_recv = recvfrom(sockfd, p_buf, MAX_PACKET_SIZE, 0,
-		      (struct sockaddr *) &serveraddr, &serverlen);
+		      (struct sockaddr *) serveraddr, &serverlen);
 
     printf("Recieved Packet!\n");
 
@@ -58,7 +57,7 @@ void* recieve_pkt(void* ptr) {
 }
 
 
-int serve_content(Pkt_t* packet, int sockfd, struct sockaddr_in serveraddr, int flag){
+int serve_content(Pkt_t* packet, int sockfd, struct sockaddr_in* serveraddr, int flag){
   /* parsing data from packet */
   P_Hdr hdr = packet->header;
 
@@ -96,9 +95,9 @@ int serve_content(Pkt_t* packet, int sockfd, struct sockaddr_in serveraddr, int 
   int p_size = sizeof(*data_pkt);
   char* data_pkt_wr = writeable_packet(data_pkt);
   
-  server_len = sizeof(serveraddr);
+  server_len = sizeof(*serveraddr);
   n_set = sendto(sockfd, data_pkt_wr, p_size, 0,
-		 (struct sockaddr *) &serveraddr, server_len);
+		 (struct sockaddr *) serveraddr, server_len);
   
   return n_set;
 }
@@ -122,13 +121,13 @@ int init_backend(struct sockaddr_in* serveraddr_be, int port_be){
     (const void *)&optval_be, sizeof(int));
 
   /* build the server's back end internet address */
-  bzero((char *) &serveraddr_be, sizeof(serveraddr_be));
-  serveraddr_be.sin_family = AF_INET; /* we are using the Internet */
-  serveraddr_be.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
-  serveraddr_be.sin_port = htons((unsigned short)port_be); /* port to listen on */
+  bzero((char *) serveraddr_be, sizeof(*serveraddr_be));
+  serveraddr_be->sin_family = AF_INET; /* we are using the Internet */
+  serveraddr_be->sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
+  serveraddr_be->sin_port = htons((unsigned short)port_be); /* port to listen on */
 
   /* bind: associate the listening socket with a port */
-  if (bind(listenfd_be, (struct sockaddr *) &serveraddr_be, sizeof(serveraddr_be)) < 0)
+  if (bind(listenfd_be, (struct sockaddr *) serveraddr_be, sizeof(*serveraddr_be)) < 0)
     error("ERROR on binding back-end socket with port");
 
   return listenfd_be;
