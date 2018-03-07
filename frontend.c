@@ -15,6 +15,7 @@ int init_frontend(struct sockaddr_in serveraddr_fe, int port_fe){
    * otherwise we have to wait about 20 secs.
    * Eliminates "ERROR on binding: Address already in use" error.
    */
+  
   setsockopt(listenfd_fe, SOL_SOCKET, SO_REUSEADDR, 
 	     (const void *)&optval_fe, sizeof(int));
 

@@ -20,14 +20,18 @@ void* recieve_pkt(void* ptr) {
   int n_recv;
 
   // uint16_t s_port = node->port;
-  
+
+ 
 
   while(1) {
     serverlen = sizeof(serverlen);
+    printf("Waiting to recieve...\n");
 
     /* receiving packet and writing into p_buf */
     n_recv = recvfrom(sockfd, p_buf, MAX_PACKET_SIZE, 0,
 		      (struct sockaddr *) &serveraddr, &serverlen);
+
+    printf("Recieved Packet!\n");
 
     if(n_recv < 0) {
       /* TODO - Error on receive packet */
@@ -99,7 +103,7 @@ int serve_content(Pkt_t* packet, int sockfd, struct sockaddr_in serveraddr, int 
   return n_set;
 }
 
-int init_backend(struct sockaddr_in serveraddr_be, int port_be){
+int init_backend(struct sockaddr_in* serveraddr_be, int port_be){
   int listenfd_be;
   int optval_be;
   
