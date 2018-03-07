@@ -27,4 +27,4 @@ test: test.c datawriter.h parser.h serverlog.h backend.h frontend.h
 	$(CC) $(ARGS) -o test test.c dwlib.o palib.o sllib.o belib.o felib.o
 
 clean:
-	rm -f *.o bbbserver palib.o dwlib.o sllib.o belib.o felib.o *~
+	rm -f *.o bbbserver test palib.o dwlib.o sllib.o belib.o felib.o *~
