@@ -190,7 +190,7 @@ void *serve_client_thread(void *ptr) {
 
   sprintf(lb, "Connected client id: %d.", tid);
   log_thr(lb, ct->num, tid);
-
+  
   /* read: read input string from the client */
   bzero(buf, BUFSIZE);
   n = read(connfd, buf, BUFSIZE);
@@ -198,13 +198,13 @@ void *serve_client_thread(void *ptr) {
     numthreads--;
     server_error("ERROR reading from socket", connfd); 
   }
-
+  
   sprintf(lb, "Server received %d Bytes", n);
   log_thr(lb, ct->num, tid);
   sprintf(lb, "Get Request Raw Headers:");
   log_thr(lb, ct->num, tid);
   log_msg(buf);
-
+  
   /* making copy of buffer to check for range requests */
   bzero(bufcopy, BUFSIZE);
   strcpy(bufcopy, buf);
@@ -248,7 +248,7 @@ void *serve_client_thread(void *ptr) {
   /* closing client connection and freeing struct */
   close(connfd);
   free(ct);
-
+  
   sprintf(lb, "Connection with {Client %d} closed.", tid);
   log_thr(lb, ct->num, tid);
   

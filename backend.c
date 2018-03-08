@@ -176,7 +176,8 @@ Node_Dir* create_node_dir(int max) {
 
   /* allocate mem for node array */
   nd->n_array = malloc(max * sizeof(Node *));
-  for(int i = 0; i < max; i++) {
+  int i;
+  for(i = 0; i < max; i++) {
     nd->n_array[i] = *((Node*) malloc(sizeof(Node)));
   }
 
@@ -449,7 +450,8 @@ Node* check_content(Node_Dir* dir, char* filename) {
   Node ref;
 
   /* looping through directory and checking nodes */
-  for(int i = 0; i < max; i++) {
+  int i;
+  for(i = 0; i < max; i++) {
     Node t = dir->n_array[i];
 
     /* checking node content -- CHECK TODO - check for content rate too?  */
@@ -721,7 +723,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
  */
 int peer_rate_response(int connfd, char* BUF, struct thread_data *ct){
   char buf[MAXLINE];
-  int rate;
+  //int rate;
   char* rate_c = malloc(sizeof(char) * MAXLINE);
 
   bzero(buf, BUFSIZE);
@@ -730,7 +732,7 @@ int peer_rate_response(int connfd, char* BUF, struct thread_data *ct){
   /* TODO this returns something */
   parse_peer_config_rate(BUF, rate_c);
 
-  rate = parse_str_2_int(rate_c);
+  //rate = parse_str_2_int(rate_c);
   free(rate_c);
 
   // CHECK 200 OK response on config_rate

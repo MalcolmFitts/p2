@@ -21,7 +21,7 @@ fe: frontend.c frontend.h
 	$(CC) $(ARGS) -o felib.o -c frontend.c
 
 bbbserver: bbbserver.c datawriter.h parser.h serverlog.h backend.h frontend.h
-	$(CC) $(ARGS) -o bbbserver bbbserver.c dwlib.o palib.o sllib.o belib.o felib.o
+	$(CC) $(ARGS) -pthread -o bbbserver bbbserver.c dwlib.o palib.o sllib.o belib.o felib.o
 
 test: test.c datawriter.h parser.h serverlog.h backend.h frontend.h
 	$(CC) $(ARGS) -o test test.c dwlib.o palib.o sllib.o belib.o felib.o
