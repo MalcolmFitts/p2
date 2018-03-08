@@ -5,16 +5,16 @@
  * Version: Project 2
  *
  *  (notes)
- * 1. CHECK   
+ * 1. CHECK
  *      - put in comments, search file for this keyword
  *      - used to indicate code that should be reviewed
- * 2. TODO   
+ * 2. TODO
  *      - put in comments, search file for this keyword
  *      - used to indicate things to do
  *
  * 3. Server log
- *      - check file "serverlog.h" for info on server log (printing) 
- *  
+ *      - check file "serverlog.h" for info on server log (printing)
+ *
  */
 
 #include "datawriter.h"
@@ -69,12 +69,12 @@ int main(int argc, char **argv) {
   int connfd;                       /* connection socket */
   int portno_fe;                    /* client port to listen on */
   struct sockaddr_in *serveraddr_fe = malloc(sizeof(struct sockaddr_in)); /* server's front-end addr */
-  
+
   /* back-end (node) vars */
   int listenfd_be;                  /* listening socket */
   int portno_be;                    /* back-end port to use */
   struct sockaddr_in *serveraddr_be = malloc(sizeof(struct sockaddr_in)); /* server's back-end addr */
-  
+
   /* client vars */
   unsigned int clientlen;           /* byte size of client's address */
   struct sockaddr_in clientaddr;    /* client's addr */
@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
     fprintf(stderr, "usage: %s <port> <port>\n", argv[0]);
     exit(1);
   }
-  
+
   portno_fe = atoi(argv[1]);
   portno_be = atoi(argv[2]);
 
@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
 
   /* create node directory */
   node_dir = create_node_dir(MAX_NODES);
-  
+
   /* allocating memory for data for thread */
   Recv_t* ptr = malloc(sizeof(Recv_t));
   ptr->sockfd = listenfd_be;
@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
     log_main(lb, ctr);
 
     if (connfd < 0) { error("ERROR on accept"); }
-      
+
     /* storing info in struct for use in thread */
     pthread_t tid;
     struct thread_data *ct = malloc(sizeof(struct thread_data));
@@ -148,7 +148,7 @@ void *serve_client_thread(void *ptr) {
   struct sockaddr_in clientaddr = ct->c_addr;
   int connfd = ct->connfd;
   int tid = ct->tid;
-  
+
   /* defining local vars */
   struct hostent *hostp;          /* client host info */
   char *hostaddrp;                /* dotted decimal host addr string */
@@ -173,15 +173,15 @@ void *serve_client_thread(void *ptr) {
   /* gethostbyaddr: determine who sent the message */
   hostp = gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr,
         sizeof(clientaddr.sin_addr.s_addr), AF_INET);
-  if (hostp == NULL) { 
+  if (hostp == NULL) {
     numthreads--;
-    server_error("ERROR on gethostbyaddr", connfd); 
+    server_error("ERROR on gethostbyaddr", connfd);
   }
-  
+
   hostaddrp = inet_ntoa(clientaddr.sin_addr);
-  if (hostaddrp == NULL) { 
+  if (hostaddrp == NULL) {
     numthreads--;
-    server_error("ERROR on inet_ntoa\n", connfd); 
+    server_error("ERROR on inet_ntoa\n", connfd);
   }
 
   sprintf(lb, "Server established connection with %s (%s)",
@@ -194,9 +194,9 @@ void *serve_client_thread(void *ptr) {
   /* read: read input string from the client */
   bzero(buf, BUFSIZE);
   n = read(connfd, buf, BUFSIZE);
-  if (n < 0) { 
+  if (n < 0) {
     numthreads--;
-    server_error("ERROR reading from socket", connfd); 
+    server_error("ERROR reading from socket", connfd);
   }
   
   sprintf(lb, "Server received %d Bytes", n);
@@ -219,11 +219,11 @@ void *serve_client_thread(void *ptr) {
   }
 
   int flag_be = 0;
-  int flag_fe = 0; 
+  int flag_fe = 0;
 
-  /* TODO 
+  /* TODO
    * - implement peer_add_response
-   * - flag responses for peer add, view, and rate requests 
+   * - flag responses for peer add, view, and rate requests
    */
   if(rqt == RQT_P_ADD) {
     /* back-end: Peer add request */
@@ -251,7 +251,7 @@ void *serve_client_thread(void *ptr) {
   
   sprintf(lb, "Connection with {Client %d} closed.", tid);
   log_thr(lb, ct->num, tid);
-  
+
   /* decrement num threads and return */
   numthreads--;
   return NULL;

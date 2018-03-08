@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <netdb.h>
-#include <sys/types.h> 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -46,7 +46,7 @@ typedef struct Node_Directory {
 /* Packet Size Constants (bytes) */
 #define P_HDR_SIZE 16
 #define MAX_DATA_SIZE 65519
-#define MAX_PACKET_SIZE 65535 
+#define MAX_PACKET_SIZE 65535
 
 
 /* Packet type (creation) flags */
@@ -62,12 +62,12 @@ typedef struct Node_Directory {
 /* TODO add FIN implimentation */
 
 /*	possible future flag(s):
-#define PKT_FLAG_FRAG 
+#define PKT_FLAG_FRAG
 */
 
 /*
- *  Masks for flag in packet header 
- *          
+ *  Masks for flag in packet header
+ *
  *  flag = |  DATA  | SYN-ACK |  SYN  | ACK  |
  */
 #define PKT_CORRUPT_MASK  0x0001    /* CORRUPT mask */
@@ -83,7 +83,7 @@ typedef struct Node_Directory {
 typedef struct Packet_Header {
   uint16_t source_port;		/* source port 	- 2 bytes */
   uint16_t dest_port;			/* dest port 	- 2 bytes */
-  
+
   uint16_t length;			/* length		- 2 bytes */
   uint16_t checksum;			/* checksum		- 2 bytes */
 
@@ -125,7 +125,7 @@ void* recieve_pkt(void* ptr);
 
 /*
  *  serve_content
- *		- function to 
+ *		- function to
  *
  *
  */
@@ -171,7 +171,7 @@ Node* create_node(char* path, char* name, int port, int rate);
 int check_node_content(Node* pn, char* filename);
 
 
-/*  
+/*
  *  create_node_dir
  *		- allocates memory for and returns pointer to Node Directory
  *			with 0 initial Nodes
@@ -190,7 +190,7 @@ Node_Dir* create_node_dir(int max);
 
 
 
-/*  
+/*
  *  add_node
  *		- adds node to node directory, given directory is not full
  *
@@ -201,16 +201,16 @@ Node_Dir* create_node_dir(int max);
 int add_node(Node_Dir* nd, Node* node);
 
 
-/*  
- *  create_packet 
+/*
+ *  create_packet
  *		- creates packet struct to be sent/received by nodes
- *  
+ *
  *  ~param: flag
  *		= 1 (PKT_FLAG_DATA) 	--> creates data packet
  *		= 2 (PKT_FLAG_ACK)  	--> creates ack (received) packet
  *		= 3 (PKT_FLAG_SYN) 		--> creates syn (request) packet
  *		= 4 (PKT_FLAG_SYN_ACK)  --> creates syn-ack (request accepted) packet
- *										
+ *
  *	~return values:
  *		- returns packet with correct content on success
  *		- returns NULL pointer on fail
@@ -222,7 +222,7 @@ Pkt_t* create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
 
 /*  TODO  --  CHECK
  *
- *  discard_packet 
+ *  discard_packet
  *		- discards packet by freeing memory
  *
  *	~notes:
@@ -232,8 +232,8 @@ Pkt_t* create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
 void discard_packet(Pkt_t *packet);
 
 
-/*  
- *  calc_checksum 
+/*
+ *  calc_checksum
  *		- calculates checksum value of a packet header struct
  *		- does this independently of header's checksum value
  *
@@ -255,7 +255,7 @@ void discard_packet(Pkt_t *packet);
 uint16_t calc_checksum(P_Hdr* hdr);
 
 
-/*  
+/*
  *  parse_packet
  *		- creates packet struct by parsing input buffer
  *
@@ -273,7 +273,7 @@ uint16_t calc_checksum(P_Hdr* hdr);
 Pkt_t* parse_packet (char* buf);
 
 
-/*  
+/*
  *  writeable_packet
  *		- takes packet and creates char array filled copy with packet byte data
  *
@@ -282,7 +282,7 @@ Pkt_t* parse_packet (char* buf);
 char* writeable_packet(Pkt_t* packet);
 
 
-/*  
+/*
  *  get_packet_type
  *		- takes packet and returns (expected) defined type
  *		- checks header's syn and ack flags
@@ -301,10 +301,10 @@ int get_packet_type (Pkt_t* packet);
 
 
 
-/*  
+/*
  *  check_content
  *		- takes Node Directory and filename and attempts to find content
- *		
+ *
  *
  *	~return values:
  *		- returns pointer to node that should have content
@@ -317,7 +317,7 @@ Node* check_content(Node_Dir* dir, char* filename);
 
 
 /*  TODO  --  CHECK
- *  
+ *
  *  sync_node
  *		- attempts to initiate connection with node and receive acknowledgement
  *
@@ -327,15 +327,15 @@ Node* check_content(Node_Dir* dir, char* filename);
  *			-- buffer should have info on failure in this case
  *
  *	~front-end interaction:
- *		- front-end should parse returned buffer 
+ *		- front-end should parse returned buffer
  *		- will parse info for headers on successful sync
- *		
+ *
  */
-char* sync_node(Node* node, uint16_t s_port, int sockfd, 
-	struct sockaddr_in serveraddr);
+char* sync_node(Node* node, uint16_t s_port, int sockfd,
+	struct sockaddr_in *serveraddr);
 
 /*  TODO  --  CHECK
- *  
+ *
  *  request_content
  *    - attempts to request content from synced node
  *
@@ -347,14 +347,14 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd,
  *  ~front-end interaction:
  *    - front-end should use returned buffer for HTTP response
  *    - will parse info for headers on successful sync
- *    
+ *
  */
-char* request_content(Node* node, uint16_t s_port, int sockfd, 
+char* request_content(Node* node, uint16_t s_port, int sockfd,
   struct sockaddr_in serveraddr, uint32_t seq_ack_num);
 
 /*  TODO
  *  add_response_be
- */ 
+ */
 int peer_add_response(int connfd, char* BUF, struct thread_data *ct, Node_Dir* node_dir);
 
 /*  TODO
