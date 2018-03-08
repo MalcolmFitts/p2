@@ -98,7 +98,6 @@ int main(int argc, char **argv) {
   /* allocating memory for data for thread */
   Recv_t* ptr = malloc(sizeof(Recv_t));
   ptr->sockfd = listenfd_be;
-  ptr->serveraddr = *serveraddr_be;
 
   /* spin-off thread for listening on back-end port and serving content */
   pthread_t tid_be;
