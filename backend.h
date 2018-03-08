@@ -103,7 +103,6 @@ typedef struct Packet {
 /* Struct for threaded function for receiving packets */
 typedef struct Receive_Struct {
   int sockfd;
-  struct sockaddr_in serveraddr;
 } Recv_t;
 
 struct thread_data {
@@ -331,8 +330,8 @@ Node* check_content(Node_Dir* dir, char* filename);
  *		- will parse info for headers on successful sync
  *
  */
-char* sync_node(Node* node, uint16_t s_port, int sockfd,
-	struct sockaddr_in *serveraddr);
+ char* sync_node(Node* node, uint16_t s_port, int sockfd,
+   struct sockaddr_in serveraddr);
 
 /*  TODO  --  CHECK
  *
@@ -368,7 +367,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
 int peer_rate_response(int connfd, char* BUF, struct thread_data *ct);
 
 
-
+struct sockaddr_in get_sockaddr_in(unsigned int ip, short port);
 /* filler end line */
 
 

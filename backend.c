@@ -11,11 +11,11 @@ void* recieve_pkt(void* ptr) {
   Recv_t* rec = ptr;
 
   int sockfd = rec->sockfd;
-  struct sockaddr_in* serveraddr = NULL;
+  struct sockaddr_in* sender_addr = NULL;
+  socklen_t addr_len = 10;
 
   char p_buf[MAX_PACKET_SIZE] = {0};
   // char* content_path = node->content_path;
-  socklen_t serverlen;
   int n_sent;
   int n_recv;
 
@@ -23,11 +23,10 @@ void* recieve_pkt(void* ptr) {
 
 
   while(1) {
-    serverlen = sizeof(*serveraddr);
     printf("Waiting for Packet\n");
     /* receiving packet and writing into p_buf */
     n_recv = recvfrom(sockfd, p_buf, MAX_PACKET_SIZE, 0,
-		      (struct sockaddr *) serveraddr, &serverlen);
+		      (struct sockaddr *) sender_addr, &addr_len);
 
     printf("Recieved Packet!\n");
 
@@ -46,7 +45,7 @@ void* recieve_pkt(void* ptr) {
     }
 
     else{
-      n_sent = serve_content(recv_pkt, sockfd, serveraddr, type);
+      n_sent = serve_content(recv_pkt, sockfd, sender_addr, type);
 
       if(n_sent < 0){
 	       /* TODO error on send */
@@ -468,7 +467,7 @@ Node* check_content(Node_Dir* dir, char* filename) {
 }
 
 char* sync_node(Node* node, uint16_t s_port, int sockfd,
-  struct sockaddr_in* serveraddr) {
+  struct sockaddr_in serveraddr) {
   /* init local vars */
   char p_buf[MAX_PACKET_SIZE] = {0};
   char buf[MAX_DATA_SIZE] = {0};
@@ -487,7 +486,7 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd,
   /* sending SYN packet */
   serverlen = sizeof(serveraddr);
   n_sent = sendto(sockfd, pack_write, strlen(pack_write), 0,
-    (const struct sockaddr*) serveraddr, serverlen);
+    (struct sockaddr*) &serveraddr, sizeof(serveraddr));
 
   if(n_sent < 0) {
     /* TODO buffer info: "send SYN fail" */
@@ -690,12 +689,12 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
 
   bzero(buf, BUFSIZE);
 
-  struct sockaddr_in *peeraddr = malloc(sizeof(struct sockaddr_in));
-  peeraddr->sin_family = AF_INET;
-  peeraddr->sin_addr.s_addr = parse_str_2_int(node->ip_hostname);
-  peeraddr->sin_port = htonl(node->port);
+  unsigned int peer_ip = (unsigned int) parse_str_2_int(node->ip_hostname);
+  short peer_port = (short) node->port;
+
   /* TODO - format return value in sync_node */
   /* initializing connection with node that should have requested content */
+  struct sockaddr_in peeraddr = get_sockaddr_in(peer_ip, peer_port);
   char* b = sync_node(node, ct->port_be, ct->listenfd_be, peeraddr);
 
   /* TODO check if fails */
@@ -745,3 +744,11 @@ int peer_rate_response(int connfd, char* BUF, struct thread_data *ct){
 }
 
 /* filler end line */
+
+struct sockaddr_in get_sockaddr_in(unsigned int ip, short port){
+  struct sockaddr_in addr;
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = ip;
+  addr.sin_port = htons(port);
+  return addr;
+}
