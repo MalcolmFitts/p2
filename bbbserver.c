@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
   /* back-end (node) vars */
   int listenfd_be;                  /* listening socket */
   int portno_be;                    /* back-end port to use */
-  struct sockaddr_in *serveraddr_be = malloc(sizeof(struct sockaddr_in)); /* server's back-end addr */
+  //struct sockaddr_in *serveraddr_be = malloc(sizeof(struct sockaddr_in)); /* server's back-end addr */
 
   /* client vars */
   unsigned int clientlen;           /* byte size of client's address */
@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
 
   /* initialize front-end and back-end data */
   listenfd_fe = init_frontend(serveraddr_fe, portno_fe);
-  listenfd_be = init_backend(serveraddr_be, portno_be);
+  listenfd_be = init_backend(portno_be);
 
   /* create node directory */
   node_dir = create_node_dir(MAX_NODES);

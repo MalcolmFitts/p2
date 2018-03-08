@@ -99,7 +99,7 @@ int serve_content(Pkt_t* packet, int sockfd, struct sockaddr_in* serveraddr, int
   return n_set;
 }
 
-int init_backend(struct sockaddr_in* serveraddr_be, int port_be){
+int init_backend(int port_be){
   int listenfd_be;
   int optval_be;
 
@@ -118,13 +118,14 @@ int init_backend(struct sockaddr_in* serveraddr_be, int port_be){
     (const void *)&optval_be, sizeof(int));
 
   /* build the server's back end internet address */
-  bzero((char *) serveraddr_be, sizeof(*serveraddr_be));
-  serveraddr_be->sin_family = AF_INET; /* we are using the Internet */
-  serveraddr_be->sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
-  serveraddr_be->sin_port = htons((unsigned short)port_be); /* port to listen on */
+  struct sockaddr_in self_addr = NULL;
+  self_addr.sin_family = AF_INET; /* we are using the Internet */
+  self_addr.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
+  self_addr.sin_port = htons((short)port_be); /* port to listen on */
+
 
   /* bind: associate the listening socket with a port */
-  if (bind(listenfd_be, (struct sockaddr *) serveraddr_be, sizeof(*serveraddr_be)) < 0)
+  if (bind(listenfd_be, (struct sockaddr *) &self_addr, sizeof(self_addr) < 0)
     error("ERROR on binding back-end socket with port");
 
   return listenfd_be;
@@ -483,11 +484,13 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd,
   /* creating writeable version of packet */
   char* pack_write = writeable_packet(syn_packet);
 
+  printf("Sending packet!\n");
   /* sending SYN packet */
   serverlen = sizeof(serveraddr);
   n_sent = sendto(sockfd, pack_write, strlen(pack_write), 0,
     (struct sockaddr*) &serveraddr, sizeof(serveraddr));
 
+  printf("Packet sent!\n");
   if(n_sent < 0) {
     /* TODO buffer info: "send SYN fail" */
   }
