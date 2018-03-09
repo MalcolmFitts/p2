@@ -3,8 +3,6 @@ ARGS = -Wall -O2 -I .
 
 all: clean sl pa pkt dw be fe bbbserver
 
-t: clean sl pa pkt dw be fe test
-
 sl: serverlog.c serverlog.h
 	$(CC) $(ARGS) -o sllib.o -c serverlog.c
 
@@ -26,8 +24,5 @@ fe: frontend.c frontend.h
 bbbserver: bbbserver.c datawriter.h parser.h packet.h serverlog.h backend.h frontend.h
 	$(CC) $(ARGS) -o bbbserver bbbserver.c dwlib.o palib.o pktlib.o sllib.o belib.o felib.o
 
-test: test.c datawriter.h parser.h packet.h serverlog.h backend.h frontend.h
-	$(CC) $(ARGS) -o test test.c dwlib.o palib.o pktlib.o sllib.o belib.o felib.o
-
 clean:
-	rm -f *.o bbbserver test palib.o dwlib.o pktlib.o sllib.o belib.o felib.o *~
+	rm -f *.o bbbserver palib.o dwlib.o pktlib.o sllib.o belib.o felib.o *~
