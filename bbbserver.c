@@ -225,6 +225,9 @@ void *serve_client_thread(void *ptr) {
       break;
   }
 
+  printf("Front-end flag value: %d\n", flag_fe);
+  printf("Back-end flag value: %d\n", flag_be);
+
   /* closing client connection and freeing struct */
   close(connfd);
   free(ct);
