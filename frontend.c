@@ -34,6 +34,8 @@ int init_frontend(short port_fe){
   if (listen(sockfd_fe, 10) < 0) /* allow 10 requests to queue up */
     error("ERROR on listen");
 
+  printf("{front} address: %d\n", self_addr.sin_addr.s_addr);
+
   return sockfd_fe;
 }
 
