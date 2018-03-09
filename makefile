@@ -1,5 +1,5 @@
 CC = gcc
-ARGS = -Wall -O2 -I .
+ARGS = -pthread -Wall -O2 -I .
 
 all: clean sl pa pkt dw be fe bbbserver
 
