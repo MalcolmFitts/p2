@@ -99,7 +99,9 @@ int main(int argc, char **argv) {
   /* spin-off thread for listening on back-end port and serving content */
   pthread_t tid_be;
   pthread_create(&(tid_be), NULL, recieve_pkt, sock_ptr);
-  pthread_detach(tid_be);
+  
+  /* CHECK - not detaching threads */
+  //pthread_detach(tid_be);
 
   /* initializing some local vars */
   clientlen = sizeof(clientaddr);
@@ -131,6 +133,7 @@ int main(int argc, char **argv) {
 
     /* spin off thread */
     pthread_create(&(tid), NULL, serve_client_thread, ct);
+
     ctr++;
   }
 }
@@ -152,7 +155,8 @@ void *serve_client_thread(void *ptr) {
   char bufcopy[BUFSIZE];          /* copy of message buffer */
   int n;                          /* message byte size */
 
-  pthread_detach(pthread_self());
+  /* CHECK - not detaching threads */
+  //pthread_detach(pthread_self());
 
   /* gethostbyaddr: determine who sent the message */
   hostp = gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr,
