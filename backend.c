@@ -118,15 +118,16 @@ int init_backend(int port_be){
     (const void *)&optval_be, sizeof(int));
 
   /* build the server's back end internet address */
-  struct sockaddr_in self_addr = NULL;
+  struct sockaddr_in self_addr;
   self_addr.sin_family = AF_INET; /* we are using the Internet */
   self_addr.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
   self_addr.sin_port = htons((short)port_be); /* port to listen on */
 
 
   /* bind: associate the listening socket with a port */
-  if (bind(listenfd_be, (struct sockaddr *) &self_addr, sizeof(self_addr) < 0)
+  if (bind(listenfd_be, (struct sockaddr *) &self_addr, sizeof(self_addr)) < 0){
     error("ERROR on binding back-end socket with port");
+    }
 
   return listenfd_be;
 }
