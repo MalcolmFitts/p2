@@ -58,7 +58,6 @@
 void *serve_client_thread(void *ptr);
 
 /* Global Variable(s): */
-Node_Dir* node_dir;           /* Directory for node referencing   */
 char lb[MAX_PRINT_LEN];       /* buffer for logging               */
 int numthreads;               /* number of current threads        */
 /* -- TODO/CHECK might want to distinguish front-end and back-end threads */
@@ -76,6 +75,8 @@ int main(int argc, char **argv) {
   /* client vars */
   struct sockaddr_in clientaddr;               /* client's addr */
   unsigned int clientlen = sizeof(clientaddr); /* size of client's address */
+
+  Node_Dir* node_dir;           /* Directory for node referencing   */
 
   /* check command line args */
   if (argc != 2) {
@@ -104,7 +105,6 @@ int main(int argc, char **argv) {
   //pthread_detach(tid_be);
 
   /* initializing some local vars */
-  clientlen = sizeof(clientaddr);
   numthreads = 1;
   int ctr = 1;
 
@@ -130,6 +130,7 @@ int main(int argc, char **argv) {
     ct->num = ctr;
     ct->listenfd_be = sockfd_be;
     ct->port_be = port_be;
+    ct->node_dir = node_dir;
 
     /* spin off thread */
     pthread_create(&(tid), NULL, serve_client_thread, ct);
@@ -147,6 +148,7 @@ void *serve_client_thread(void *ptr) {
   struct sockaddr_in clientaddr = ct->c_addr;
   int connfd = ct->connfd;
   int tid = ct->tid;
+  Node_Dir* node_dir = ct->node_dir;
 
   /* defining local vars */
   struct hostent *hostp;          /* client host info */
@@ -225,17 +227,25 @@ void *serve_client_thread(void *ptr) {
       break;
   }
 
-  printf("Front-end flag value: %d\n", flag_fe);
-  printf("Back-end flag value: %d\n", flag_be);
+  if(flag_fe) {
+    printf("Front-end Request handled.\n");
+  }
+  else if(flag_be) {
+    printf("Back-end Request handled.\n");
+  }
+  else{
+    numthreads--;
+    error("ERROR Unknown Request Type.\n");
+  }
 
   /* closing client connection and freeing struct */
-  close(connfd);
-  free(ct);
+  //close(connfd);
+  //free(ct);
 
-  sprintf(lb, "Connection with {Client %d} closed.", tid);
+  sprintf(lb, "{Client %d} request served.", tid);
   log_thr(lb, ct->num, tid);
 
   /* decrement num threads and return */
-  numthreads--;
-  return NULL;
+  //numthreads--;
+  return serve_client_thread(ct);
 }

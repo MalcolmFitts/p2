@@ -388,6 +388,10 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
 
   printf("created & added node successfully. \n");
 
+  /* CHECK - debug printing */
+  printf("Node hostname: %s\nNode port: %d\n", n->hostname, n->port);
+  printf("Node content: %s\nNode rate: %d\n", n->content_path, n->content_rate);
+
   /* 200 Code  --> Success!
    * TODO      --> flag (return) val: success */
   write_status_header(connfd, SC_OK, ST_OK);
