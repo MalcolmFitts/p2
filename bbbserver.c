@@ -58,6 +58,7 @@
 void *serve_client_thread(void *ptr);
 
 /* Global Variable(s): */
+Node_Dir* node_dir;           /* Directory for node referencing   */
 char lb[MAX_PRINT_LEN];       /* buffer for logging               */
 int numthreads;               /* number of current threads        */
 /* -- TODO/CHECK might want to distinguish front-end and back-end threads */
@@ -76,7 +77,7 @@ int main(int argc, char **argv) {
   struct sockaddr_in clientaddr;               /* client's addr */
   unsigned int clientlen = sizeof(clientaddr); /* size of client's address */
 
-  Node_Dir* node_dir;           /* Directory for node referencing   */
+  
 
   /* check command line args */
   if (argc != 2) {
@@ -92,7 +93,7 @@ int main(int argc, char **argv) {
   struct sockaddr_in* self_addr_be;     /* server's back-end address   */
   self_addr_fe = malloc(sizeof(struct sockaddr_in));
   self_addr_be = malloc(sizeof(struct sockaddr_in));
-  
+
   sockfd_fe = init_frontend(port_fe, self_addr_fe);
   sockfd_be = init_backend(port_be, self_addr_be);
 

@@ -205,7 +205,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
 int peer_rate_response(int connfd, char* BUF, struct thread_data *ct);
 
 
-struct sockaddr_in get_sockaddr_in(unsigned int ip, short port);
+struct sockaddr_in get_sockaddr_in(char* hostname, short port);
 /* filler end line */
 
 

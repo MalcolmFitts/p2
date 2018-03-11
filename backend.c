@@ -240,9 +240,9 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd) {
   int n_recv;
   uint16_t d_port = node->port;
 
-  unsigned int peer_ip = (unsigned int) parse_str_2_int(node->ip_hostname);
+  //unsigned int peer_ip = (unsigned int) parse_str_2_int(node->ip_hostname);
   short peer_port = (short) node->port;
-  struct sockaddr_in peer_addr = get_sockaddr_in(peer_ip, peer_port);
+  struct sockaddr_in peer_addr = get_sockaddr_in(node->ip_hostname, peer_port);
   socklen_t peer_addr_len = sizeof(peer_addr);
 
   Pkt_t syn_packet;
@@ -263,7 +263,6 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd) {
   }
 
   /* receive SYN-ACK packet */
-
   n_recv = recvfrom(sockfd, &syn_ack_packet, sizeof(syn_ack_packet), 0,
                    (struct sockaddr *) &peer_addr, &peer_addr_len);
 
@@ -294,8 +293,10 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
   char buf[MAX_DATA_SIZE] = {0};
   int n_sent;
   int n_recv;
-  int d_host = parse_str_2_int(node->ip_hostname);
+  /* CHECK - maybe this is parsed wrong */
+  //int d_host = parse_str_2_int(node->ip_hostname);
   short d_port = node->port;
+  
   Pkt_t data_pkt;
   Pkt_t ack_pkt;
 
@@ -304,7 +305,7 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
     node->content_path, PKT_FLAG_ACK);
 
   /* creating sockaddr for peer node */
-  struct sockaddr_in peer_addr = get_sockaddr_in(d_host, d_port);
+  struct sockaddr_in peer_addr = get_sockaddr_in(node->ip_hostname, d_port);
   socklen_t peer_addr_len = sizeof(peer_addr);
 
   /* sending ACK to peer node */
@@ -461,6 +462,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   /* TODO check if fails */
 
   printf("synced node!\n");
+  printf("received syn-ack buffer:\n%s\n", b);
 
   /* TODO - will need to parse this differently once chanced sync_node {658} */
   len = parse_str_2_int(b);
@@ -469,7 +471,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   write_content_length_header(connfd, len);
   write_content_type_header(connfd, file_type);
 
-  printf("wrote headers!\n");
+  printf("wrote headers to client!\n");
 
   bzero(buf, BUFSIZE);
   /* CHECK will not be full len after CP */
@@ -507,10 +509,23 @@ int peer_rate_response(int connfd, char* BUF, struct thread_data *ct){
 
 /* filler end line */
 
-struct sockaddr_in get_sockaddr_in(unsigned int ip, short port){
+struct sockaddr_in get_sockaddr_in(char* hostname, short port){
+  struct hostent *server;
   struct sockaddr_in addr;
+
+  /* resolve host */
+  server = gethostbyname(hostname);
+  if (!server) {
+    printf("ERROR, no such host as %s\n", hostname);
+    exit(0);
+  }
+  
+  /* build node's address */
+  bzero((char *) &addr, sizeof(addr));
   addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = ip;
+  bcopy((char *)server->h_addr, (char *)&addr.sin_addr.s_addr, 
+    server->h_length);
   addr.sin_port = htons(port);
+
   return addr;
 }
