@@ -17,7 +17,7 @@ void* recieve_pkt(void* ptr) {
   int sent_status;
   int recv_status;
 
-  printf("%d\n", sockfd);
+  //printf("%d\n", sockfd);
 
   while(1) {
     printf("Waiting for Packet\n");
@@ -35,7 +35,7 @@ void* recieve_pkt(void* ptr) {
 
     /* CHECK accepted types (SYN and ACK)*/
     /* TODO add FIN implimentation */
-    if (type == PKT_FLAG_UNKNOWN || type == PKT_FLAG_CORRUPT){
+    if (type == PKT_FLAG_UNKNOWN || type == PKT_FLAG_CORRUPT) {
       /* TODO corrupted packet */
     }
 
@@ -50,7 +50,8 @@ void* recieve_pkt(void* ptr) {
 }
 
 int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
-                  int flag){
+                  int flag) {
+
   /* parsing data from packet */
   P_Hdr hdr = packet.header;
 
@@ -90,7 +91,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
   return n_set;
 }
 
-int init_backend(short port_be){
+int init_backend(short port_be) {
   int sockfd_be;
   int optval_be = 1;
 
@@ -108,6 +109,10 @@ int init_backend(short port_be){
 
   /* build the server's back end internet address */
   struct sockaddr_in self_addr;
+
+  /* CHECK - was not zeroing memory */
+  bzero((char *) &self_addr, sizeof(self_addr));
+
   self_addr.sin_family = AF_INET; /* we are using the Internet */
   self_addr.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
   self_addr.sin_port = htons(port_be); /* port to listen on */
@@ -116,6 +121,19 @@ int init_backend(short port_be){
   /* bind: associate the listening socket with a port */
   if (bind(sockfd_be, (struct sockaddr *) &self_addr, sizeof(self_addr)) < 0)
     error("ERROR on binding back-end socket with port");
+
+  // /* CHECK - debugging - debugging - debugging - debugging */
+  // struct hostent *hostp; /* client host info */
+  // char *hostaddrp;
+  // printf("shits bad.\n");
+  // hostp = gethostbyaddr((const char *)&self_addr.sin_addr.s_addr, 
+  //       sizeof(self_addr.sin_addr.s_addr), AF_INET);
+  // hostaddrp = inet_ntoa(self_addr.sin_addr);
+  // printf("{be} Server address %s (%s)\n", 
+  //    hostp->h_name, hostaddrp);
+  // /* CHECK - debugging - debugging - debugging - debugging */
+
+  // printf("not that bad\n");
 
   return sockfd_be;
 }

@@ -18,8 +18,12 @@ int init_frontend(short port_fe){
   setsockopt(sockfd_fe, SOL_SOCKET, SO_REUSEADDR,
 	     (const void *)&optval_fe, sizeof(int));
 
-  /* build the server's back end internet address */
+  /* build the server's front end internet address */
   struct sockaddr_in self_addr;
+
+  /* CHECK - was not zeroing memory */
+  bzero((char *) &self_addr, sizeof(self_addr));
+  
   self_addr.sin_family = AF_INET; /* we are using the Internet */
   self_addr.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
   self_addr.sin_port = htons(port_fe); /* port to listen on */

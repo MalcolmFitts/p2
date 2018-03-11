@@ -70,24 +70,25 @@ not impl. yet lol\
 \b\fs36 \'97extra (p2)\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97
 \b0\fs24 \
 \
-host:\
-	ece0: 172.19.137.178:9001\
-	(fe: 9001   //   be: 9002)\
-client:\
-	ece1: 172.19.138.179:9009\
+slave:\
+	ece0: 172.19.137.178:9009\
 	(fe: 9009   //   be: 9010)\
 \
+\
+\
 add:\
-http://172.19.137.178:9001/peer/add?path=content/texts/text1.txt&host=172.19.138.179&port=9010&rate=1600\
+http://localhost:9001/peer/add?path=content/texts/text1.txt&host=172.19.138.178&port=9010&rate=1600\
 \
 vew:\
-http://172.19.137.179:9001/peer/view/content/texts/text1.txt\
+http://localhost:9001/peer/view/content/texts/text1.txt\
 \
 \
 \
 \
 \
-\
+slave 2:\
+	ece1: 172.19.138.179:8787\
+	(fe: 8787   //   be: 8788)\
 \
 \
 \
