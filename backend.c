@@ -91,7 +91,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
   return n_set;
 }
 
-int init_backend(short port_be) {
+int init_backend(short port_be, struct sockaddr_in* self_addr) {
   int sockfd_be;
   int optval_be = 1;
 
@@ -108,18 +108,18 @@ int init_backend(short port_be) {
     (const void *)&optval_be, sizeof(int));
 
   /* build the server's back end internet address */
-  struct sockaddr_in self_addr;
+  //struct sockaddr_in self_addr;
 
   /* CHECK - was not zeroing memory */
-  bzero((char *) &self_addr, sizeof(self_addr));
+  //bzero((char *) &self_addr, sizeof(self_addr));
 
-  self_addr.sin_family = AF_INET; /* we are using the Internet */
-  self_addr.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
-  self_addr.sin_port = htons(port_be); /* port to listen on */
+  self_addr->sin_family = AF_INET; /* we are using the Internet */
+  self_addr->sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
+  self_addr->sin_port = htons(port_be); /* port to listen on */
 
 
   /* bind: associate the listening socket with a port */
-  if (bind(sockfd_be, (struct sockaddr *) &self_addr, sizeof(self_addr)) < 0)
+  if (bind(sockfd_be, (struct sockaddr *) self_addr, sizeof(*self_addr)) < 0)
     error("ERROR on binding back-end socket with port");
 
   // /* CHECK - debugging - debugging - debugging - debugging */

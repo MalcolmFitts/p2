@@ -77,7 +77,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
  *		- initalizes the backend port for the server node
  *
  */
-int init_backend(short port_be);
+int init_backend(short port_be, struct sockaddr_in* self_addr);
 
 /*
  *  create_node

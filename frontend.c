@@ -1,7 +1,7 @@
 
 #include "frontend.h"
 
-int init_frontend(short port_fe){
+int init_frontend(short port_fe, struct sockaddr_in* self_addr){
   int optval_fe = 1;
   int sockfd_fe;
 
@@ -19,17 +19,15 @@ int init_frontend(short port_fe){
 	     (const void *)&optval_fe, sizeof(int));
 
   /* build the server's front end internet address */
-  struct sockaddr_in self_addr;
+  //struct sockaddr_in self_addr;
 
   /* CHECK - was not zeroing memory */
-  bzero((char *) &self_addr, sizeof(self_addr));
-  
-  self_addr.sin_family = AF_INET; /* we are using the Internet */
-  self_addr.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
-  self_addr.sin_port = htons(port_fe); /* port to listen on */
+  self_addr->sin_family = AF_INET; /* we are using the Internet */
+  self_addr->sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
+  self_addr->sin_port = htons(port_fe); /* port to listen on */
 
   /* bind: associate the listening socket with a port */
-  if (bind(sockfd_fe, (struct sockaddr *) &self_addr, sizeof(self_addr)) < 0)
+  if (bind(sockfd_fe, (struct sockaddr *) self_addr, sizeof(*self_addr)) < 0)
     error("ERROR on binding front-end socket with port");
 
   /* listen: make it a listening socket ready to accept connection requests
@@ -37,8 +35,6 @@ int init_frontend(short port_fe){
    */
   if (listen(sockfd_fe, 10) < 0) /* allow 10 requests to queue up */
     error("ERROR on listen");
-
-  printf("{front} address: %d\n", self_addr.sin_addr.s_addr);
 
   return sockfd_fe;
 }

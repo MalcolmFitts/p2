@@ -88,16 +88,19 @@ int main(int argc, char **argv) {
   port_be =  port_fe + 1;
 
   /* initialize front-end and back-end data */
-  sockfd_fe = init_frontend(port_fe);
-  sockfd_be = init_backend(port_be);
+  struct sockaddr_in* self_addr_fe;     /* server's front-end address  */
+  struct sockaddr_in* self_addr_be;     /* server's back-end address   */
+  self_addr_fe = malloc(sizeof(struct sockaddr_in));
+  self_addr_be = malloc(sizeof(struct sockaddr_in));
+  
+  sockfd_fe = init_frontend(port_fe, self_addr_fe);
+  sockfd_be = init_backend(port_be, self_addr_be);
 
   /* create node directory */
   node_dir = create_node_dir(MAX_NODES);
 
-  /* allocating memory for data for thread */
-  int* sock_ptr = &sockfd_be;
-
   /* spin-off thread for listening on back-end port and serving content */
+  int* sock_ptr = &sockfd_be;
   pthread_t tid_be;
   pthread_create(&(tid_be), NULL, recieve_pkt, sock_ptr);
   
@@ -246,6 +249,6 @@ void *serve_client_thread(void *ptr) {
   log_thr(lb, ct->num, tid);
 
   /* decrement num threads and return */
-  //numthreads--;
-  return serve_client_thread(ct);
+  numthreads--;
+  return NULL;
 }
