@@ -29,11 +29,11 @@
 
 /* Peer Node struct */
 typedef struct Peer_Node {
-	struct sockaddr_in node_addr; /* node's address */
 	int content_rate;	  /* avg content bit rate (kbps) 	  */
 	short port;		  	  /* back-end port num 				  */
 	char* content_path;   /* filepath to content in peer node */
 	char* ip_hostname;	  /* ip/hostname of peer node 		  */
+	struct sockaddr_in node_addr; /* node's address */
 } Node;
 
 

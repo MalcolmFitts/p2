@@ -88,6 +88,8 @@ int main(int argc, char **argv) {
   port_fe = atoi(argv[1]);
   port_be =  port_fe + 1;
 
+  printf("front-end port: %d\nback-end port: %d\n", port_fe, port_be);
+
   /* initialize front-end and back-end data */
   struct sockaddr_in* self_addr_fe;     /* server's front-end address  */
   struct sockaddr_in* self_addr_be;     /* server's back-end address   */
@@ -134,7 +136,6 @@ int main(int argc, char **argv) {
     ct->num = ctr;
     ct->listenfd_be = sockfd_be;
     ct->port_be = port_be;
-    ct->node_dir = node_dir;
 
     /* spin off thread */
     pthread_create(&(tid), NULL, serve_client_thread, ct);
@@ -152,7 +153,6 @@ void *serve_client_thread(void *ptr) {
   struct sockaddr_in clientaddr = ct->c_addr;
   int connfd = ct->connfd;
   int tid = ct->tid;
-  Node_Dir* node_dir = ct->node_dir;
 
   /* defining local vars */
   struct hostent *hostp;          /* client host info */

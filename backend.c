@@ -114,55 +114,24 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
   //bzero((char *) &self_addr, sizeof(self_addr));
 
   self_addr->sin_family = AF_INET; /* we are using the Internet */
-  self_addr->sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
-  self_addr->sin_port = htons(port_be); /* port to listen on */
+  (self_addr->sin_addr).s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
+  self_addr->sin_port = htons((unsigned short) port_be); /* port to listen on */
 
 
   /* bind: associate the listening socket with a port */
   if (bind(sockfd_be, (struct sockaddr *) self_addr, sizeof(*self_addr)) < 0)
     error("ERROR on binding back-end socket with port");
 
-  // /* CHECK - debugging - debugging - debugging - debugging */
-  // struct hostent *hostp; /* client host info */
-  // char *hostaddrp;
-  // printf("shits bad.\n");
-  // hostp = gethostbyaddr((const char *)&self_addr.sin_addr.s_addr, 
-  //       sizeof(self_addr.sin_addr.s_addr), AF_INET);
-  // hostaddrp = inet_ntoa(self_addr.sin_addr);
-  // printf("{be} Server address %s (%s)\n", 
-  //    hostp->h_name, hostaddrp);
-  // /* CHECK - debugging - debugging - debugging - debugging */
-
-  // printf("not that bad\n");
 
   return sockfd_be;
 }
 
 
-// struct sockaddr_in get_sockaddr_in(char* hostname, short port){
-//   struct hostent *server;
-//   struct sockaddr_in addr;
-
-//   /* resolve host */
-//   server = gethostbyname(hostname);
-//   if (!server) {
-//     printf("ERROR, no such host as %s\n", hostname);
-//     exit(0);
-//   }
-  
-//   /* build node's address */
-//   bzero((char *) &addr, sizeof(addr));
-//   addr.sin_family = AF_INET;
-//   bcopy((char *)server->h_addr, (char *)&addr.sin_addr.s_addr, 
-//     server->h_length);
-//   addr.sin_port = htons(port);
-
-//   return addr;
-// }
 
 Node* create_node(char* path, char* name, int port, int rate) {
   /* allocate mem for struct */
-  Node* pn = malloc(sizeof(Node));
+  Node* pn;
+  pn = malloc(sizeof(Node));
 
   /* checking for successful mem allocation */
   if(!pn) return NULL;
@@ -183,10 +152,15 @@ Node* create_node(char* path, char* name, int port, int rate) {
     return NULL;
   }
 
-  pn->node_addr.sin_family = AF_INET;
-  bcopy((char *)node_host->h_addr, 
-    (char *) &(pn->node_addr.sin_addr.s_addr), node_host->h_length);
-  pn->node_addr.sin_port = htons(port);
+  struct sockaddr_in addr;
+  bzero((char *) &addr, sizeof(addr));
+
+  addr.sin_family = AF_INET;
+  bcopy((char *)node_host->h_addr, (char *)&addr.sin_addr.s_addr, 
+    node_host->h_length);
+  addr.sin_port = htons((unsigned short) port);
+
+  pn->node_addr = addr;
 
   return pn;
 }
