@@ -245,6 +245,7 @@ Node* check_content(Node_Dir* dir, char* filename) {
 }
 
 char* sync_node(Node* node, uint16_t s_port, int sockfd) {
+  printf("Made it to sync...\n");
   char buf[BUFSIZE];
   int n_sent;
   int n_recv;
@@ -300,9 +301,8 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd) {
   /* CHECK - not sure i should discard these packets here */
   //discard_packet(syn_packet);
   //discard_packet(syn_ack_packet);
-
-  char* ref = buf;
-  return ref;
+  char* res = buf;
+  return res;
 }
 
 char* request_content(Node* node, uint16_t s_port, int sockfd,
