@@ -471,7 +471,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
 
   printf("Node with content: %s:%d\n", node->ip_hostname, node->port);
 
-  bzero(buf, BUFSIZE);
+  //bzero(buf, BUFSIZE);
 
   /* TODO - format return value in sync_node */
   /* initializing connection with node that should have requested content */
