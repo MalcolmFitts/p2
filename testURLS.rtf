@@ -70,31 +70,48 @@ not impl. yet lol\
 \b\fs36 \'97extra (p2)\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97
 \b0\fs24 \
 \
-slave:\
+info:\
 	linux: 128.2.13.138:9009\
 	(fe: 9009   //   be: 9010)\
 \
+
+\fs28 (localhost as master):
+\fs24 \
 \
-\
-add:\
+    - add:\
 http://localhost:9001/peer/add?path=content/texts/text1.txt&host=128.2.13.138&port=9010&rate=1600\
 \
-vew:\
-http://localhost:9001/peer/view/content/texts/text1.txt\
+    - view:\
+http://l128.2.13.138:9001/peer/view/content/texts/text1.txt\
+\
+\
+
+\fs28 ssh-ed node as master:
+\fs24 \
+\
+    - add:\
+http://128.2.13.138:9001/peer/add?path=content/texts/text1.txt&host=localhost&port=9010&rate=1600\
+\
+\
+http://128.2.13.138:9001/peer/add?path=content/texts/text1.txt&host=128.2.13.145&port=9010&rate=1600\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural
+\cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0     - view:\
+http://128.2.13.138:9001/peer/view/content/texts/text1.txt\
+\
+or\
 \
 \
 \
 \
+\
+\'97 old \'97 \
 \
 slave 2:\
 	ece1: 172.19.138.179:8787\
 	(fe: 8787   //   be: 8788)\
-\
-\
-\
-\
-\
-\
 \
 
 \fs48 \'97eof\'97 \'97eof\'97 \'97eof\'97 \'97eof\'97}

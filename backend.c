@@ -138,6 +138,28 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
   return sockfd_be;
 }
 
+
+// struct sockaddr_in get_sockaddr_in(char* hostname, short port){
+//   struct hostent *server;
+//   struct sockaddr_in addr;
+
+//   /* resolve host */
+//   server = gethostbyname(hostname);
+//   if (!server) {
+//     printf("ERROR, no such host as %s\n", hostname);
+//     exit(0);
+//   }
+  
+//   /* build node's address */
+//   bzero((char *) &addr, sizeof(addr));
+//   addr.sin_family = AF_INET;
+//   bcopy((char *)server->h_addr, (char *)&addr.sin_addr.s_addr, 
+//     server->h_length);
+//   addr.sin_port = htons(port);
+
+//   return addr;
+// }
+
 Node* create_node(char* path, char* name, int port, int rate) {
   /* allocate mem for struct */
   Node* pn = malloc(sizeof(Node));
@@ -152,6 +174,19 @@ Node* create_node(char* path, char* name, int port, int rate) {
   pn->content_path = path;
   pn->ip_hostname = name;
   pn->content_rate = rate;
+
+  /* creating node address */
+  struct hostent* node_host;
+  node_host = gethostbyname(name);
+  if(!node_host) {
+    printf("Error: No Host Found For %s\n", name);
+    return NULL;
+  }
+
+  pn->node_addr.sin_family = AF_INET;
+  bcopy((char *)node_host->h_addr, 
+    (char *) &(pn->node_addr.sin_addr.s_addr), node_host->h_length);
+  pn->node_addr.sin_port = htons(port);
 
   return pn;
 }
@@ -200,6 +235,7 @@ int add_node(Node_Dir* nd, Node* node) {
     (nd->n_array[n]).ip_hostname = node->ip_hostname;
     (nd->n_array[n]).port = node->port;
     (nd->n_array[n]).content_rate = node->content_rate;
+    (nd->n_array[n]).node_addr = node->node_addr;
 
     nd->cur_nodes = n + 1;
     return 1;
@@ -240,9 +276,9 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd) {
   int n_recv;
   uint16_t d_port = node->port;
 
-  //unsigned int peer_ip = (unsigned int) parse_str_2_int(node->ip_hostname);
-  short peer_port = (short) node->port;
-  struct sockaddr_in peer_addr = get_sockaddr_in(node->ip_hostname, peer_port);
+  // unsigned int peer_ip = (unsigned int) parse_str_2_int(node->ip_hostname);
+  // short peer_port = (short) node->port;
+  struct sockaddr_in peer_addr = node->node_addr;
   socklen_t peer_addr_len = sizeof(peer_addr);
 
   Pkt_t syn_packet;
@@ -257,9 +293,12 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd) {
   n_sent = sendto(sockfd, &syn_packet, sizeof(syn_packet), 0,
                  (struct sockaddr*) &peer_addr, peer_addr_len);
 
-  printf("Packet sent!\n");
+  printf("Packet sent!\nBytes sent: %d\n", n_sent);
+
   if(n_sent < 0) {
     /* TODO buffer info: "send SYN fail" */
+    printf("Error on sending SYN packet.\n");
+    exit(0);
   }
 
   /* receive SYN-ACK packet */
@@ -296,7 +335,7 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
   /* CHECK - maybe this is parsed wrong */
   //int d_host = parse_str_2_int(node->ip_hostname);
   short d_port = node->port;
-  
+
   Pkt_t data_pkt;
   Pkt_t ack_pkt;
 
@@ -305,7 +344,7 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
     node->content_path, PKT_FLAG_ACK);
 
   /* creating sockaddr for peer node */
-  struct sockaddr_in peer_addr = get_sockaddr_in(node->ip_hostname, d_port);
+  struct sockaddr_in peer_addr = node->node_addr;
   socklen_t peer_addr_len = sizeof(peer_addr);
 
   /* sending ACK to peer node */
@@ -478,7 +517,8 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   char* b2 = request_content(node, ct->port_be, ct->listenfd_be, ct->c_addr,
                              len);
 
-  write(connfd, b2, strlen(buf));
+  /* CHECK - this was writing 0 bytes - strlen(buf) = 0 */
+  write(connfd, b2, strlen(b2));
 
   printf("wrote data!!@@\n");
 
@@ -507,7 +547,7 @@ int peer_rate_response(int connfd, char* BUF, struct thread_data *ct){
   return 0;
 }
 
-/* filler end line */
+
 
 struct sockaddr_in get_sockaddr_in(char* hostname, short port){
   struct hostent *server;
@@ -529,3 +569,8 @@ struct sockaddr_in get_sockaddr_in(char* hostname, short port){
 
   return addr;
 }
+
+
+
+
+/* filler end line */
