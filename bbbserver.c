@@ -78,15 +78,14 @@ int main(int argc, char **argv) {
   unsigned int clientlen = sizeof(clientaddr); /* size of client's address */
 
   
-
   /* check command line args */
-  if (argc != 2) {
-    fprintf(stderr, "usage: %s <port>\n", argv[0]);
+  if (argc != 3) {
+    fprintf(stderr, "usage: %s <port> <port>\n", argv[0]);
     exit(1);
   }
 
   port_fe = atoi(argv[1]);
-  port_be =  port_fe + 1;
+  port_be = atoi(argv[2]);
 
   printf("front-end port: %d\nback-end port: %d\n", port_fe, port_be);
 
@@ -136,6 +135,7 @@ int main(int argc, char **argv) {
     ct->num = ctr;
     ct->listenfd_be = sockfd_be;
     ct->port_be = port_be;
+    //ct->node_dir = node_dir;
 
     /* spin off thread */
     pthread_create(&(tid), NULL, serve_client_thread, ct);
@@ -153,6 +153,7 @@ void *serve_client_thread(void *ptr) {
   struct sockaddr_in clientaddr = ct->c_addr;
   int connfd = ct->connfd;
   int tid = ct->tid;
+  //Node_Dir* node_dir = ct->node_dir;
 
   /* defining local vars */
   struct hostent *hostp;          /* client host info */
