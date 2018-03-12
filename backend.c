@@ -223,6 +223,7 @@ int add_node(Node_Dir* nd, Node* node) {
 Node* check_content(Node_Dir* dir, char* filename) {
   int max = dir->cur_nodes;
   int found = 0;
+  int index = -1;
   Node ref;
 
   /* looping through directory and checking nodes */
@@ -232,13 +233,15 @@ Node* check_content(Node_Dir* dir, char* filename) {
 
     /* checking node content -- CHECK TODO - check for content rate too?  */
     if(check_node_content(&t, filename) == 1 && !found) {
-      ref = dir->n_array[i];
       found = 1;
+      index = i;
     }
   }
 
   /* did not find content */
-  if(!found) return NULL;
+  if(!found || index == -1) return NULL;
+
+  
 
   Node* res = create_node(ref.content_path, ref.ip_hostname, ref.port, ref.content_rate);
   return res;
@@ -482,7 +485,9 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
     return 0;
   }
 
-  char* b = sync_node(node, ct->port_be, ct->listenfd_be);
+  printf("ct is fine.\n");
+
+  char* b = sync_node(node, (uint16_t) (ct->port_be), ct->listenfd_be);
 
   /* TODO check if fails */
 
