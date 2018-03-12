@@ -90,10 +90,8 @@ int main(int argc, char **argv) {
   printf("front-end port: %d\nback-end port: %d\n", port_fe, port_be);
 
   /* initialize front-end and back-end data */
-  struct sockaddr_in* self_addr_fe;     /* server's front-end address  */
-  struct sockaddr_in* self_addr_be;     /* server's back-end address   */
-  self_addr_fe = malloc(sizeof(struct sockaddr_in));
-  self_addr_be = malloc(sizeof(struct sockaddr_in));
+  struct sockaddr_in* self_addr_fe = malloc(sizeof(struct sockaddr_in));
+  struct sockaddr_in* self_addr_be = malloc(sizeof(struct sockaddr_in));
 
   sockfd_fe = init_frontend(port_fe, self_addr_fe);
   sockfd_be = init_backend(port_be, self_addr_be);
@@ -110,7 +108,7 @@ int main(int argc, char **argv) {
   //pthread_detach(tid_be);
 
   /* initializing some local vars */
-  numthreads = 1;
+  numthreads = 0;
   int ctr = 1;
 
   /* main loop: */
@@ -135,7 +133,6 @@ int main(int argc, char **argv) {
     ct->num = ctr;
     ct->listenfd_be = sockfd_be;
     ct->port_be = port_be;
-    //ct->node_dir = node_dir;
 
     /* spin off thread */
     pthread_create(&(tid), NULL, serve_client_thread, ct);
@@ -240,7 +237,7 @@ void *serve_client_thread(void *ptr) {
   }
   else{
     numthreads--;
-    error("ERROR Unknown Request Type.\n");
+    error("ERROR: Failed to handle request.\n");
   }
 
   /* closing client connection and freeing struct */

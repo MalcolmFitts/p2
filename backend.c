@@ -426,7 +426,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   char* filepath = malloc(sizeof(char) * MAXLINE);
   char path[MAXLINE];
   char* file_type = malloc(sizeof(char) * MINLINE);
-  Node* node;
+  //Node* node;
   int len;
   int res;
 
@@ -460,7 +460,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   strcpy(buf, BUF);
 
   /* finding node with requested content */
-  node = check_content(node_dir, filepath);
+  Node* node = check_content(node_dir, filepath);
 
   if(!node){
     /* 500 Error --> Failure to find content in node directory
@@ -471,10 +471,17 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
 
   printf("Node with content: %s:%d\n", node->ip_hostname, node->port);
 
-  //bzero(buf, BUFSIZE);
+  bzero(buf, BUFSIZE);
 
   /* TODO - format return value in sync_node */
   /* initializing connection with node that should have requested content */
+
+  /* DEBUG  */
+  if(!ct) {
+    printf("Thread data struct null.\n");
+    return 0;
+  }
+
   char* b = sync_node(node, ct->port_be, ct->listenfd_be);
 
   /* TODO check if fails */

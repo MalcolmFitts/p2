@@ -51,7 +51,6 @@ struct thread_data {
   int num;                    /* DEBUG - overall connected num */
   int listenfd_be;            /* back end listening socket */
   int port_be;                /* back end port */
-  Node_Dir* node_dir;          /* Directory for node referencing   */
 };
 
 /*
