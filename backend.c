@@ -252,15 +252,20 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd) {
 
   // unsigned int peer_ip = (unsigned int) parse_str_2_int(node->ip_hostname);
   // short peer_port = (short) node->port;
+  printf("Made it to backend.c:255\n");
   struct sockaddr_in peer_addr = node->node_addr;
   socklen_t peer_addr_len = sizeof(peer_addr);
 
   Pkt_t syn_packet;
   Pkt_t syn_ack_packet;
 
+  printf("Made it to backend.c:262\n");
+
   /* create SYN packet to send to node */
   syn_packet = create_packet(d_port, s_port, 0, node->content_path,
                                    PKT_FLAG_SYN);
+
+  printf("Made it to backend.c:268\n");
 
   printf("Sending packet!\n");
   /* sending SYN packet */
