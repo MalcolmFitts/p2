@@ -107,16 +107,12 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
   setsockopt(sockfd_be, SOL_SOCKET, SO_REUSEADDR,
     (const void *)&optval_be, sizeof(int));
 
-  /* build the server's back end internet address */
-  //struct sockaddr_in self_addr;
-
-  /* CHECK - was not zeroing memory */
-  //bzero((char *) &self_addr, sizeof(self_addr));
-
-  self_addr->sin_family = AF_INET; /* we are using the Internet */
-  (self_addr->sin_addr).s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
-  self_addr->sin_port = htons((unsigned short) port_be); /* port to listen on */
-
+  /* we are using the Internet */
+  self_addr->sin_family = AF_INET;
+  /* accept reqs to any IP addr */
+  (self_addr->sin_addr).s_addr = htonl(INADDR_ANY);
+  /* port to listen on */
+  self_addr->sin_port = htons((unsigned short) port_be);
 
   /* bind: associate the listening socket with a port */
   if (bind(sockfd_be, (struct sockaddr *) self_addr, sizeof(*self_addr)) < 0)
@@ -125,8 +121,6 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
 
   return sockfd_be;
 }
-
-
 
 Node* create_node(char* path, char* name, int port, int rate) {
   /* allocate mem for struct */
@@ -156,7 +150,7 @@ Node* create_node(char* path, char* name, int port, int rate) {
   bzero((char *) &addr, sizeof(addr));
 
   addr.sin_family = AF_INET;
-  bcopy((char *)node_host->h_addr, (char *)&addr.sin_addr.s_addr, 
+  bcopy((char *)node_host->h_addr, (char *)&addr.sin_addr.s_addr,
     node_host->h_length);
   addr.sin_port = htons((unsigned short) port);
 
@@ -224,15 +218,15 @@ Node* check_content(Node_Dir* dir, char* filename) {
   int max = dir->cur_nodes;
   int found = 0;
   int index = -1;
-  Node ref;
+  Node n;
 
   /* looping through directory and checking nodes */
   int i;
   for(i = 0; i < max; i++) {
-    Node t = dir->n_array[i];
+    n = dir->n_array[i];
 
     /* checking node content -- CHECK TODO - check for content rate too?  */
-    if(check_node_content(&t, filename) == 1 && !found) {
+    if(check_node_content(&n, filename) == 1 && !found) {
       found = 1;
       index = i;
     }
@@ -241,9 +235,8 @@ Node* check_content(Node_Dir* dir, char* filename) {
   /* did not find content */
   if(!found || index == -1) return NULL;
 
-  
-
-  Node* res = create_node(ref.content_path, ref.ip_hostname, ref.port, ref.content_rate);
+  Node* res = create_node(n.content_path, n.ip_hostname, n.port,
+                          n.content_rate);
   return res;
 }
 
@@ -364,7 +357,6 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
 /*
  *  TODO - replace writing headers with returning flag values
  */
-
 int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
                       Node_Dir* node_dir) {
   /* initilizing local buf and arrays for use in parsing */
@@ -422,9 +414,11 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
   return 1;
 }
 
-/*  TODO - replace writing headers/data with returning flag values
+/*
+ *  TODO - replace writing headers/data with returning flag values
  */
-int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* node_dir){
+int peer_view_response(int connfd, char*BUF, struct thread_data *ct,
+                       Node_Dir* node_dir){
   char buf[BUFSIZE];
   char* filepath = malloc(sizeof(char) * MAXLINE);
   char path[MAXLINE];
@@ -516,7 +510,8 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   return 1;
 }
 
-/*  TODO - replace writing headers with returning flag values
+/*
+ *  TODO - replace writing headers with returning flag values
  */
 int peer_rate_response(int connfd, char* BUF, struct thread_data *ct){
   char buf[MAXLINE];
@@ -538,8 +533,6 @@ int peer_rate_response(int connfd, char* BUF, struct thread_data *ct){
   return 0;
 }
 
-
-
 struct sockaddr_in get_sockaddr_in(char* hostname, short port){
   struct hostent *server;
   struct sockaddr_in addr;
@@ -550,18 +543,13 @@ struct sockaddr_in get_sockaddr_in(char* hostname, short port){
     printf("ERROR, no such host as %s\n", hostname);
     exit(0);
   }
-  
+
   /* build node's address */
   bzero((char *) &addr, sizeof(addr));
   addr.sin_family = AF_INET;
-  bcopy((char *)server->h_addr, (char *)&addr.sin_addr.s_addr, 
+  bcopy((char *)server->h_addr, (char *)&addr.sin_addr.s_addr,
     server->h_length);
   addr.sin_port = htons(port);
 
   return addr;
 }
-
-
-
-
-/* filler end line */

@@ -22,9 +22,13 @@ int init_frontend(short port_fe, struct sockaddr_in* self_addr){
   //struct sockaddr_in self_addr;
 
   /* CHECK - was not zeroing memory */
-  self_addr->sin_family = AF_INET; /* we are using the Internet */
-  self_addr->sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
-  self_addr->sin_port = htons(port_fe); /* port to listen on */
+  
+  /* we are using the Internet */
+  self_addr->sin_family = AF_INET;
+  /* accept reqs to any IP addr */
+  self_addr->sin_addr.s_addr = htonl(INADDR_ANY);
+  /* port to listen on */
+  self_addr->sin_port = htons(port_fe);
 
   /* bind: associate the listening socket with a port */
   if (bind(sockfd_fe, (struct sockaddr *) self_addr, sizeof(*self_addr)) < 0)
