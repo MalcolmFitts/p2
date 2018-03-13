@@ -124,8 +124,7 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
 
 Node* create_node(char* path, char* name, int port, int rate) {
   /* allocate mem for struct */
-  Node* pn;
-  pn = malloc(sizeof(Node));
+  Node* pn = malloc(sizeof(Node));
 
   /* checking for successful mem allocation */
   if(!pn) return NULL;

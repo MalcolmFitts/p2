@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
   struct sockaddr_in clientaddr;               /* client's addr */
   unsigned int clientlen = sizeof(clientaddr); /* size of client's address */
 
-  
+
   /* check command line args */
   if (argc != 3) {
     fprintf(stderr, "usage: %s <port> <port>\n", argv[0]);
@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
   int* sock_ptr = &sockfd_be;
   pthread_t tid_be;
   pthread_create(&(tid_be), NULL, recieve_pkt, sock_ptr);
-  
+
   /* CHECK - not detaching threads */
   //pthread_detach(tid_be);
 
@@ -231,11 +231,9 @@ void *serve_client_thread(void *ptr) {
 
   if(flag_fe) {
     printf("Front-end Request handled.\n");
-  }
-  else if(flag_be) {
+  } else if(flag_be) {
     printf("Back-end Request handled.\n");
-  }
-  else{
+  } else{
     numthreads--;
     error("ERROR: Failed to handle request.\n");
   }
