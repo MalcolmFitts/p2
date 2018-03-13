@@ -12,6 +12,8 @@
 #include <pthread.h>
 #include <time.h>
 
+void error(char *msg);
+
 struct sockaddr_in get_sockaddr_in(char* hostname, short port);
 
 /**  error - wrapper for perror*/
@@ -89,4 +91,6 @@ int main(){
   } else {
     printf("SENT\n");
   }
+
+  return 0;
 }

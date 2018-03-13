@@ -14,6 +14,8 @@
 
 #define BUFSIZE 1024
 
+void error(char *msg);
+
 /**  error - wrapper for perror*/
 void error(char *msg) {
   perror(msg);
