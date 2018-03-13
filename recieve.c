@@ -52,4 +52,5 @@ int main(){
 
   printf("RECIEVED: %s", recieved);
 
+  return 0;
 }
