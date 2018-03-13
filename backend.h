@@ -22,14 +22,15 @@
 #include "parser.h"
 #include "serverlog.h"
 #include "datawriter.h"
+#include "packet.h"
 
 /* Peer Node Constant(s) */
 #define MAX_NODES 50
 
 /* Peer Node struct */
 typedef struct Peer_Node {
-	int content_rate;	  /* avg content bit rate (kbps) 	  */
-	uint16_t port;		  /* back-end port num 				  */
+	int content_rate;	  	/* avg content bit rate (kbps) 	  */
+	short port;		  			/* back-end port num 				  */
 	char* content_path;   /* filepath to content in peer node */
 	char* ip_hostname;	  /* ip/hostname of peer node 		  */
 } Node;
@@ -41,69 +42,6 @@ typedef struct Node_Directory {
 	int max_nodes;        /* max possible nbr of nodes        */
 	Node *n_array;     /* array of pointers to nodes       */
 } Node_Dir;
-
-
-/* Packet Size Constants (bytes) */
-#define P_HDR_SIZE 16
-#define MAX_DATA_SIZE 65519
-#define MAX_PACKET_SIZE 65535
-
-
-/* Packet type (creation) flags */
-#define PKT_FLAG_UNKNOWN -1
-#define PKT_FLAG_CORRUPT 0
-#define PKT_FLAG_DATA    1
-#define PKT_FLAG_ACK     2
-#define PKT_FLAG_SYN 	 3
-#define PKT_FLAG_SYN_ACK 4
-#define PKT_FLAG_FIN     5
-
-
-/* TODO add FIN implimentation */
-
-/*	possible future flag(s):
-#define PKT_FLAG_FRAG
-*/
-
-/*
- *  Masks for flag in packet header
- *
- *  flag = |  DATA  | SYN-ACK |  SYN  | ACK  |
- */
-#define PKT_CORRUPT_MASK  0x0001    /* CORRUPT mask */
-#define PKT_DATA_MASK     0x0002    /* DATA mask    */
-#define PKT_ACK_MASK      0x0004
-#define PKT_SYN_MASK      0x0008    /* SYN mask     */
-#define PKT_SYN_ACK_MASK  0x0010    /* SYN-ACK mask */
-#define PKT_FIN_MASK      0x0020    /* DATA mask    */
-
-
-
-/* Packet Header Struct */
-typedef struct Packet_Header {
-  uint16_t source_port;		/* source port 	- 2 bytes */
-  uint16_t dest_port;			/* dest port 	- 2 bytes */
-
-  uint16_t length;			/* length		- 2 bytes */
-  uint16_t checksum;			/* checksum		- 2 bytes */
-
-  uint32_t seq_num;                     /* sequence num - 4 bytes */
-
-  uint16_t flag;
-  uint16_t data_offset;
-
-} P_Hdr;
-
-/* Packet Struct */
-typedef struct Packet {
-  P_Hdr header;				/* Packet Header */
-  char buf[MAX_DATA_SIZE];	/* Packet Data   */
-} Pkt_t;
-
-/* Struct for threaded function for receiving packets */
-typedef struct Receive_Struct {
-  int sockfd;
-} Recv_t;
 
 struct thread_data {
   struct sockaddr_in c_addr;  /* client address struct */
@@ -128,7 +66,8 @@ void* recieve_pkt(void* ptr);
  *
  *
  */
-int serve_content(Pkt_t* packet, int sockfd, struct sockaddr_in* serveraddr, int flag);
+int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
+									int flag);
 
 
 /* TODO make sure this works (serveraddr_be prob should be a pointer)
@@ -137,7 +76,7 @@ int serve_content(Pkt_t* packet, int sockfd, struct sockaddr_in* serveraddr, int
  *		- initalizes the backend port for the server node
  *
  */
-int init_backend(int port_be);
+int init_backend(short port_be);
 
 /*
  *  create_node
@@ -199,107 +138,6 @@ Node_Dir* create_node_dir(int max);
  */
 int add_node(Node_Dir* nd, Node* node);
 
-
-/*
- *  create_packet
- *		- creates packet struct to be sent/received by nodes
- *
- *  ~param: flag
- *		= 1 (PKT_FLAG_DATA) 	--> creates data packet
- *		= 2 (PKT_FLAG_ACK)  	--> creates ack (received) packet
- *		= 3 (PKT_FLAG_SYN) 		--> creates syn (request) packet
- *		= 4 (PKT_FLAG_SYN_ACK)  --> creates syn-ack (request accepted) packet
- *
- *	~return values:
- *		- returns packet with correct content on success
- *		- returns NULL pointer on fail
- *
- */
-Pkt_t* create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
-  char* filename, int flag);
-
-
-/*  TODO  --  CHECK
- *
- *  discard_packet
- *		- discards packet by freeing memory
- *
- *	~notes:
- *		- WARNING: packet data will be GONE FOREVER
- *		- should only be used when you DO NOT need packet contents
- */
-void discard_packet(Pkt_t *packet);
-
-
-/*
- *  calc_checksum
- *		- calculates checksum value of a packet header struct
- *		- does this independently of header's checksum value
- *
- *	~notes:
- *		- header consists of 7 16-bit values
- *		- checksum will be 8th
- *		- vars:
- *			from hdr: {source_port, dest_port, length, ack, syn}
- *			seq_num1 = (uint16_t) ((seq_num >> 16))
- *			seq_num2 = (uint16_t) (seq_num)
- *
- *		- calculation:
- *			x = [(s_p) + (d_p) + (l) + (seq_num1) + (seq_num2)
- *					+ (ack) + (syn)]
- *			checksum = ~ x;
- *
- *
- */
-uint16_t calc_checksum(P_Hdr* hdr);
-
-
-/*
- *  parse_packet
- *		- creates packet struct by parsing input buffer
- *
- *	~notes:
- *		- header data
- *			-- source port --> buf { 0,  1}
- *			-- dest port   --> buf { 2,  3}
- *			-- length      --> buf { 4,  5}
- *			-- check sum   --> buf { 6,  7}
- *			-- syn    	   --> buf { 8,  9}
- *			-- ack         --> buf {10, 11}
- *			-- seq num     --> buf {12, 15}
- *		- data (rest)
- */
-Pkt_t* parse_packet (char* buf);
-
-
-/*
- *  writeable_packet
- *		- takes packet and creates char array filled copy with packet byte data
- *
- *
- */
-char* writeable_packet(Pkt_t* packet);
-
-
-/*
- *  get_packet_type
- *		- takes packet and returns (expected) defined type
- *		- checks header's syn and ack flags
- *
- *	~return values:
- *		= -1 --> corrupted packet (undefined reason)
- *		=  0 --> corrupted packet (checksum)
- *		=  1 --> data packet
- *		=  2 --> ACK packet
- *		=  3 --> SYN packet
- *		=  4 --> SYN-ACK packet
- *
- */
-int get_packet_type (Pkt_t* packet);
-
-
-
-
 /*
  *  check_content
  *		- takes Node Directory and filename and attempts to find content
@@ -330,8 +168,7 @@ Node* check_content(Node_Dir* dir, char* filename);
  *		- will parse info for headers on successful sync
  *
  */
- char* sync_node(Node* node, uint16_t s_port, int sockfd,
-   struct sockaddr_in serveraddr);
+ char* sync_node(Node* node, uint16_t s_port, int sockfd);
 
 /*  TODO  --  CHECK
  *
