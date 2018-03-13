@@ -14,6 +14,12 @@
 
 #define BUFSIZE 1024
 
+/**  error - wrapper for perror*/
+void error(char *msg) {
+  perror(msg);
+  exit(1);
+}
+
 int main(){
   int my_sockfd;
   struct sockaddr_in my_addr;
@@ -25,17 +31,17 @@ int main(){
   my_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
   bzero((char *) &my_addr, my_addr_len);
-  my_addr.sinfamily = AF_INTET;
+  my_addr.sin_family = AF_INET;
   my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   my_addr.sin_port = htons(my_port);
 
-  if (bind(my_sockfd, &my_addr, sizeof(&my_addr)) < 0)
+  if (bind(my_sockfd, (struct sockaddr *) &my_addr, sizeof(my_addr)) < 0)
     error("ERROR on binding front-end socket with port");
 
   struct sockaddr_in sender_addr;
-  int sender_len;
+  socklen_t sender_len;
 
-  flag = recvfrom(my_sockfd, recieved, BUFSIZE, 0
+  flag = recvfrom(my_sockfd, recieved, BUFSIZE, 0,
                   (struct sockaddr *) &sender_addr, &sender_len);
 
   if(flag < 0){

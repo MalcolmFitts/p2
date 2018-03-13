@@ -14,6 +14,12 @@
 
 struct sockaddr_in get_sockaddr_in(char* hostname, short port);
 
+/**  error - wrapper for perror*/
+void error(char *msg) {
+  perror(msg);
+  exit(1);
+}
+
 struct sockaddr_in get_sockaddr_in(char* hostname, short port){
   struct hostent *server;
   struct sockaddr_in addr;
@@ -37,10 +43,10 @@ struct sockaddr_in get_sockaddr_in(char* hostname, short port){
 
 int main(){
   /* TO SEND */
-  char * hello = "Sup Bitch"
+  char * hello = "Sup Bitch";
   int hello_size = sizeof(hello);
 
-  char *node_hostname; "172.19.138.17";
+  char *node_hostname = "172.19.138.17";
   uint16_t node_port = 9002;
   struct sockaddr_in node_addr;
   struct in_addr addr;
@@ -69,13 +75,18 @@ int main(){
   /* port to listen on */
   my_addr.sin_port = htons(my_port);
 
-  if (bind(my_sockfd, &my_addr, sizeof(&my_addr)) < 0)
+  if (bind(my_sockfd, (struct sockaddr *) &my_addr, sizeof(my_addr)) < 0)
     error("ERROR on binding front-end socket with port");
 
   //if (listen(sockfd_fe, 10) < 0) /* allow 10 requests to queue up */
     //error("ERROR on listen");
 
   int sent = sendto(my_sockfd, hello, hello_size, 0,
-                   (struct sockaddr *) node_addr, node_addr_len);
+                   (struct sockaddr *) &node_addr, node_addr_len);
 
+  if(sent < 0){
+    error("ERROR on SEND.");
+  } else {
+    printf("SENT\n");
+  }
 }
