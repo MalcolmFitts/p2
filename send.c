@@ -12,6 +12,8 @@
 #include <pthread.h>
 #include <time.h>
 
+#define BUFSIZE 1024
+
 void error(char *msg);
 
 struct sockaddr_in get_sockaddr_in(char* hostname, short port);
@@ -44,13 +46,14 @@ struct sockaddr_in get_sockaddr_in(char* hostname, short port){
 }
 
 int main(){
+  int optval;
   /* TO SEND */
-  char * hello = "Sup Bitch";
-  int hello_size = sizeof(hello);
+  char buf[BUFSIZE];
 
   char *node_hostname = "172.21.67.91";
   uint16_t node_port = 8436;
   struct sockaddr_in node_addr;
+  struct hostent *server;
   struct in_addr addr;
   int node_addr_len = sizeof(node_addr);
 
@@ -59,9 +62,12 @@ int main(){
         exit(EXIT_FAILURE);
   }
 
+  server = gethostbyname(node_hostname);
+
   bzero((char *) &node_addr, node_addr_len);
   node_addr.sin_family = AF_INET;
-  node_addr.sin_addr = addr;
+  bcopy((char *)server->h_addr,
+        (char *)&node_addr.sin_addr.s_addr, server->h_length);
   node_addr.sin_port = htons(node_port);
 
   int my_sockfd;
@@ -69,6 +75,16 @@ int main(){
   uint16_t my_port = 8346;
 
   my_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+ /* setsockopt: Handy debugging trick that lets
+  *  us rerun the server immediately after we kill it;
+  *  otherwise we have to wait about 20 secs.
+  *  Eliminates "ERROR on binding: Address already in use" error.
+  */
+
+  optval = 1;
+  setsockopt(my_sockfd, SOL_SOCKET, SO_REUSEADDR,
+            (const void *)&optval , sizeof(int));
 
   /* we are using the Internet */
   my_addr.sin_family = AF_INET;
@@ -80,10 +96,12 @@ int main(){
   if (bind(my_sockfd, (struct sockaddr *) &my_addr, sizeof(my_addr)) < 0)
     error("ERROR on binding front-end socket with port");
 
-  //if (listen(sockfd_fe, 10) < 0) /* allow 10 requests to queue up */
-    //error("ERROR on listen");
+  /* get a message from the user */
+  bzero(buf, BUFSIZE);
+  printf("Please enter msg: ");
+  fgets(buf, BUFSIZE, stdin);
 
-  int sent = sendto(my_sockfd, hello, hello_size, 0,
+  int sent = sendto(my_sockfd, buf, BUFSIZE, 0,
                    (struct sockaddr *) &node_addr, node_addr_len);
 
   if(sent < 0){
