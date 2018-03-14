@@ -55,7 +55,7 @@ int main(){
   struct sockaddr_in node_addr;
   int node_addr_len;
 
-  struct sockaddr_in node_addr = get_sockaddr_in(node_hostname, node_port);
+  node_addr = get_sockaddr_in(node_hostname, node_port);
   node_addr_len = sizeof(node_addr);
 
   int my_sockfd;
