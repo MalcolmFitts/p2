@@ -28,6 +28,8 @@ int main(){
   struct sockaddr_in my_addr;
   uint16_t my_port = 8436;
   int my_addr_len = sizeof(my_addr);
+  struct sockaddr_in sender_addr;
+  socklen_t sender_len;
   int flag;
   char recieved[BUFSIZE];
 

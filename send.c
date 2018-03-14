@@ -50,25 +50,18 @@ int main(){
   /* TO SEND */
   char buf[BUFSIZE];
 
-  char *node_hostname = "172.21.67.91";
-  uint16_t node_port = 8436;
+  char *node_hostname = "172.19.138.17";
+  uint16_t node_port = 9002;
   struct sockaddr_in node_addr;
-  struct hostent *server;
-  struct in_addr addr;
-  int node_addr_len = sizeof(node_addr);
+  int node_addr_len;
 
   if (inet_aton(node_hostname, &addr) == 0) {
         fprintf(stderr, "Invalid address\n");
         exit(EXIT_FAILURE);
   }
 
-  server = gethostbyname(node_hostname);
-
-  bzero((char *) &node_addr, node_addr_len);
-  node_addr.sin_family = AF_INET;
-  bcopy((char *)server->h_addr,
-        (char *)&node_addr.sin_addr.s_addr, server->h_length);
-  node_addr.sin_port = htons(node_port);
+  struct sockaddr_in node_addr = get_sockaddr_in(node_hostname, node_port);
+  node_addr_len = sizeof(node_addr);
 
   int my_sockfd;
   struct sockaddr_in my_addr;
