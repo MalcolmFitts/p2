@@ -50,8 +50,8 @@ int main(){
   /* TO SEND */
   char buf[BUFSIZE];
 
-  char *node_hostname = "172.19.138.17";
-  uint16_t node_port = 9002;
+  char *node_hostname = "172.21.67.91";
+  uint16_t node_port = 8436;
   struct sockaddr_in node_addr;
   int node_addr_len;
 
