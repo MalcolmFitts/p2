@@ -55,11 +55,6 @@ int main(){
   struct sockaddr_in node_addr;
   int node_addr_len;
 
-  if (inet_aton(node_hostname, &addr) == 0) {
-        fprintf(stderr, "Invalid address\n");
-        exit(EXIT_FAILURE);
-  }
-
   struct sockaddr_in node_addr = get_sockaddr_in(node_hostname, node_port);
   node_addr_len = sizeof(node_addr);
 
