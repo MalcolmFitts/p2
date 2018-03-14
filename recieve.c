@@ -28,18 +28,18 @@ int main(){
   struct sockaddr_in my_addr;
   uint16_t my_port = 8436;
   struct sockaddr_in sender_addr;
-  unsigned int sender_len = sizeof(sender_addr);
+  unsigned int sender_len;
   int flag;
   char recieved[BUFSIZE];
 
-  my_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+  if ((my_sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+    error("ERROR opening socket");
 
  /* setsockopt: Handy debugging trick that lets
   *  us rerun the server immediately after we kill it;
   *  otherwise we have to wait about 20 secs.
   *  Eliminates "ERROR on binding: Address already in use" error.
   */
-
   optval = 1;
   setsockopt(my_sockfd, SOL_SOCKET, SO_REUSEADDR,
             (const void *)&optval , sizeof(int));
@@ -50,14 +50,14 @@ int main(){
   my_addr.sin_port = htons((unsigned short)my_port);
 
   if (bind(my_sockfd, (struct sockaddr *) &my_addr, sizeof(my_addr)) < 0)
-    error("ERROR on binding front-end socket with port");
+    error("ERROR biding");
 
   printf("Waiting to recieve...\n");
 
+  sender_len = sizeof(sender_addr);
   bzero(recieved, BUFSIZE);
   flag = recvfrom(my_sockfd, recieved, BUFSIZE, 0,
                   (struct sockaddr *) &sender_addr, &sender_len);
-
   if(flag < 0){
     printf("Error on recieve\n");
   }

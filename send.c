@@ -49,10 +49,14 @@ int main(){
   /* TO SEND */
   char buf[BUFSIZE];
 
-  char *node_hostname = "172.21.67.91";
+  char *node_hostname = "127.0.0.1";
   uint16_t node_port = 8436;
   struct sockaddr_in node_addr;
-  unsigned int node_addr_len;
+  socklen_t node_addr_len;
+
+  struct sockaddr_in my_addr;
+
+  uint16_t my_port = 9001;
 
   node_addr = get_sockaddr_in(node_hostname, node_port);
   node_addr_len = sizeof(node_addr);
@@ -60,6 +64,16 @@ int main(){
   int my_sockfd;
 
   my_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+  if (my_sockfd < 0)
+    error("ERROR opening socket");
+
+  bzero((char *) &my_addr, sizeof(my_addr));
+  my_addr.sin_family = AF_INET;
+  my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  my_addr.sin_port = htons((unsigned short)my_port);
+
+  if (bind(my_sockfd, (struct sockaddr *) &my_addr, sizeof(my_addr)) < 0)
+    error("ERROR biding");
 
   /* get a message from the user */
   bzero(buf, BUFSIZE);
