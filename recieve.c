@@ -27,9 +27,9 @@ int main(){
   int my_sockfd;
   struct sockaddr_in my_addr;
   uint16_t my_port = 8436;
-  int my_addr_len = sizeof(my_addr);
+  int my_addr_len;
   struct sockaddr_in sender_addr;
-  socklen_t sender_len;
+  int sender_len = sizeof(sender_addr);
   int flag;
   char recieved[BUFSIZE];
 
@@ -45,16 +45,17 @@ int main(){
   setsockopt(my_sockfd, SOL_SOCKET, SO_REUSEADDR,
             (const void *)&optval , sizeof(int));
 
-  bzero((char *) &my_addr, my_addr_len);
+  bzero((char *) &my_addr, sizeof(my_addr));
   my_addr.sin_family = AF_INET;
   my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-  my_addr.sin_port = htons(my_port);
+  my_addr.sin_port = htons((unsigned short)my_port);
 
   if (bind(my_sockfd, (struct sockaddr *) &my_addr, sizeof(my_addr)) < 0)
     error("ERROR on binding front-end socket with port");
 
   printf("Waiting to recieve...\n");
 
+  bzero(recieved, BUFSIZE);
   flag = recvfrom(my_sockfd, recieved, BUFSIZE, 0,
                   (struct sockaddr *) &sender_addr, &sender_len);
 
@@ -62,7 +63,7 @@ int main(){
     printf("Error on recieve\n");
   }
 
-  printf("RECIEVED: %s", recieved);
+  printf("RECIEVED: %s\n", recieved);
 
   return 0;
 }
