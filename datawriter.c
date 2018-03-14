@@ -1,3 +1,4 @@
+
 #include "datawriter.h"
 
 /*  other headers to implement:
@@ -295,3 +296,4 @@ void error(char *msg) {
   perror(msg);
   exit(1);
 }
+
