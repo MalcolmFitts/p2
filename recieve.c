@@ -53,9 +53,6 @@ int main(){
   if (bind(my_sockfd, (struct sockaddr *) &my_addr, sizeof(my_addr)) < 0)
     error("ERROR on binding front-end socket with port");
 
-  struct sockaddr_in sender_addr;
-  socklen_t sender_len;
-
   printf("Waiting to recieve...\n");
 
   flag = recvfrom(my_sockfd, recieved, BUFSIZE, 0,
