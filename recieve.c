@@ -27,9 +27,8 @@ int main(){
   int my_sockfd;
   struct sockaddr_in my_addr;
   uint16_t my_port = 8436;
-  int my_addr_len;
   struct sockaddr_in sender_addr;
-  int sender_len = sizeof(sender_addr);
+  unsigned int sender_len = sizeof(sender_addr);
   int flag;
   char recieved[BUFSIZE];
 
