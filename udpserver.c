@@ -123,12 +123,11 @@ int main(int argc, char **argv) {
     /* 
      * sendto: echo the input back to the client 
      */
-    bzero(buf, BUFSIZE);
-    char* newbuf;
-    newbuf = writeable_packet(rec_pkt);
+    
+    int psize = head.length;
 
 
-    n = sendto(sockfd, newbuf, strlen(newbuf), 0, 
+    n = sendto(sockfd, rec_pkt, psize, 0, 
 	       (struct sockaddr *) &clientaddr, clientlen);
     if (n < 0) 
       error("ERROR in sendto");

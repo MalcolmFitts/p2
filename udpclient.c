@@ -72,18 +72,15 @@ int main(int argc, char **argv) {
     
     printf("created packet.\n");
 
-    char* newbuf;
-    newbuf = writeable_packet(&send_pkt);
-
-    printf("created writeable packet.\n");
+    int p_size = send_pkt.header.length;
 
     /* ADDING THINGS ^^^^^^^  */
 
-    printf("strlen(newbuf) = %d \n", strlen(newbuf));
+    printf("psize = %d \n", p_size);
 
     /* send the message to the server */
     serverlen = sizeof(serveraddr);
-    n = sendto(sockfd, newbuf, strlen(newbuf), 0, &serveraddr, serverlen);
+    n = sendto(sockfd, &send_pkt, p_size, 0, &serveraddr, serverlen);
     if (n < 0) 
       error("ERROR in sendto");
 
