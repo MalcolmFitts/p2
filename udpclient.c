@@ -70,16 +70,24 @@ int main(int argc, char **argv) {
     Pkt_t send_pkt;
     send_pkt = create_packet(portno, portno, 0, filename, 1);
     
+    printf("created packet.\n");
+
     char* newbuf;
     newbuf = writeable_packet(&send_pkt);
 
+    printf("created writeable packet.\n");
+
     /* ADDING THINGS ^^^^^^^  */
+
+    printf("strlen(newbuf) = %d \n", strlen(newbuf));
 
     /* send the message to the server */
     serverlen = sizeof(serveraddr);
     n = sendto(sockfd, newbuf, strlen(newbuf), 0, &serveraddr, serverlen);
     if (n < 0) 
       error("ERROR in sendto");
+
+    printf("Sent!\n");
     
     /* print the server's reply */
     n = recvfrom(sockfd, buf, strlen(buf), 0, &serveraddr, &serverlen);
