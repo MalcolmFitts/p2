@@ -11,6 +11,8 @@
 #include <netinet/in.h>
 #include <netdb.h> 
 
+#include "packet.h"
+
 #define BUFSIZE 1024
 
 /* 

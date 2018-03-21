@@ -13,6 +13,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include "packet.h"
+
 #define BUFSIZE 1024
 
 /*
