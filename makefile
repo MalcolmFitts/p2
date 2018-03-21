@@ -1,7 +1,13 @@
 CC = gcc
 ARGS = -pthread -Wall -O2 -I .
 
-all: clean sl pa pkt dw be fe bbbserver
+all: clean udpc udps sl pa pkt dw be fe bbbserver
+
+udpc: udpclient.c packet.h
+	$(CC) $(ARGS) -o udpclient -c udpclient.c
+
+udps: udpserver.c packet.h
+	$(CC) $(ARGS) -o udpserver -c udpserver.c
 
 sl: serverlog.c serverlog.h
 	$(CC) $(ARGS) -o sllib.o -c serverlog.c
@@ -25,4 +31,4 @@ bbbserver: bbbserver.c datawriter.h parser.h packet.h serverlog.h backend.h fron
 	$(CC) $(ARGS) -o bbbserver bbbserver.c dwlib.o palib.o pktlib.o sllib.o belib.o felib.o
 
 clean:
-	rm -f *.o bbbserver palib.o dwlib.o pktlib.o sllib.o belib.o felib.o *~
+	rm -f *.o bbbserver udpclient udpserver palib.o dwlib.o pktlib.o sllib.o belib.o felib.o *~
