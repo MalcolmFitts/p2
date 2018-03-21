@@ -5,7 +5,6 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
 
   Pkt_t packet;
   P_Hdr hdr;
-
   /* CHECK - fixing file buffer size to max size */
   char f_buf[MAX_DATA_SIZE] = {0};
 

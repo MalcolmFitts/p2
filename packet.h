@@ -16,8 +16,8 @@
 
 /* Packet Size Constants (bytes) */
 #define P_HDR_SIZE 16
-#define MAX_DATA_SIZE 65519
-#define MAX_PACKET_SIZE 65535
+#define MAX_DATA_SIZE 1484
+#define MAX_PACKET_SIZE 1500
 
 
 /* Packet type (creation) flags */
