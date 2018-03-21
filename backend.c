@@ -241,7 +241,7 @@ Node* check_content(Node_Dir* dir, char* filename) {
   /* did not find content */
   if(!found || index == -1) return NULL;
 
-  
+  ref = dir->n_array[index];
 
   Node* res = create_node(ref.content_path, ref.ip_hostname, ref.port, ref.content_rate);
   return res;
@@ -316,13 +316,15 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
   int n_recv;
   /* CHECK - maybe this is parsed wrong */
   //int d_host = parse_str_2_int(node->ip_hostname);
-  short d_port = node->port;
+  
+  /* CHECK - both ports (source & dest) should be the same */
+  //short d_port = node->port;
 
   Pkt_t data_pkt;
   Pkt_t ack_pkt;
 
   /* creating ACK packet */
-  ack_pkt = create_packet(d_port, s_port, seq_ack_num,
+  ack_pkt = create_packet(s_port, s_port, seq_ack_num,
     node->content_path, PKT_FLAG_ACK);
 
   /* creating sockaddr for peer node */
