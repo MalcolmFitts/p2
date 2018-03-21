@@ -77,6 +77,7 @@ int main(int argc, char **argv) {
     /* ADDING THINGS ^^^^^^^  */
 
     printf("psize = %d \n", p_size);
+    printf("buffer: \n%s\n", send_pkt.buf);
 
     /* send the message to the server */
     serverlen = sizeof(serveraddr);
