@@ -63,6 +63,17 @@ int main(int argc, char **argv) {
     printf("Please enter msg: ");
     fgets(buf, BUFSIZE, stdin);
 
+    /* ADDING THING vvvvvvv  */
+
+    char* filename = "content/texts/text1.txt";
+
+    Pkt_t send_pkt = create_packet(portno, portno, 0, filename, 1);
+    
+    bzero(buf, BUFSIZE);
+    buf = writeable_packet(send_pkt);
+
+    /* ADDING THINGS ^^^^^^^^ */
+
     /* send the message to the server */
     serverlen = sizeof(serveraddr);
     n = sendto(sockfd, buf, strlen(buf), 0, &serveraddr, serverlen);
@@ -73,6 +84,10 @@ int main(int argc, char **argv) {
     n = recvfrom(sockfd, buf, strlen(buf), 0, &serveraddr, &serverlen);
     if (n < 0) 
       error("ERROR in recvfrom");
-    printf("Echo from server: %s", buf);
+
+    Pkt_t rec_pkt = parse_packet(buf);
+
+
+    printf("Echo from server: %s", rec_pkt->buf);
     return 0;
 }

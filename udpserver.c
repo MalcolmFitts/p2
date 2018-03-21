@@ -104,11 +104,29 @@ int main(int argc, char **argv) {
       error("ERROR on inet_ntoa\n");
     printf("server received datagram from %s (%s)\n", 
 	   hostp->h_name, hostaddrp);
+
+    /* ADDING THING vvvvvvv  */
+
+    Pkt_t *rec_pkt;
+    rec_pkt = parse_packet(buf);
+    P_Hdr head = rec_pkt->header;
+
+    printf("\nHeader ports: {source %d / dest %d}\n", head->source_port, head->dest_port);
+    printf("Packet buf:\n%s\n\n", rec_pkt->buf);
+
+
+    /* ADDING THINGS ^^^^^^^^ */
+
+
     printf("server received %d/%d bytes: %s\n", strlen(buf), n, buf);
     
     /* 
      * sendto: echo the input back to the client 
      */
+    bzero(buf, BUFSIZE);
+    buf = writeable_packet(rec_pkt);
+
+
     n = sendto(sockfd, buf, strlen(buf), 0, 
 	       (struct sockaddr *) &clientaddr, clientlen);
     if (n < 0) 
