@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
     rec_pkt = parse_packet(buf);
     P_Hdr head = rec_pkt->header;
 
-    printf("\nHeader ports: {source %d / dest %d}\n", head->source_port, head->dest_port);
+    printf("\nHeader ports: {source %d / dest %d}\n", head.source_port, head.dest_port);
     printf("Packet buf:\n%s\n\n", rec_pkt->buf);
 
 
@@ -124,10 +124,11 @@ int main(int argc, char **argv) {
      * sendto: echo the input back to the client 
      */
     bzero(buf, BUFSIZE);
-    buf = writeable_packet(rec_pkt);
+    char* newbuf;
+    newbuf = writeable_packet(rec_pkt);
 
 
-    n = sendto(sockfd, buf, strlen(buf), 0, 
+    n = sendto(sockfd, newbuf, strlen(newbuf), 0, 
 	       (struct sockaddr *) &clientaddr, clientlen);
     if (n < 0) 
       error("ERROR in sendto");

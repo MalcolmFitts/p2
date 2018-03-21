@@ -67,16 +67,16 @@ int main(int argc, char **argv) {
 
     char* filename = "content/texts/text1.txt";
 
-    Pkt_t send_pkt = create_packet(portno, portno, 0, filename, 1);
+    Pkt_t *send_pkt = create_packet(portno, portno, 0, filename, 1);
     
-    bzero(buf, BUFSIZE);
-    buf = writeable_packet(send_pkt);
+    char* newbuf;
+    newbuf = writeable_packet(send_pkt);
 
-    /* ADDING THINGS ^^^^^^^^ */
+    /* ADDING THINGS ^^^^^^^  */
 
     /* send the message to the server */
     serverlen = sizeof(serveraddr);
-    n = sendto(sockfd, buf, strlen(buf), 0, &serveraddr, serverlen);
+    n = sendto(sockfd, newbuf, strlen(newbuf), 0, &serveraddr, serverlen);
     if (n < 0) 
       error("ERROR in sendto");
     
@@ -84,8 +84,9 @@ int main(int argc, char **argv) {
     n = recvfrom(sockfd, buf, strlen(buf), 0, &serveraddr, &serverlen);
     if (n < 0) 
       error("ERROR in recvfrom");
+  
 
-    Pkt_t rec_pkt = parse_packet(buf);
+    Pkt_t* rec_pkt = parse_packet(buf);
 
 
     printf("Echo from server: %s", rec_pkt->buf);
