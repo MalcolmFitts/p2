@@ -389,6 +389,7 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
     /* 500 Code  --> Failure to parse peer add request
      * TODO      --> flag (return) val: parse fail */
     write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
+    write_empty_header(connfd);
     return 0;
   }
 
@@ -407,6 +408,7 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
     /* 500 Code  --> Failure to add node to directory
      * TODO      --> flag (return) val: add node fail */
     write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
+    write_empty_header(connfd);
     return 0;
   }
 
@@ -419,6 +421,7 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
   /* 200 Code  --> Success!
    * TODO      --> flag (return) val: success */
   write_status_header(connfd, SC_OK, ST_OK);
+  write_empty_header(connfd);
 
   printf("wrote headers!\n");
   return 1;
@@ -444,6 +447,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
     /* 500 Error --> Failure to parse peer view request
      * TODO      --> flag (return) val: parse fail */
     write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
+    write_empty_header(connfd);
     return 0;
   }
 
@@ -458,6 +462,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
     /* 500 Error --> Failure to parse file type
      * TODO      --> flag (return) val: parse fail */
     write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
+    write_empty_header(connfd);
     return 0;
   }
 
@@ -471,6 +476,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
     /* 500 Error --> Failure to find content in node directory
      * TODO      --> flag (return) val: no node found */
     write_status_header(connfd, SC_NOT_FOUND, ST_NOT_FOUND);
+    write_empty_header(connfd);
     return 0;
   }
 
@@ -500,6 +506,9 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   len = parse_str_2_int(b);
 
   write_status_header(connfd, SC_OK, ST_OK);
+  write_date_header(connfd);
+  write_conn_header(connfd, CONN_KEEP_HDR);
+  write_keep_alive_header(connfd, 0, 100);
   write_content_length_header(connfd, len);
   write_content_type_header(connfd, file_type);
 
@@ -511,9 +520,10 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
                              len);
 
   /* CHECK - this was writing 0 bytes - strlen(buf) = 0 */
+  write_empty_header(connfd);
   write(connfd, b2, strlen(b2));
 
-  printf("wrote data!!@@\n");
+  printf("wrote data:\n%s\n", b2);
 
   return 1;
 }
@@ -536,6 +546,7 @@ int peer_rate_response(int connfd, char* BUF, struct thread_data *ct){
 
   // CHECK 200 OK response on config_rate
   write_status_header(connfd, SC_OK, ST_OK);
+  write_empty_header(connfd);
 
   return 0;
 }
