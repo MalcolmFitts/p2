@@ -277,18 +277,20 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd) {
   syn_packet = create_packet(d_port, s_port, 0, node->content_path,
                                    PKT_FLAG_SYN);
 
-  printf("Sending SYN packet to: %s:%d\n", node->ip_hostname, node->port);
+  printf("Sending SYN packet to: %s:%d...\n", node->ip_hostname, node->port);
   /* sending SYN packet */
   n_sent = sendto(sockfd, &syn_packet, sizeof(syn_packet), 0,
                  (struct sockaddr*) &peer_addr, peer_addr_len);
-
-  printf("Packet sent!\nBytes sent: %d\n", n_sent);
 
   if(n_sent < 0) {
     /* TODO buffer info: "send SYN fail" */
     printf("Error on sending SYN packet.\n");
     exit(0);
   }
+
+  printf("Packet sent!\nBytes sent: %d\n", n_sent);
+
+  printf("Waiting to receive SYN_ACK packet...\n");
 
   /* receive SYN-ACK packet */
   n_recv = recvfrom(sockfd, &syn_ack_packet, sizeof(syn_ack_packet), 0,
@@ -300,10 +302,16 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd) {
     exit(0);
   }
 
-  if(get_packet_type(syn_ack_packet) != PKT_FLAG_SYN_ACK) {
-    /* TODO buffer info: "corrupted packet OR wrong packet type" */
-    printf("Error: incorrect packet type.\n");
-    exit(0);
+  while(get_packet_type(syn_ack_packet) != PKT_FLAG_SYN_ACK) {
+    /* receive SYN-ACK packet */
+    n_recv = recvfrom(sockfd, &syn_ack_packet, sizeof(syn_ack_packet), 0,
+                   (struct sockaddr *) &peer_addr, &peer_addr_len);
+
+    if(n_recv < 0) {
+      /* TODO buffer info: "recv ACK fail" */
+      printf("Error on receiving SYN-ACK packet.\n");
+      exit(0);
+    }
   }
 
   printf("Received SYN-ACK packet from: %s:%d\n", node->ip_hostname, node->port);
@@ -311,7 +319,7 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd) {
   /* storing buf for later return to caller & discarding local packets */
   /* CHECK - memcpy */
   size_t b_len = strlen(syn_ack_packet.buf);
-  memcpy(buf, syn_ack_packet.buf, b_len);
+  strncpy(buf, syn_ack_packet.buf, b_len);
 
   /* CHECK - not sure i should discard these packets here */
   //discard_packet(syn_packet);
@@ -343,13 +351,21 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
   struct sockaddr_in peer_addr = node->node_addr;
   socklen_t peer_addr_len = sizeof(peer_addr);
 
+  printf("Sending ACK packet to: %s:%d...\n", node->ip_hostname, node->port);
+
   /* sending ACK to peer node */
   n_sent = sendto(sockfd, &ack_pkt, sizeof(ack_pkt), 0,
                  (struct sockaddr *) &peer_addr, peer_addr_len);
 
   if(n_sent < 0) {
     /* TODO deal with fail on sending ACK */
+    printf("Error on sending ACK packet.\n");
+    exit(0);
   }
+
+  printf("Packet sent!\nBytes sent: %d\n", n_sent);
+  printf("Waiting to receive DATA packet from %s:%d...\n", node->ip_hostname, node->port);
+
 
   n_recv = recvfrom(sockfd, &data_pkt, sizeof(data_pkt), 0,
                    (struct sockaddr *) &peer_addr, &peer_addr_len);
@@ -358,13 +374,24 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
     /* TODO deal with fail on receiving data */
   }
 
-  if(get_packet_type(data_pkt) != PKT_FLAG_DATA) {
+  while(get_packet_type(data_pkt) != PKT_FLAG_DATA) {
     /* TODO deal with corrupted packet */
+    n_recv = recvfrom(sockfd, &data_pkt, sizeof(data_pkt), 0,
+                   (struct sockaddr *) &peer_addr, &peer_addr_len);
+
+    if(n_recv < 0) {
+      /* TODO deal with fail on receiving data */
+      printf("Error on receiving DATA packet.\n");
+      exit(0);
+    }
   }
+
+  printf("Received DATA packet from: %s:%d\n", node->ip_hostname, node->port);
 
   /* storing buf for later return to caller & discarding local packets */
   /* CHECK - memcpy */
-  size_t b_len = strlen(data_pkt.buf);
+  //size_t b_len = strlen(data_pkt.buf);
+  size_t b_len = data_pkt.header.length;
   memcpy(buf, data_pkt.buf, b_len);
 
   /* CHECK - not sure i should discard these packets here */

@@ -27,9 +27,10 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
     /* CHECK - might want to return info (in buf) on not finding file */
     if(!fp){
       /* TODO some error */
+      sprintf(packet->buf, "File: Not Found\nContent Size: -1\n");
     }
-    
-    /* finds correct starting point in file based on seq */
+    else{ 
+      /* finds correct starting point in file based on seq */
     int file_start = s_num * MAX_DATA_SIZE;
     fseek(fp, file_start, SEEK_SET);
 
@@ -37,6 +38,8 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
     /* CHECK - might want to save this value for FIN flag*/
     fread(packet->buf, 1, MAX_DATA_SIZE, fp);
     fclose(fp);
+    }
+    
   }
 
   else if(flag == PKT_FLAG_ACK) {
