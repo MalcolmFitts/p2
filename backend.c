@@ -20,7 +20,7 @@ void* recieve_pkt(void* ptr) {
   //printf("%d\n", sockfd);
 
   while(1) {
-    printf("Waiting for Packet\n");
+    printf("Waiting for Packet...\n");
     /* receiving packet and writing into p_buf */
     recv_status = recvfrom(sockfd, &packet, sizeof(packet), 0,
 		      (struct sockaddr *) &sender_addr, &sender_addr_len);
@@ -75,8 +75,11 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
     /* parsing filename from ACK packet buffer */
     sscanf(packet.buf, "Ready to send: %s\n", filename);
 
+    printf("Requested file: %s\n", filename);
+
     /* respond to ACK packet with data */
     data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_DATA);
+    printf("Sending DATA packet...\n");
   }
 
   else {
@@ -85,14 +88,17 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
     /* parsing filename from SYN packet buffer */
     sscanf(packet.buf, "Request: %s\n", filename);
 
+    printf("Requested file: %s\n", filename);
+
     /* respond to SYN packet with SYN-ACK */
     data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_SYN_ACK);
+    printf("Sending SYN-ACK packet...\n");
   }
 
   n_set = sendto(sockfd, &data_pkt, sizeof(data_pkt), 0,
 		 (struct sockaddr *) &server_addr, server_addr_len);
 
-  printf("Sent response packet!\n");
+  printf("Sent!\n\n");
 
   return n_set;
 }
@@ -452,6 +458,8 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   char* filepath = malloc(sizeof(char) * MAXLINE);
   char path[MAXLINE];
   char* file_type = malloc(sizeof(char) * MINLINE);
+  char* b;
+  char* b2;
 
   int len;
   int res;
@@ -490,7 +498,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   /* finding node with requested content */
   Node* node = check_content(node_dir, filepath);
 
-  if(!node){
+  if(!node) {
     /* 500 Error --> Failure to find content in node directory
      * TODO      --> flag (return) val: no node found */
     write_status_header(connfd, SC_NOT_FOUND, ST_NOT_FOUND);
@@ -511,7 +519,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
     return 0;
   }
 
-  char* b = sync_node(node, (uint16_t) (ct->port_be), ct->listenfd_be);
+  b = sync_node(node, (uint16_t) (ct->port_be), ct->listenfd_be);
 
   /* TODO check if fails */
 
@@ -520,6 +528,12 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
 
   /* TODO - will need to parse this differently once chanced sync_node {658} */
   len = parse_str_2_int(b);
+  
+
+  bzero(buf, BUFSIZE);
+  /* CHECK will not be full len after CP */
+  b2 = request_content(node, ct->port_be, ct->listenfd_be, ct->c_addr,
+                             len);
 
   write_status_header(connfd, SC_OK, ST_OK);
   write_date_header(connfd);
@@ -529,11 +543,6 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   write_content_type_header(connfd, file_type);
 
   printf("Wrote headers to client!\n");
-
-  bzero(buf, BUFSIZE);
-  /* CHECK will not be full len after CP */
-  char* b2 = request_content(node, ct->port_be, ct->listenfd_be, ct->c_addr,
-                             len);
 
   /* CHECK - this was writing 0 bytes - strlen(buf) = 0 */
   write_empty_header(connfd);

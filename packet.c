@@ -3,23 +3,23 @@
 Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
   char* filename, int flag) {
 
-  Pkt_t packet;
-  P_Hdr hdr;
+  Pkt_t *packet = malloc(sizeof(struct Packet));
+  P_Hdr *hdr = malloc(sizeof(struct Packet_Header));
   /* CHECK - fixing file buffer size to max size */
-  char f_buf[MAX_DATA_SIZE] = {0};
+  // char f_buf[MAX_DATA_SIZE] = {0};
 
-  hdr.source_port = s_port;
-  hdr.dest_port = dest_port;
-  hdr.seq_num = s_num;
+  hdr->source_port = s_port;
+  hdr->dest_port = dest_port;
+  hdr->seq_num = s_num;
 
   /* CHECK - fixing size of packets to max size for now */
-  hdr.length = MAX_PACKET_SIZE;
+  hdr->length = MAX_PACKET_SIZE;
 
   if(flag == PKT_FLAG_DATA) {
     /* data packet */
 
     /* set flag to DATA */
-    hdr.flag = (1 << PKT_FLAG_DATA);
+    hdr->flag = (1 << PKT_FLAG_DATA);
 
     /* checking file contents */
     FILE* fp = fopen(filename, "r");
@@ -28,11 +28,14 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
     if(!fp){
       /* TODO some error */
     }
-    rewind(fp);
+    
+    /* finds correct starting point in file based on seq */
+    int file_start = s_num * MAX_DATA_SIZE;
+    fseek(fp, file_start, SEEK_SET);
 
     /* storing file contents in f_buf and closing file */
-    /* CHECK - might want to save this value */
-    fread(f_buf, 1, MAX_DATA_SIZE, fp);
+    /* CHECK - might want to save this value for FIN flag*/
+    fread(packet->buf, 1, MAX_DATA_SIZE, fp);
     fclose(fp);
   }
 
@@ -40,29 +43,29 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
     /* ACK packet */
 
     /* set flag to ACK */
-    hdr.flag = (1 << PKT_FLAG_ACK);
+    hdr->flag = (1 << PKT_FLAG_ACK);
 
     /*
      *  CHECK - not sure how to send ACK info - hdr->ACK_NUM (need to impelment)
      *  NOT in buffer here
      */
-    sprintf(f_buf, "Ready to send: %s\n", filename);
+    sprintf(packet->buf, "Ready to send: %s\n", filename);
   }
   else if(flag == PKT_FLAG_SYN) {
     /* SYN packet */
 
     /* set flag to SYN */
-    hdr.flag =  (1 << PKT_FLAG_SYN);
+    hdr->flag =  (1 << PKT_FLAG_SYN);
 
     /* CHECK - not sure how to send SYN info - maybe in buffer */
     /* TODO - Data offset here to pass options in the data buffer (hdr->data_offset) */
-    sprintf(f_buf, "Request: %s\n", filename);
+    sprintf(packet->buf, "Request: %s\n", filename);
   }
   else if(flag == PKT_FLAG_SYN_ACK) {
     /* SYN-ACK packet */
 
     /* set flag to SYN-ACK */
-    hdr.flag =  (1 << PKT_FLAG_SYN_ACK);
+    hdr->flag =  (1 << PKT_FLAG_SYN_ACK);
 
     /* CHECK - not sure how to send SYN-ACK info - maybe in buffer */
     /* TODO - Data offset here to pass options in the data buffer */
@@ -77,7 +80,7 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
       int f_size = fStat->st_size;
 
       /* storing info in buffer */
-      sprintf(f_buf, "File: %s\nContent Size: %d\n", filename, f_size);
+      sprintf(packet->buf, "File: %s\nContent Size: %d\n", filename, f_size);
 
       /* freeing mem and closing file */
       free(fStat);
@@ -86,12 +89,12 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
     else if(flag == PKT_FLAG_FIN) {
 
       /* set flag to FIN */
-      hdr.flag = (1 << PKT_FLAG_FIN);
+      hdr->flag = (1 << PKT_FLAG_FIN);
 
     }
     else{
       /* info on no file found in buffer */
-      sprintf(f_buf, "File: Not Found\nContent Size: -1\n");
+      sprintf(packet->buf, "File: Not Found\nContent Size: -1\n");
     }
 
   }
@@ -99,26 +102,26 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
   else if (flag == PKT_FLAG_FIN){
 
     /* set flag to FIN */
-    hdr.flag = PKT_FIN_MASK;
+    hdr->flag = PKT_FIN_MASK;
 
   }
   else {
     /* invalid file creation flag */
   }
 
-  char* dest = strcpy(packet.buf, f_buf);
+  // char* dest = strcpy(packet->buf, f_buf);
 
-  if (dest == NULL){
-    /* Some error */
-  }
+  // if (dest == NULL){
+  //   /* Some error */
+  // }
 
   /* TODO CHECK - calculate checksum value */
-  uint16_t c = calc_checksum(hdr);
-  hdr.checksum = c;
+  uint16_t c = calc_checksum(*hdr);
+  hdr->checksum = c;
 
-  packet.header = hdr;
+  packet->header = (*hdr);
 
-  return packet;
+  return *packet;
 }
 
 void discard_packet(Pkt_t *packet) {
