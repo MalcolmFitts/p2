@@ -41,7 +41,7 @@ typedef struct Peer_Node {
 typedef struct Node_Directory {
 	int cur_nodes;        /* current nbr of nodes             */
 	int max_nodes;        /* max possible nbr of nodes        */
-	Node *n_array;     /* array of pointers to nodes       */
+	Node *n_array;        /* array of pointers to nodes       */
 } Node_Dir;
 
 struct thread_data {

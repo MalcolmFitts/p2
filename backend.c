@@ -70,6 +70,8 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
 
   /* Create the packet to be sent */
   if (flag == PKT_FLAG_ACK) {
+    printf("Received packet type: ACK\n");
+
     /* parsing filename from ACK packet buffer */
     sscanf(packet.buf, "Ready to send: %s\n", filename);
 
@@ -78,6 +80,8 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
   }
 
   else {
+    printf("Received packet type: SYN\n");
+
     /* parsing filename from SYN packet buffer */
     sscanf(packet.buf, "Request: %s\n", filename);
 
@@ -87,6 +91,8 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
 
   n_set = sendto(sockfd, &data_pkt, sizeof(data_pkt), 0,
 		 (struct sockaddr *) &server_addr, server_addr_len);
+
+  printf("Sent response packet!\n");
 
   return n_set;
 }
