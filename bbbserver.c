@@ -230,10 +230,10 @@ void *serve_client_thread(void *ptr) {
   }
 
   if(flag_fe) {
-    printf("Front-end Request handled.\n");
+    printf("Front-end Request handled.\n\n");
   }
   else if(flag_be) {
-    printf("Back-end Request handled.\n");
+    printf("Back-end Request handled.\n\n");
   }
   else{
     numthreads--;

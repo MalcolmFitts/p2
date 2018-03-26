@@ -254,30 +254,24 @@ Node* check_content(Node_Dir* dir, char* filename) {
 }
 
 char* sync_node(Node* node, uint16_t s_port, int sockfd) {
-  printf("Made it to sync...\n");
-  char buf[BUFSIZE];
+  char buf[MAX_DATA_SIZE];
   int n_sent;
   int n_recv;
   uint16_t d_port = node->port;
 
   // unsigned int peer_ip = (unsigned int) parse_str_2_int(node->ip_hostname);
   // short peer_port = (short) node->port;
-  printf("Made it to backend.c:255\n");
   struct sockaddr_in peer_addr = node->node_addr;
   socklen_t peer_addr_len = sizeof(peer_addr);
 
   Pkt_t syn_packet;
   Pkt_t syn_ack_packet;
 
-  printf("Made it to backend.c:262\n");
-
   /* create SYN packet to send to node */
   syn_packet = create_packet(d_port, s_port, 0, node->content_path,
                                    PKT_FLAG_SYN);
 
-  printf("Made it to backend.c:268\n");
-
-  printf("Sending packet!\n");
+  printf("Sending SYN packet to: %s:%d\n", node->ip_hostname, node->port);
   /* sending SYN packet */
   n_sent = sendto(sockfd, &syn_packet, sizeof(syn_packet), 0,
                  (struct sockaddr*) &peer_addr, peer_addr_len);
@@ -296,11 +290,17 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd) {
 
   if(n_recv < 0) {
     /* TODO buffer info: "recv ACK fail" */
+    printf("Error on receiving SYN-ACK packet.\n");
+    exit(0);
   }
 
   if(get_packet_type(syn_ack_packet) != PKT_FLAG_SYN_ACK) {
     /* TODO buffer info: "corrupted packet OR wrong packet type" */
+    printf("Error: incorrect packet type.\n");
+    exit(0);
   }
+
+  printf("Received SYN-ACK packet from: %s:%d\n", node->ip_hostname, node->port);
 
   /* storing buf for later return to caller & discarding local packets */
   /* CHECK - memcpy */
@@ -399,7 +399,7 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
     return 0;
   }
 
-  printf("parsed peer add successfully.\n\n");
+  printf("parsed peer add successfully.\n");
 
   /* parsing string reps to ints and freeing memory */
   port = parse_str_2_int(port_c);
@@ -427,7 +427,12 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
   /* 200 Code  --> Success!
    * TODO      --> flag (return) val: success */
   write_status_header(connfd, SC_OK, ST_OK);
+  write_date_header(connfd);
+  write_conn_header(connfd, CONN_KEEP_HDR);
+  write_keep_alive_header(connfd, 0, 100);
   write_empty_header(connfd);
+
+  printf("Wrote headers to client.\n");
 
   char client_resp[BUFSIZE] = {0};
   sprintf(client_resp, "Peer Add Success!\nNode hostname: %s\nNode port: %d\nNode content: %s\nNode rate: %d\n", 
@@ -435,7 +440,8 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
 
   send(connfd, client_resp, strlen(client_resp), 0);
 
-  printf("wrote headers!\n");
+  printf("Wrote server info to client.\n");
+
   return 1;
 }
 
@@ -446,7 +452,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   char* filepath = malloc(sizeof(char) * MAXLINE);
   char path[MAXLINE];
   char* file_type = malloc(sizeof(char) * MINLINE);
-  //Node* node;
+
   int len;
   int res;
 
@@ -463,7 +469,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
     return 0;
   }
 
-  printf("trying to get peer file: %s\n", filepath);
+  printf("Requested peer file: %s\n", filepath);
 
   bzero(path, MAXLINE);
   strcpy(path, filepath);
@@ -492,7 +498,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
     return 0;
   }
 
-  printf("Node with content: %s:%d\n", node->ip_hostname, node->port);
+  printf("Known node with content: %s:%d\n", node->ip_hostname, node->port);
 
   bzero(buf, BUFSIZE);
 
@@ -505,13 +511,11 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
     return 0;
   }
 
-  printf("ct is fine.\n");
-
   char* b = sync_node(node, (uint16_t) (ct->port_be), ct->listenfd_be);
 
   /* TODO check if fails */
 
-  printf("synced node!\n");
+  printf("Synced with node: %s:%d\n", node->ip_hostname, node->port);
   printf("received syn-ack buffer:\n%s\n", b);
 
   /* TODO - will need to parse this differently once chanced sync_node {658} */
@@ -524,7 +528,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   write_content_length_header(connfd, len);
   write_content_type_header(connfd, file_type);
 
-  printf("wrote headers to client!\n");
+  printf("Wrote headers to client!\n");
 
   bzero(buf, BUFSIZE);
   /* CHECK will not be full len after CP */
@@ -535,7 +539,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   write_empty_header(connfd);
   write(connfd, b2, strlen(b2));
 
-  printf("wrote data:\n%s\n", b2);
+  printf("Written data:\n%s\n", b2);
 
   return 1;
 }
