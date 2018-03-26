@@ -399,7 +399,7 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
     return 0;
   }
 
-  printf("parsed peer add successfully.\n");
+  printf("parsed peer add successfully.\n\n");
 
   /* parsing string reps to ints and freeing memory */
   port = parse_str_2_int(port_c);
@@ -422,12 +422,18 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
 
   /* CHECK - debug printing */
   printf("Node hostname: %s\nNode port: %d\n", n->ip_hostname, n->port);
-  printf("Node content: %s\nNode rate: %d\n", n->content_path, n->content_rate);
+  printf("Node content: %s\nNode rate: %d\n\n", n->content_path, n->content_rate);
 
   /* 200 Code  --> Success!
    * TODO      --> flag (return) val: success */
   write_status_header(connfd, SC_OK, ST_OK);
   write_empty_header(connfd);
+
+  char client_resp[BUFSIZE] = {0};
+  sprintf(client_resp, "Peer Add Success!\nNode hostname: %s\nNode port: %d\nNode content: %s\nNode rate: %d\n", 
+    n->ip_hostname, n->port, n->content_path, n->content_rate);
+
+  send(connfd, client_resp, strlen(client_resp), 0);
 
   printf("wrote headers!\n");
   return 1;
