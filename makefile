@@ -1,5 +1,5 @@
 CC = gcc
-ARGS = -pthread -Wall -O2 -I .
+ARGS = -g -pthread -Wall -O2 -I .
 
 all: clean sl pa pkt dw be fe bbbserver
 
@@ -32,3 +32,6 @@ send: send.c
 
 recv: recieve.c
 	$(CC) $(ARGS) -o recv recieve.c
+
+serv: server.c
+	$(CC) $(ARGS) -o serv server.c
