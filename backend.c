@@ -46,10 +46,12 @@ void* recieve_pkt(void* ptr) {
     /* TODO add FIN implimentation */
     if(type == PKT_FLAG_UNKNOWN) {
       printf("Server received packet with unknown flag.\n");
+      printf("{temp} ignoring this packet for now.\n\n");
     }
     
-    else if(flag == PKT_FLAG_CORRUPT) {
+    else if(type == PKT_FLAG_CORRUPT) {
       printf("Server received packet with corrupt flag.\n");
+      printf("{temp} ignoring this packet for now.\n\n");
     }
     
 
@@ -114,7 +116,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
 
   else {
     
-    else if(flag == PKT_FLAG_SYN_ACK) {
+    if(flag == PKT_FLAG_SYN_ACK) {
       printf("Server received packet with SYN-ACK flag.\n");
       printf("Should not have received this type of packet here.\n");
     }
@@ -122,7 +124,6 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
       printf("Server received packet with DATA flag.\n");
       printf("Should not have received this type of packet here.\n");
     }
-
     
     return 0;
   }
