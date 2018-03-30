@@ -77,6 +77,9 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
   int n_set;
   Pkt_t data_pkt;
 
+  struct hostent *hostp;          /* client host info */
+  char *hostaddrp;                /* dotted decimal host addr string */
+
   /* Create the packet to be sent */
   if (flag == PKT_FLAG_ACK) {
     printf("Received packet type: ACK\n");
@@ -103,6 +106,12 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
     data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_SYN_ACK);
     printf("Sending SYN-ACK packet...\n");
   }
+
+  hostp = gethostbyaddr((const char *)&server_addr.sin_addr.s_addr,
+        sizeof(server_addr.sin_addr.s_addr), AF_INET);
+  hostaddrp = inet_ntoa(server_addr.sin_addr);
+
+  printf("Packet destination: %s (%s)\n", hostp->h_name, hostaddrp);
 
   n_set = sendto(sockfd, &data_pkt, sizeof(data_pkt), 0,
 		 (struct sockaddr *) &server_addr, server_addr_len);
@@ -279,6 +288,9 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd) {
   struct sockaddr_in peer_addr = node->node_addr;
   socklen_t peer_addr_len = sizeof(peer_addr);
 
+  // struct hostent *hostp;          /* client host info */
+  // char *hostaddrp;                /* dotted decimal host addr string */
+
   Pkt_t syn_packet;
   Pkt_t syn_ack_packet;
 
@@ -310,6 +322,12 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd) {
     printf("Error on receiving SYN-ACK packet.\n");
     exit(0);
   }
+
+  // hostp = gethostbyaddr((const char *)&peer_addr.sin_addr.s_addr,
+  //       sizeof(peer_addr.sin_addr.s_addr), AF_INET);
+  // hostaddrp = inet_ntoa(peer_addr.sin_addr);
+
+  // printf("Packet sender: %s (%s)\n", hostp->h_name, hostaddrp);
 
   while(get_packet_type(syn_ack_packet) != PKT_FLAG_SYN_ACK) {
     /* receive SYN-ACK packet */
@@ -381,6 +399,8 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
 
   if(n_recv < 0) {
     /* TODO deal with fail on receiving data */
+    printf("Error on receiving data packet.\n");
+    exit(0);
   }
 
   while(get_packet_type(data_pkt) != PKT_FLAG_DATA) {
@@ -400,7 +420,9 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
   /* storing buf for later return to caller & discarding local packets */
   /* CHECK - memcpy */
   //size_t b_len = strlen(data_pkt.buf);
-  size_t b_len = data_pkt.header.length;
+
+  //sets b_len to received bytes - packet header size = data size
+  size_t b_len = n_recv - P_HDR_SIZE;
   memcpy(buf, data_pkt.buf, b_len);
 
   /* CHECK - not sure i should discard these packets here */
