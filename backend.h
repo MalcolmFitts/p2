@@ -18,11 +18,14 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
+#include <pthread.h>
 
 #include "parser.h"
 #include "serverlog.h"
 #include "datawriter.h"
 #include "packet.h"
+
+pthread_mutex_t stdout_lock;
 
 /* Peer Node Constant(s) */
 #define MAX_NODES 50
@@ -31,9 +34,9 @@
 typedef struct Peer_Node {
 	int content_rate;	  /* avg content bit rate (kbps) 	  */
 	short port;		  	  /* back-end port num 				  */
+	struct sockaddr_in node_addr; /* node's address */
 	char* content_path;   /* filepath to content in peer node */
 	char* ip_hostname;	  /* ip/hostname of peer node 		  */
-	struct sockaddr_in node_addr; /* node's address */
 } Node;
 
 
@@ -41,7 +44,7 @@ typedef struct Peer_Node {
 typedef struct Node_Directory {
 	int cur_nodes;        /* current nbr of nodes             */
 	int max_nodes;        /* max possible nbr of nodes        */
-	Node *n_array;     /* array of pointers to nodes       */
+	Node *n_array;        /* array of nodes       */
 } Node_Dir;
 
 struct thread_data {
@@ -49,7 +52,7 @@ struct thread_data {
   int connfd;                 /* connection fd */
   int tid;                    /* thread id tag */
   int num;                    /* DEBUG - overall connected num */
-  int listenfd_be;            /* back end listening socket */
+  int listenfd_be;              /* back end listening socket */
   int port_be;                /* back end port */
 };
 
@@ -76,7 +79,7 @@ struct thread_data {
  *
  *
  */
-void* recieve_pkt(void* ptr);
+void* handle_be(void* ptr);
 
 /*
  *  serve_content
@@ -86,15 +89,6 @@ void* recieve_pkt(void* ptr);
  */
 int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
 									int flag);
-
-
-/* TODO make sure this works (serveraddr_be prob should be a pointer)
- *
- *  init_backend
- *		- initalizes the backend port for the server node
- *
- */
-int init_backend(short port_be, struct sockaddr_in* self_addr);
 
 /*
  *  create_node
@@ -108,7 +102,7 @@ int init_backend(short port_be, struct sockaddr_in* self_addr);
  *		- pointer to allocated node on success
  *		- NULL pointer on fail
  */
-Node* create_node(char* path, char* name, int port, int rate);
+Node create_node(char* path, char* name, int port, int rate);
 
 
 /*
@@ -124,7 +118,7 @@ Node* create_node(char* path, char* name, int port, int rate);
  *		- returns 0 on failure to find content
  *		- return -1 if node is null
  */
-int check_node_content(Node* pn, char* filename);
+int check_node_content(Node n, char* filename);
 
 
 /*
@@ -142,10 +136,6 @@ int check_node_content(Node* pn, char* filename);
  */
 Node_Dir* create_node_dir(int max);
 
-
-
-
-
 /*
  *  add_node
  *		- adds node to node directory, given directory is not full
@@ -154,7 +144,7 @@ Node_Dir* create_node_dir(int max);
  *		- returns 1 on success (added node to directory)
  *		- returns 0 on fail
  */
-int add_node(Node_Dir* nd, Node* node);
+int add_node(Node_Dir* nd, Node node);
 
 /*
  *  check_content
@@ -168,7 +158,7 @@ int add_node(Node_Dir* nd, Node* node);
  *	~front-end interaction:
  *		- front-end should use returned Node for sync_node
  */
-Node* check_content(Node_Dir* dir, char* filename);
+Node check_content(Node_Dir* dir, char* filename);
 
 
 /*  TODO  --  CHECK
@@ -186,7 +176,7 @@ Node* check_content(Node_Dir* dir, char* filename);
  *		- will parse info for headers on successful sync
  *
  */
- char* sync_node(Node* node, uint16_t s_port, int sockfd);
+void sync_node(Node node, uint16_t s_port, int sockfd);
 
 /*  TODO  --  CHECK
  *
@@ -203,7 +193,7 @@ Node* check_content(Node_Dir* dir, char* filename);
  *    - will parse info for headers on successful sync
  *
  */
-char* request_content(Node* node, uint16_t s_port, int sockfd,
+char* request_content(Node node, uint16_t s_port, int sockfd,
   struct sockaddr_in serveraddr, uint32_t seq_ack_num);
 
 /*  TODO

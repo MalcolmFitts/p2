@@ -26,8 +26,6 @@
 #define MAX_RANGE_NUM_LEN 32
 #define SERVER_NAME "BBBserver"
 
-int init_frontend(short port_fe, struct sockaddr_in* self_addr);
-
 /* Writes the frontend response to the client for a normal GET request */
 int frontend_response(int connfd, char* BUF, struct thread_data *ct);
 

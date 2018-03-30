@@ -43,19 +43,20 @@
 #define MAX_RANGE_NUM_LEN 32
 #define SERVER_NAME "BBBserver"
 
-
 /* DEFINED IN backend.h -- struct to hold data for initial threads */
 // struct thread_data {
 //   struct sockaddr_in c_addr;  /* client address struct */
 //   int connfd;                 /* connection fd */
 //   int tid;                    /* thread id tag */
 //   int num;                    /* DEBUG - overall connected num */
-//   int sockfd_be;            /* back end listening socket */
+//   int sockfd_be;              /* back end listening socket */
 //   int port_be;                /* back end port */
 // };
 
 /* function prototype */
 void *serve_client_thread(void *ptr);
+
+int init_port(unsigned short port, int flag);
 
 /* Global Variable(s): */
 Node_Dir* node_dir;           /* Directory for node referencing   */
@@ -65,18 +66,18 @@ int numthreads;               /* number of current threads        */
 
 int main(int argc, char **argv) {
   /* front-end (client) vars */
-  int sockfd_fe;                  /* listening socket */
-  short port_fe;                    /* client port to listen on */
+  uint16_t port_fe;                    /* client port to listen on */
   int connfd;                       /* connection socket */
 
   /* back-end (node) vars */
-  int sockfd_be;                  /* listening socket */
-  short port_be;                    /* back-end port to use */
+  uint16_t port_be;                    /* back-end port to use */
 
   /* client vars */
   struct sockaddr_in clientaddr;               /* client's addr */
   unsigned int clientlen = sizeof(clientaddr); /* size of client's address */
 
+  int sockfd_fe;                  /* listening socket */
+  int sockfd_be;                  /* listening socket */
 
   /* check command line args */
   if (argc != 3) {
@@ -89,23 +90,17 @@ int main(int argc, char **argv) {
 
   printf("front-end port: %d\nback-end port: %d\n", port_fe, port_be);
 
-  /* initialize front-end and back-end data */
-  struct sockaddr_in* self_addr_fe = malloc(sizeof(struct sockaddr_in));
-  struct sockaddr_in* self_addr_be = malloc(sizeof(struct sockaddr_in));
+  sockfd_fe = init_port(port_fe, 1);
+  sockfd_be = init_port(port_be, 0);
 
-  sockfd_fe = init_frontend(port_fe, self_addr_fe);
-  sockfd_be = init_backend(port_be, self_addr_be);
+  printf("sockfd_fe: %d sockfd_be: %d\n", sockfd_fe, sockfd_be);
 
   /* create node directory */
   node_dir = create_node_dir(MAX_NODES);
 
   /* spin-off thread for listening on back-end port and serving content */
-  int* sock_ptr = &sockfd_be;
   pthread_t tid_be;
-  pthread_create(&(tid_be), NULL, recieve_pkt, sock_ptr);
-
-  /* CHECK - not detaching threads */
-  //pthread_detach(tid_be);
+  pthread_create(&(tid_be), NULL, handle_be, (void *) &sockfd_be);
 
   /* initializing some local vars */
   numthreads = 0;
@@ -113,7 +108,9 @@ int main(int argc, char **argv) {
 
   /* main loop: */
   while (1) {
+    pthread_mutex_lock(&stdout_lock);
     sprintf(lb, "Waiting for a connection request...");
+    pthread_mutex_unlock(&stdout_lock);
     log_main(lb, ctr);
 
     /* accept: wait for a connection request */
@@ -146,11 +143,14 @@ void *serve_client_thread(void *ptr) {
   numthreads++;
 
   /* parse data back out of the ptr*/
-  struct thread_data *ct = ptr;
-  struct sockaddr_in clientaddr = ct->c_addr;
-  int connfd = ct->connfd;
-  int tid = ct->tid;
-  //Node_Dir* node_dir = ct->node_dir;
+  struct thread_data* ct = ptr;
+  struct sockaddr_in clientaddr;
+  int connfd;
+  int tid;
+
+  clientaddr = ct->c_addr;
+  connfd = ct->connfd;
+  tid = ct->tid;
 
   /* defining local vars */
   struct hostent *hostp;          /* client host info */
@@ -176,13 +176,15 @@ void *serve_client_thread(void *ptr) {
     server_error("ERROR on inet_ntoa\n", connfd);
   }
 
+  pthread_mutex_lock(&stdout_lock);
   sprintf(lb, "Server established connection with %s (%s)",
     hostp->h_name, hostaddrp);
+  pthread_mutex_unlock(&stdout_lock);
   log_thr(lb, ct->num, tid);
 
   sprintf(lb, "Connected client id: %d.", tid);
   log_thr(lb, ct->num, tid);
-  
+
   /* read: read input string from the client */
   bzero(buf, BUFSIZE);
   n = read(connfd, buf, BUFSIZE);
@@ -190,13 +192,13 @@ void *serve_client_thread(void *ptr) {
     numthreads--;
     server_error("ERROR reading from socket", connfd);
   }
-  
+
   sprintf(lb, "Server received %d Bytes", n);
   log_thr(lb, ct->num, tid);
   sprintf(lb, "Get Request Raw Headers:");
   log_thr(lb, ct->num, tid);
   log_msg(buf);
-  
+
   /* making copy of buffer to check for range requests */
   bzero(bufcopy, BUFSIZE);
   strcpy(bufcopy, buf);
@@ -245,4 +247,45 @@ void *serve_client_thread(void *ptr) {
   /* decrement num threads and return */
   numthreads--;
   return NULL;
+}
+
+int init_port(unsigned short port, int flag) {
+  int optval;
+  int sockfd;
+  struct sockaddr_in addr;
+  socklen_t lenaddr;
+
+  if(!flag){
+    sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+  } else {
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  }
+  if (sockfd < 0)
+    error("ERROR opening socket");
+
+ /*
+  *  setsockopt: Handy debugging trick that lets
+  *              us rerun the server immediately after we kill it;
+  *              otherwise we have to wait about 20 secs.
+  *              Eliminates "ERROR on binding: Address already in use" error.
+  */
+  optval = 1;
+  setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,
+            (const void *)&optval , sizeof(int));
+
+  bzero((char *) &addr, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  addr.sin_port = htons(port);
+  lenaddr = sizeof(addr);
+
+  if (bind(sockfd, (struct sockaddr *) &addr, lenaddr) < 0)
+    error("ERROR biding");
+
+  if (flag){
+    if (listen(sockfd, 10) < 0) /* allow 10 requests to queue up */
+      error("ERROR on listen");
+  }
+
+  return sockfd;
 }

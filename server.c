@@ -16,10 +16,9 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <time.h>
+#include <fcntl.h>
 
 #define BUFSIZE 1024
-
-static pthread_mutex_t printf_mutex;
 
 void* recv_fn(void* ptr);
 /*
@@ -58,8 +57,6 @@ int main(int argc, char **argv) {
   //peer_hostname = argv[1];
   be_portno = atoi(argv[1]);
 
-
-  pthread_mutex_init(&printf_mutex, NULL);
   /*
    * socket: create the parent socket
    */
@@ -94,19 +91,8 @@ int main(int argc, char **argv) {
   pthread_t tid_be;
   pthread_create(&(tid_be), NULL, recv_fn, (void *) &sockfd);
 
-  char go[BUFSIZE];
-  pthread_mutex_lock(&printf_mutex);
-  printf("Tell me when to stop: \n");
-  pthread_mutex_unlock(&printf_mutex);
-  pthread_mutex_lock(&printf_mutex);
-  fgets(go, BUFSIZE, stdin);
-  pthread_mutex_unlock(&printf_mutex);
-  int f;
-  f = shutdown(sockfd, 0);
-  pthread_mutex_lock(&printf_mutex);
-  printf("Socket should be closed\n");
-  pthread_mutex_unlock(&printf_mutex);
   while(1){
+
   }
 }
 
@@ -120,20 +106,33 @@ void* recv_fn(void* ptr){
   socklen_t peer_addr_len;
   peer_addr_len = sizeof(peer_addr);
 
-  while(1){
-    int recv_flag;
-    bzero(&buf, sizeof(buf));
-    pthread_mutex_lock(&printf_mutex);
-    printf("I am recieving\n");
-    pthread_mutex_unlock(&printf_mutex);
-    recv_flag = recvfrom(sockfd, &buf, sizeof(buf), 0,
-                        (struct sockaddr *) &peer_addr, &peer_addr_len);
+  fd_set readfds;
+  fcntl(sockfd, F_SETFL, O_NONBLOCK);
+  struct timeval tv;
 
-    if(recv_flag == -1){
-      error("Error on recvfrom():30");
-    }
-    pthread_mutex_lock(&printf_mutex);
-    printf("I am off\n");
-    pthread_mutex_unlock(&printf_mutex);
+  while(1){
+
+    FD_ZERO(&readfds);
+    FD_SET(sockfd, &readfds);
+
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+    int rv;
+    //rv = select(sockfd, &readfds, NULL, NULL, NULL);
+    int recv_flag;
+
+    //if (1){
+
+      bzero(&buf, sizeof(buf));
+      //printf("I am recieving\n");
+      recv_flag = recvfrom(sockfd, &buf, BUFSIZE, 0,
+                          (struct sockaddr *) &peer_addr, &peer_addr_len);
+
+      if(recv_flag == -1){
+        error("Error on recvfrom():30");
+      }
+      printf("%s", buf);
+
+    //}
   }
 }
