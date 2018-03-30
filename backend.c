@@ -23,7 +23,7 @@ void* recieve_pkt(void* ptr) {
   //printf("%d\n", sockfd);
 
   while(1) {
-    printf("Waiting for Packet...\n");
+    printf("Waiting for packet on backend...\n");
     /* receiving packet and writing into p_buf */
     recv_status = recvfrom(sockfd, &packet, sizeof(packet), 0,
 		      (struct sockaddr *) &sender_addr, &sender_addr_len);
@@ -44,9 +44,14 @@ void* recieve_pkt(void* ptr) {
 
     /* CHECK accepted types (SYN and ACK)*/
     /* TODO add FIN implimentation */
-    if (type == PKT_FLAG_UNKNOWN || type == PKT_FLAG_CORRUPT) {
-      /* TODO corrupted packet */
+    if(type == PKT_FLAG_UNKNOWN) {
+      printf("Server received packet with unknown flag.\n");
     }
+    
+    else if(flag == PKT_FLAG_CORRUPT) {
+      printf("Server received packet with corrupt flag.\n");
+    }
+    
 
     else {
       sent_status = serve_content(packet, sockfd, sender_addr, type);
@@ -108,12 +113,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
   }
 
   else {
-    if(flag == PKT_FLAG_UNKNOWN) {
-      printf("Server received packet with unknown flag.\n");
-    }
-    else if(flag == PKT_FLAG_CORRUPT) {
-      printf("Server received packet with corrupt flag.\n");
-    }
+    
     else if(flag == PKT_FLAG_SYN_ACK) {
       printf("Server received packet with SYN-ACK flag.\n");
       printf("Should not have received this type of packet here.\n");
@@ -123,7 +123,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
       printf("Should not have received this type of packet here.\n");
     }
 
-    printf("{temp} ignoring this packet for now.\n\n");
+    
     return 0;
   }
 
