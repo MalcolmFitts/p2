@@ -94,7 +94,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
     printf("Sending DATA packet...\n");
   }
 
-  else {
+  else if (flag == PKT_FLAG_SYN) {
     printf("Received packet type: SYN\n");
 
     /* parsing filename from SYN packet buffer */
@@ -105,6 +105,26 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
     /* respond to SYN packet with SYN-ACK */
     data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_SYN_ACK);
     printf("Sending SYN-ACK packet...\n");
+  }
+
+  else {
+    if(flag == PKT_FLAG_UNKNOWN) {
+      printf("Server received packet with unknown flag.\n");
+    }
+    else if(flag == PKT_FLAG_CORRUPT) {
+      printf("Server received packet with corrupt flag.\n");
+    }
+    else if(flag == PKT_FLAG_SYN_ACK) {
+      printf("Server received packet with SYN-ACK flag.\n");
+      printf("Should not have received this type of packet here.\n");
+    }
+    else if(flag == PKT_FLAG_DATA) {
+      printf("Server received packet with DATA flag.\n");
+      printf("Should not have received this type of packet here.\n");
+    }
+
+    printf("{temp} ignoring this packet for now.\n\n");
+    return 0;
   }
 
   hostp = gethostbyaddr((const char *)&server_addr.sin_addr.s_addr,
