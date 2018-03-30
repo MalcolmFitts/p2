@@ -17,6 +17,9 @@ void* recieve_pkt(void* ptr) {
   int sent_status;
   int recv_status;
 
+  struct hostent *hostp;          /* client host info */
+  char *hostaddrp;                /* dotted decimal host addr string */
+
   //printf("%d\n", sockfd);
 
   while(1) {
@@ -30,6 +33,12 @@ void* recieve_pkt(void* ptr) {
     if(recv_status < 0) {
       /* TODO - Error on receive packet */
     }
+
+    hostp = gethostbyaddr((const char *)&sender_addr.sin_addr.s_addr,
+        sizeof(sender_addr.sin_addr.s_addr), AF_INET);
+    hostaddrp = inet_ntoa(sender_addr.sin_addr);
+
+    printf("Packet sender: %s (%s)\n", hostp->h_name, hostaddrp);
 
     int type = get_packet_type(packet);
 
