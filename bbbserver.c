@@ -17,32 +17,31 @@
  *
  */
 
- #include "datawriter.h"
- #include "parser.h"
- #include "serverlog.h"
- #include "backend.h"
- #include "frontend.h"
- #include "mutex.h"
+#include "datawriter.h"
+#include "parser.h"
+#include "serverlog.h"
+#include "backend.h"
+#include "frontend.h"
 
- #include <stdio.h>
- #include <unistd.h>
- #include <stdbool.h>
- #include <stdlib.h>
- #include <string.h>
- #include <netdb.h>
- #include <sys/types.h>
- #include <sys/stat.h>
- #include <sys/socket.h>
- #include <netinet/in.h>
- #include <arpa/inet.h>
- #include <pthread.h>
- #include <time.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+#include <time.h>
 
- #define MAX_FILEPATH_LEN 512
- #define MAXLINE 8192
- #define BUFSIZE 1024
- #define MAX_RANGE_NUM_LEN 32
- #define SERVER_NAME "BBBserver"
+#define MAX_FILEPATH_LEN 512
+#define MAXLINE 8192
+#define BUFSIZE 1024
+#define MAX_RANGE_NUM_LEN 32
+#define SERVER_NAME "BBBserver"
 
 /* DEFINED IN backend.h -- struct to hold data for initial threads */
 // struct thread_data {

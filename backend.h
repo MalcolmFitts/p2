@@ -25,9 +25,10 @@
 #include "datawriter.h"
 #include "packet.h"
 #include "node.h"
-#include "mutex.h"
 
 #define COM_BUFSIZE 1500
+
+extern pthread_mutex_t mutex;
 
 struct thread_data {
   struct sockaddr_in c_addr;  /* client address struct */

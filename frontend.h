@@ -6,7 +6,6 @@
 #include "serverlog.h"
 #include "backend.h"
 #include "node.h"
-#include "mutex.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -32,6 +31,8 @@
 #define COM_BUF_HDR 2
 #define COM_BUF_FIN 3
 #define COM_BUFSIZE 1500
+
+extern pthread_mutex_t mutex;
 
 int init_frontend(short port_fe, struct sockaddr_in* self_addr);
 
