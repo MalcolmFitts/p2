@@ -15,7 +15,7 @@
 #include "parser.h"
 
 /* Packet Size Constants (bytes) */
-#define P_HDR_SIZE 16
+#define P_HDR_SIZE 20
 #define MAX_DATA_SIZE 1484
 #define MAX_PACKET_SIZE 1500
 
@@ -76,6 +76,8 @@ typedef struct Packet_Header {
   uint16_t flag;
   uint16_t data_offset;
 
+  char* com_buf;
+
 } P_Hdr;
 
 /* Packet Struct */
@@ -100,7 +102,7 @@ typedef struct Packet {
  *
  */
 Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
-  char* filename, int flag);
+  char* filename, int flag, char* com_buf);
 
 
 /*  TODO  --  CHECK
