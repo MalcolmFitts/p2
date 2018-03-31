@@ -151,26 +151,31 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct) {
 }
 
 void handle_be_response(char* COM_BUF, int connfd, char* content_type){
-   int cmp;
-   char BUF[COM_BUFSIZE];
-   char* data;
+  int cmp;
+  char BUF[BUFSIZE];
+  char* data;
+  int type;
 
-   while(1){
-     pthread_mutex_lock(&mutex);
-     memcpy(BUF, COM_BUF, COM_BUFSIZE);
-     memset(COM_BUF, '\0', COM_BUFSIZE);
-     pthread_mutex_unlock(&mutex);
-     if(BUF[0] != '\0'){
-       n_scan = sscanf(BUF, "%d %s\n", type, data);
-       if (numscanned != 2) {
-         printf("FE DOESNT UNDERSTAND BE\n");
-       }
-       switch(type){
+  while(1) {
+    /* Locking BE-FE communication buffer to safely copy data */
+    pthread_mutex_lock(&mutex);
+    memcpy(BUF, COM_BUF, BUFSIZE);
+    memset(COM_BUF, '\0', BUFSIZE);
+    pthread_mutex_unlock(&mutex);
 
-         case COM_BUF_HDR:
-          int content_len
+    if (BUF[0] != '\0') {
+      /* BUF has info for FE; parse type of response and data */
+      n_scan = sscanf(BUF, "%d %s\n", type, data);
+
+      if (n_scan != 2) {
+        printf("FE DOESNT UNDERSTAND BE\n");
+      }
+
+      switch(type){
+        case COM_BUF_HDR:
+          int content_len;
           n_scan = sscanf(data, "%d", content_len);
-          if (n_scan != 1){
+          if (n_scan != 1) {
             /* SERVER_ERROR */
             write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
             wtrite_empty_header(connfd);
@@ -182,18 +187,18 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
           write_empty_header(connfd);
           break;
 
-         case COM_BUF_DATA:
+        case COM_BUF_DATA:
           n_scan = sscanf(info, "%s", content);
           write(connfd, info, strlen(info));
           break;
 
-         case COM_BUF_FIN:
+        case COM_BUF_FIN:
           write_empty_header(connfd);
           break;
 
-         default:
+        default:
           printf("FE DOESN'T UNDERSTAND BE\n");
-          break
+          break;
        }
      }
    }

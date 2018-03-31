@@ -73,7 +73,7 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct);
  *  view_response_be
  */
  int peer_view_response(char* filepath, char* file_type, uint16_t port_be,
-                        int sockfd_be, Node_Dir* node_dir, char* COM_BUF);
+                        int sockfd_be, char* COM_BUF);
 
 /*  TODO
  *  rate_response_be
