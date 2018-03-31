@@ -22,6 +22,7 @@
 #include "serverlog.h"
 #include "backend.h"
 #include "frontend.h"
+#include "node.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -59,7 +60,6 @@ void *serve_client_thread(void *ptr);
 int init_port(unsigned short port, int flag);
 
 /* Global Variable(s): */
-Node_Dir* node_dir;           /* Directory for node referencing   */
 char lb[MAX_PRINT_LEN];       /* buffer for logging               */
 int numthreads;               /* number of current threads        */
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
   /* back-end (node) vars */
   int sockfd_be;                    /* listening socket */
   short port_be;                    /* back-end port to use */
-  struct sockaddr_in* self_addr_be  /* back-end address */
+  struct sockaddr_in* self_addr_be;  /* back-end address */
 
   /* client vars */
   struct sockaddr_in clientaddr;               /* client's addr */
@@ -97,11 +97,11 @@ int main(int argc, char **argv) {
   sockfd_be = init_backend(port_be, self_addr_be);
 
   /* create node directory */
-  node_dir = create_node_dir(MAX_NODES);
+  // node_dir = create_node_dir(MAX_NODES);
 
   /* spin-off thread for listening on back-end port and serving content */
   pthread_t tid_be;
-  pthread_create(&(tid_be), NULL, recieve_pkt, sock_ptr);
+  pthread_create(&(tid_be), NULL, handle_be, sock_ptr);
 
   /* initializing some local vars */
   numthreads = 0;
@@ -208,7 +208,7 @@ void *serve_client_thread(void *ptr) {
 
     case RQT_P_ADD:
       /* This goes to backend */
-      flag_be = peer_add_response(connfd, buf, ct, node_dir);
+      flag_be = peer_add_response(connfd, buf, ct);
 
       if(flag_be){
         /* 200 Code  --> Success! */
@@ -243,8 +243,7 @@ void *serve_client_thread(void *ptr) {
         write_empty_header(connfd);
         return 0;
       }
-      flag_be = peer_view_response(filepath, file_type, port_be, sockfd_be,
-                                   node_dir);
+      flag_be = peer_view_response(filepath, file_type, port_be, sockfd_be);
       /* couldn't find content */
       if(flag_be == 0){
         write_status_header(connfd, SC_NOT_FOUND, ST_NOT_FOUND);

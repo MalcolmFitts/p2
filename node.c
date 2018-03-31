@@ -51,6 +51,18 @@ int check_node_content(Node* pn, char* filename) {
 }
 
 
+int check_node_host(Node* pn, char* hostname) {
+  /* checking for null pointer */
+  if(!pn) return -1;
+
+  /* CHECK TODO - might have to check for /content/ start and whatnot */
+  if(strcmp(hostname, pn->ip_hostname) == 0) {
+    return 1;
+  }
+  return 0;
+}
+
+
 Node_Dir* create_node_dir(int max) {
   /* check for creation of dir larger than defined max */
   if(max > MAX_NODES) max = MAX_NODES;
@@ -87,7 +99,6 @@ int add_node(Node_Dir* nd, Node* node) {
     (nd->n_array[n]).port = node->port;
     (nd->n_array[n]).content_rate = node->content_rate;
     (nd->n_array[n]).node_addr = node->node_addr;
-    (nd->n_array[n]).state = 0;
 
     nd->cur_nodes = n + 1;
     return 1;
@@ -124,3 +135,33 @@ Node* check_content(Node_Dir* dir, char* filename) {
   Node* res = create_node(ref.content_path, ref.ip_hostname, ref.port, ref.content_rate);
   return res;
 }
+
+
+
+Node* find_node_by_hostname(Node_Dir* dir, char* hostname) {
+  int max = dir->cur_nodes;
+  int found = 0;
+  int index = -1;
+  Node* ref;
+
+  /* looping through directory and checking nodes */
+  int i;
+  for(i = 0; i < max; i++) {
+    Node t = dir->n_array[i];
+
+    /* checking node content -- CHECK TODO - check for content rate too?  */
+    if(check_node_host(&t, hostname) == 1 && !found) {
+      found = 1;
+      index = i;
+    }
+  }
+
+  /* did not find content */
+  if(!found || index == -1) return NULL;
+
+  ref = &(dir->n_array[index]);
+  return ref;
+}
+
+
+

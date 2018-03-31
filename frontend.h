@@ -5,6 +5,7 @@
 #include "parser.h"
 #include "serverlog.h"
 #include "backend.h"
+#include "node.h"
 
 #include <stdio.h>
 #include <unistd.h>

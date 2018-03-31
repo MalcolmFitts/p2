@@ -16,7 +16,7 @@
 
 /* Packet Size Constants (bytes) */
 #define P_HDR_SIZE 20
-#define MAX_DATA_SIZE 1484
+#define MAX_DATA_SIZE 1480
 #define MAX_PACKET_SIZE 1500
 
 
@@ -37,7 +37,7 @@
     "Request: <filename>\n"
 
  * PKT_FLAG_SYN_ACK:
-    "File: <filename>\nContent Size: <size>\n"
+    "File: <filename>\nContent Size: <size>\nRequired Packets: <num>\n"
 
  * PKT_FLAG_ACK:
     "Ready to send: <filename>\n"

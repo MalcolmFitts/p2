@@ -14,10 +14,6 @@
 #include <arpa/inet.h>
 #include <sys/stat.h>
 
-#include "parser.h"
-#include "serverlog.h"
-#include "datawriter.h"
-#include "packet.h"
 
 /* Peer Node Constant(s) */
 #define MAX_NODES 50
@@ -29,8 +25,6 @@ typedef struct Peer_Node {
 	char* content_path;   /* filepath to content in peer node */
 	char* ip_hostname;	  /* ip/hostname of peer node 		  */
 	struct sockaddr_in node_addr; /* node's address */
-
-	int state;
 } Node;
 
 
@@ -66,12 +60,27 @@ Node* create_node(char* path, char* name, int port, int rate);
  *		- filename should start with "content/"
  *		ex: filename = "content/rest/of/path.ogg"
  *
- *	~return values:f
+ *	~return values:
  *		- returns 1 on finding content in node
  *		- returns 0 on failure to find content
  *		- return -1 if node is null
  */
 int check_node_content(Node* pn, char* filename);
+
+
+/*
+ *  check_node_host
+ *		- checks peer_node for matching hostname
+ *
+ *	~param: hostname
+ *		ex: hostname = "128.2.3.137"
+ *
+ *	~return values:
+ *		- returns 1 on finding node has hostname
+ *		- returns 0 on non-matching hostname
+ *		- return -1 if node is null
+ */
+int check_node_host(Node* pn, char* hostname);
 
 
 /*
@@ -119,8 +128,17 @@ Node* check_content(Node_Dir* dir, char* filename);
 
 
 
-
-
+/*
+ *  find_node_by_hostname
+ *		- takes Node Directory and hostname and attempts to find matching node
+ *
+ *
+ *	~return values:
+ *		- returns pointer to node with hostname
+ *		- returns NULL if no node has this hostname in directory
+ *
+ */
+Node* find_node_by_hostname(Node_Dir* dir, char* hostname);
 
 
 
