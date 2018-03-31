@@ -151,15 +151,6 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct) {
 }
 
 void handle_be_response(char* COM_BUF, int connfd, char* content_type){
-  /* while(1){
-   *    Check for BE response
-   *    if BE response
-   *      send to client
-   *      check to see if we need to keep waiting
-   *      if not
-   *        break
-   * }
-   */
    int cmp;
    char BUF[BUFSIZE];
    char* data;
@@ -175,6 +166,7 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
          printf("FE DOESNT UNDERSTAND BE\n");
        }
        switch(type){
+
          case COM_BUF_HDR:
           int content_len
           n_scan = sscanf(data, "%d", content_len);
@@ -189,6 +181,7 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
           write_content_type_header(connfd, content_type);
           write_empty_header(connfd);
           break;
+
          case COM_BUF_DATA:
           n_scan = sscanf(info, "%s", content);
           write(connfd, info, strlen(info));
@@ -203,4 +196,5 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
      }
      sleep(10);
    }
+   return;
 }

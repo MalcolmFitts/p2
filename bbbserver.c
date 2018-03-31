@@ -202,6 +202,7 @@ void *serve_client_thread(void *ptr) {
   /* TODO: flag responses for peer add, view, and rate requests */
 
   switch(rqt){
+
     case RQT_P_ADD:
       /* This goes to backend */
       flag_be = peer_add_response(connfd, buf, ct, node_dir);
@@ -219,6 +220,7 @@ void *serve_client_thread(void *ptr) {
         write_empty_header(connfd);
       }
       break;
+
     case RQT_P_VIEW:
       /* This goes to backend */
       char* filepath = malloc(sizeof(char) * MAXLINE);
@@ -249,6 +251,7 @@ void *serve_client_thread(void *ptr) {
       }
       handle_be_response(COM_BUF, connfd, file_type);
       break;
+
     case RQT_P_RATE:
       /* This goes to backend */
       flag_be = peer_rate_response(connfd, buf, ct);
@@ -257,6 +260,7 @@ void *serve_client_thread(void *ptr) {
       numthreads--;
       error("ERROR Invalid GET request");
       break;
+
     default:
       /* Standard FE response */
       flag_fe = frontend_response(connfd, buf, ct);
