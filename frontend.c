@@ -137,8 +137,7 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct) {
       sprintf(lb, "Sending content to {Client %d}...", tid);
       log_thr(lb, ct->num, tid);
 
-      write_full_content(connfd, fp, fileExt,
-			 content_size, last_modified);
+      write_full_content(connfd, fp, fileExt, content_size, last_modified);
 
       sprintf(lb, "Sent %d bytes to {Client %d}!", content_size, tid);
       log_thr(lb, ct->num, tid);
@@ -151,10 +150,13 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct) {
 }
 
 void handle_be_response(char* COM_BUF, int connfd, char* content_type){
-  int cmp;
   char BUF[BUFSIZE];
-  char* data;
+  char* info = NULL;
+  char* data = NULL;
   int type;
+  int n_scan = 0;
+  int content_len;
+  char* content = NULL;
 
   while(1) {
     /* Locking BE-FE communication buffer to safely copy data */
@@ -165,7 +167,7 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
 
     if (BUF[0] != '\0') {
       /* BUF has info for FE; parse type of response and data */
-      n_scan = sscanf(BUF, "%d %s\n", type, data);
+      n_scan = sscanf(BUF, "%d %s\n", &type, data);
 
       if (n_scan != 2) {
         printf("FE DOESNT UNDERSTAND BE\n");
@@ -173,12 +175,11 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
 
       switch(type){
         case COM_BUF_HDR:
-          int content_len;
-          n_scan = sscanf(data, "%d", content_len);
+          n_scan = sscanf(data, "%d", &content_len);
           if (n_scan != 1) {
             /* SERVER_ERROR */
             write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
-            wtrite_empty_header(connfd);
+            write_empty_header(connfd);
             return;
           }
           write_status_header(connfd, SC_OK, ST_OK);

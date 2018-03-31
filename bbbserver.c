@@ -17,7 +17,32 @@
  *
  */
 
-#include "bbbserver.h"
+ #include "datawriter.h"
+ #include "parser.h"
+ #include "serverlog.h"
+ #include "backend.h"
+ #include "frontend.h"
+ #include "mutex.h"
+
+ #include <stdio.h>
+ #include <unistd.h>
+ #include <stdbool.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <netdb.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <sys/socket.h>
+ #include <netinet/in.h>
+ #include <arpa/inet.h>
+ #include <pthread.h>
+ #include <time.h>
+
+ #define MAX_FILEPATH_LEN 512
+ #define MAXLINE 8192
+ #define BUFSIZE 1024
+ #define MAX_RANGE_NUM_LEN 32
+ #define SERVER_NAME "BBBserver"
 
 /* DEFINED IN backend.h -- struct to hold data for initial threads */
 // struct thread_data {
@@ -28,6 +53,8 @@
 //   int sockfd_be;              /* back end listening socket */
 //   int port_be;                /* back end port */
 // };
+
+pthread_mutex_t mutex;
 
 /* function prototype */
 void *serve_client_thread(void *ptr);
@@ -41,13 +68,13 @@ int main(int argc, char **argv) {
   /* front-end (client) vars */
   int sockfd_fe;                    /* listening socket */
   short port_fe;                    /* client port to listen on */
-  struct sockaddr_in* self_addr_fe; /* front end address */
+  struct sockaddr_in* self_addr_fe = NULL; /* front end address */
   int connfd;                       /* connection socket */
 
   /* back-end (node) vars */
   int sockfd_be;                    /* listening socket */
   short port_be;                    /* back-end port to use */
-  struct sockaddr_in* self_addr_be;  /* back-end address */
+  struct sockaddr_in* self_addr_be = NULL;  /* back-end address */
 
   /* client vars */
   struct sockaddr_in clientaddr;               /* client's addr */
@@ -65,15 +92,17 @@ int main(int argc, char **argv) {
 
   printf("front-end port: %d\nback-end port: %d\n", port_fe, port_be);
 
-  mutex = PTHREAD_MUTEX_INITIALIZER;
+  pthread_mutex_init(&mutex, NULL);
 
   /* initialize front-end and back-end data */
   sockfd_fe = init_frontend(port_fe, self_addr_fe);
   sockfd_be = init_backend(port_be, self_addr_be);
 
+  int* be_sockfd_ptr = &sockfd_be;
+
   /* spin-off thread for listening on back-end port and serving content */
   pthread_t tid_be;
-  pthread_create(&(tid_be), NULL, handle_be, sock_ptr);
+  pthread_create(&(tid_be), NULL, handle_be, be_sockfd_ptr);
 
   /* initializing some local vars */
   numthreads = 0;
@@ -81,9 +110,7 @@ int main(int argc, char **argv) {
 
   /* main loop: */
   while (1) {
-    pthread_mutex_lock(&stdout_lock);
     sprintf(lb, "Waiting for a connection request...");
-    pthread_mutex_unlock(&stdout_lock);
     log_main(lb, ctr);
 
     /* accept: wait for a connection request */
@@ -128,6 +155,9 @@ void *serve_client_thread(void *ptr) {
   char bufcopy[BUFSIZE];          /* copy of message buffer */
   int n;                          /* message byte size */
 
+  char* filepath;
+  char* file_type;
+
   /* gethostbyaddr: determine who sent the message */
   hostp = gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr,
         sizeof(clientaddr.sin_addr.s_addr), AF_INET);
@@ -142,7 +172,6 @@ void *serve_client_thread(void *ptr) {
     server_error("ERROR on inet_ntoa\n", connfd);
   }
 
-  pthread_mutex_lock(&stdout_lock);
   sprintf(lb, "Server established connection with %s (%s)",
           hostp->h_name, hostaddrp);
   log_thr(lb, ct->num, tid);
@@ -198,24 +227,24 @@ void *serve_client_thread(void *ptr) {
 
     case RQT_P_VIEW:
       /* This goes to backend */
-      char* filepath = malloc(sizeof(char) * MAXLINE);
-      char* file_type = malloc(sizeof(char) * MINLINE);
+      filepath = malloc(sizeof(char) * MAXLINE);
+      file_type = malloc(sizeof(char) * MINLINE);
       uint16_t port_be = ct->port_be;
       int sockfd_be = ct->listenfd_be;
-      struct sockaddr_in client_addr = ct->c_addr;
       char* COM_BUF = malloc(sizeof(char) * BUFSIZE);
 
       memset(COM_BUF, '\0', BUFSIZE);
 
-      if((!parse_peer_view_content(BUF, filepath)) ||
-         (!parse_file_type(filepath, file_type)){
+      if((!parse_peer_view_content(bufcopy, filepath)) ||
+         (!parse_file_type(filepath, file_type))){
         /* 500 Error --> Failure to parse file type
          * TODO      --> flag (return) val: parse fail */
         write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
         write_empty_header(connfd);
         return 0;
       }
-      flag_be = peer_view_response(filepath, file_type, port_be, sockfd_be);
+      flag_be = peer_view_response(filepath, file_type, port_be, sockfd_be,
+                                   COM_BUF);
       /* couldn't find content */
       if(flag_be == 0){
         write_status_header(connfd, SC_NOT_FOUND, ST_NOT_FOUND);

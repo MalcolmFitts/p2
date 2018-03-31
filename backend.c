@@ -7,7 +7,6 @@
 
 #include "backend.h"
 
-
 /* Global - Directory for node referencing   */
 Node_Dir* node_dir;
 
@@ -389,16 +388,16 @@ struct sockaddr_in get_sockaddr_in(char* hostname, short port){
 }
 
 void send_hdr_to_fe(char* com_buf, int file_size){
-  char buf[COM_BUF_SIZE];
+  char buf[COM_BUFSIZE];
   sprintf(buf, "%d %d\n", 2, file_size);
   pthread_mutex_lock(&mutex);
   memcpy(com_buf, buf, strlen(buf));
   pthread_mutex_unlock(&mutex);
 }
 void send_data_to_fe(char* com_buf, char* data, int fin_flag){
-  char buf[COM_BUF_SIZE];
+  char buf[COM_BUFSIZE];
   sprintf(buf, "%d %s\n", 1, data);
   pthread_mutex_lock(&mutex);
-  memcpy(com_buf, buf, strlen(buf))
+  memcpy(com_buf, buf, strlen(buf));
   pthread_mutex_unlock(&mutex);
 }

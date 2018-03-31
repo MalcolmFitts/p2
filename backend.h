@@ -25,7 +25,9 @@
 #include "datawriter.h"
 #include "packet.h"
 #include "node.h"
-#include "bbbserver.h"
+#include "mutex.h"
+
+#define COM_BUFSIZE 1500
 
 struct thread_data {
   struct sockaddr_in c_addr;  /* client address struct */
@@ -63,6 +65,8 @@ void* handle_be(void* ptr);
  */
 int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
 									int flag);
+
+int init_backend(short port_be, struct sockaddr_in* self_addr);
 
 /*  TODO
  *  add_response_be

@@ -24,17 +24,9 @@ be: backend.c backend.h
 fe: frontend.c frontend.h
 	$(CC) $(ARGS) -o felib.o -c frontend.c
 
-bbbserver: bbbserver.c bbbserver.h datawriter.h parser.h node.h packet.h serverlog.h backend.h frontend.h
+bbbserver: bbbserver.c datawriter.h parser.h node.h packet.h serverlog.h backend.h frontend.h
 	$(CC) $(ARGS) -o bbbserver bbbserver.c dwlib.o palib.o nodelib.o pktlib.o sllib.o belib.o felib.o
 
 clean:
 	rm -f *.o bbbserver send recv serv palib.o nodelib.o dwlib.o pktlib.o sllib.o belib.o felib.o *~
-
-send: send.c
-	$(CC) $(ARGS) -o send send.c
-
-recv: recieve.c
-	$(CC) $(ARGS) -o recv recieve.c
-
-serv: server.c
-	$(CC) $(ARGS) -o serv server.c
+	
