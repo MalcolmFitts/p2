@@ -16,12 +16,14 @@ void* handle_be(void* ptr) {
   sender_addr_len = sizeof(sender_addr);
 
   Pkt_t packet;
-  int recv_flag = 0;
+  int sent_status;
+  int recv_status;
+
+  struct hostent *hostp;          /* client host info */
+  char *hostaddrp;                /* dotted decimal host addr string */
 
   while(1) {
-    pthread_mutex_lock(&stdout_lock);
-    printf("Waiting for Packet\n");
-    pthread_mutex_unlock(&stdout_lock);
+    printf("Waiting for packet on backend...\n");
     /* receiving packet and writing into p_buf */
     connfd = accept(sockfd, (struct sockaddr *) &sender_addr, &sender_addr_len);
     bzero(&packet, sizeof(packet));
@@ -31,18 +33,30 @@ void* handle_be(void* ptr) {
     if(recv_flag == -1){
       error("Error on recvfrom():30");
     }
-    //int type = get_packet_type(packet);
+
+    hostp = gethostbyaddr((const char *)&sender_addr.sin_addr.s_addr,
+        sizeof(sender_addr.sin_addr.s_addr), AF_INET);
+    hostaddrp = inet_ntoa(sender_addr.sin_addr);
+
+    printf("Packet sender: %s (%s)\n", hostp->h_name, hostaddrp);
+
+    int type = get_packet_type(packet);
 
     /* CHECK accepted types (SYN and ACK)*/
-    /*
-     * TODO add FIN implimentation
-     */
-    //if (type == PKT_FLAG_UNKNOWN || type == PKT_FLAG_CORRUPT) {
-      /* TODO corrupted packet */
-    //}
+    /* TODO add FIN implimentation */
+    if(type == PKT_FLAG_UNKNOWN) {
+      printf("Server received packet with unknown flag.\n");
+      printf("{temp} ignoring this packet for now.\n\n");
+    }
 
-    //else {
-      //sent_status = serve_content(packet, sockfd, sender_addr, type);
+    else if(flag == PKT_FLAG_CORRUPT) {
+      printf("Server received packet with corrupt flag.\n");
+      printf("{temp} ignoring this packet for now.\n\n");
+    }
+
+
+    else {
+      sent_status = serve_content(packet, sockfd, sender_addr, type);
 
       //if(sent_status < 0){
 	       /* TODO error on send */
@@ -71,25 +85,61 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
   int n_set;
   Pkt_t data_pkt;
 
+  struct hostent *hostp;          /* client host info */
+  char *hostaddrp;                /* dotted decimal host addr string */
+
   /* Create the packet to be sent */
   if (flag == PKT_FLAG_ACK) {
+    printf("Received packet type: ACK\n");
+
     /* parsing filename from ACK packet buffer */
     sscanf(packet.buf, "Ready to send: %s\n", filename);
 
+    printf("Requested file: %s\n", filename);
+
     /* respond to ACK packet with data */
     data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_DATA);
+    printf("Sending DATA packet...\n");
   }
 
-  else {
+  else if (flag == PKT_FLAG_SYN) {
+    printf("Received packet type: SYN\n");
+
     /* parsing filename from SYN packet buffer */
     sscanf(packet.buf, "Request: %s\n", filename);
 
+    printf("Requested file: %s\n", filename);
+
     /* respond to SYN packet with SYN-ACK */
     data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_SYN_ACK);
+    printf("Sending SYN-ACK packet...\n");
   }
+
+  else {
+
+    if(flag == PKT_FLAG_SYN_ACK) {
+      printf("Server received packet with SYN-ACK flag.\n");
+      printf("Should not have received this type of packet here.\n");
+    }
+    else if(flag == PKT_FLAG_DATA) {
+      printf("Server received packet with DATA flag.\n");
+      printf("Should not have received this type of packet here.\n");
+    }
+
+
+    return 0;
+  }
+
+  hostp = gethostbyaddr((const char *)&server_addr.sin_addr.s_addr,
+        sizeof(server_addr.sin_addr.s_addr), AF_INET);
+  hostaddrp = inet_ntoa(server_addr.sin_addr);
+
+  printf("Packet destination: %s (%s)\n", hostp->h_name, hostaddrp);
 
   n_set = sendto(sockfd, &data_pkt, sizeof(data_pkt), 0,
 		 (struct sockaddr *) &server_addr, server_addr_len);
+
+  printf("Sent!\n\n");
 
   return n_set;
 }
@@ -233,44 +283,38 @@ Node check_content(Node_Dir* dir, char* filename) {
     return n;
   };
 
-  Node res = create_node(n.content_path, n.ip_hostname, n.port,
-                          n.content_rate);
+  ref = dir->n_array[index];
+
+  Node* res = create_node(ref.content_path, ref.ip_hostname, ref.port, ref.content_rate);
   return res;
 }
 
-void sync_node(Node node, uint16_t s_port, int sockfd) {
-  pthread_mutex_lock(&stdout_lock);
-  printf("Made it to sync...\n");
-  pthread_mutex_unlock(&stdout_lock);
-  char buf[BUFSIZE];
+char* sync_node(Node* node, uint16_t s_port, int sockfd) {
+  char buf[MAX_DATA_SIZE];
   int n_sent;
   int n_recv;
   uint16_t node_port;
   node_port = node.port;
 
-  pthread_mutex_lock(&stdout_lock);
-  printf("Made it to backend.c:255\n");
-  pthread_mutex_unlock(&stdout_lock);
-  struct sockaddr_in peer_addr = node.node_addr;
+  // unsigned int peer_ip = (unsigned int) parse_str_2_int(node->ip_hostname);
+  // short peer_port = (short) node->port;
+  struct sockaddr_in peer_addr = node->node_addr;
   socklen_t peer_addr_len = sizeof(peer_addr);
+
+  // struct hostent *hostp;          /* client host info */
+  // char *hostaddrp;                /* dotted decimal host addr string */
 
   Pkt_t syn_packet;
   Pkt_t syn_ack_packet;
-
-  printf("Made it to backend.c:262\n");
 
   /* create SYN packet to send to node */
   syn_packet = create_packet(node_port, s_port, 0, node.content_path,
                                    PKT_FLAG_SYN);
 
-  printf("Made it to backend.c:268\n");
-
-  printf("Sending packet!\n");
+  printf("Sending SYN packet to: %s:%d...\n", node->ip_hostname, node->port);
   /* sending SYN packet */
   n_sent = sendto(sockfd, &syn_packet, sizeof(syn_packet), 0,
                  (struct sockaddr*) &peer_addr, peer_addr_len);
-
-  printf("Packet sent!\nBytes sent: %d\n", n_sent);
 
   if(n_sent < 0) {
     /* TODO buffer info: "send SYN fail" */
@@ -278,23 +322,50 @@ void sync_node(Node node, uint16_t s_port, int sockfd) {
     exit(0);
   }
 
+  printf("Packet sent!\nBytes sent: %d\n", n_sent);
+
+  printf("Waiting to receive SYN_ACK packet...\n");
+
   /* receive SYN-ACK packet */
   n_recv = recvfrom(sockfd, &syn_ack_packet, sizeof(syn_ack_packet), 0,
                    (struct sockaddr *) &peer_addr, &peer_addr_len);
 
   if(n_recv < 0) {
     /* TODO buffer info: "recv ACK fail" */
+    printf("Error on receiving SYN-ACK packet.\n");
+    exit(0);
   }
 
-  if(get_packet_type(syn_ack_packet) != PKT_FLAG_SYN_ACK) {
-    /* TODO buffer info: "corrupted packet OR wrong packet type" */
+  // hostp = gethostbyaddr((const char *)&peer_addr.sin_addr.s_addr,
+  //       sizeof(peer_addr.sin_addr.s_addr), AF_INET);
+  // hostaddrp = inet_ntoa(peer_addr.sin_addr);
+
+  // printf("Packet sender: %s (%s)\n", hostp->h_name, hostaddrp);
+
+  while(get_packet_type(syn_ack_packet) != PKT_FLAG_SYN_ACK) {
+    /* receive SYN-ACK packet */
+    n_recv = recvfrom(sockfd, &syn_ack_packet, sizeof(syn_ack_packet), 0,
+                   (struct sockaddr *) &peer_addr, &peer_addr_len);
+
+    if(n_recv < 0) {
+      /* TODO buffer info: "recv ACK fail" */
+      printf("Error on receiving SYN-ACK packet.\n");
+      exit(0);
+    }
   }
+
+  printf("Received SYN-ACK packet from: %s:%d\n", node->ip_hostname, node->port);
 
   /* storing buf for later return to caller & discarding local packets */
   /* CHECK - memcpy */
   size_t b_len = strlen(syn_ack_packet.buf);
-  memcpy(buf, syn_ack_packet.buf, b_len);
-  return;
+  strncpy(buf, syn_ack_packet.buf, b_len);
+
+  /* CHECK - not sure i should discard these packets here */
+  //discard_packet(syn_packet);
+  //discard_packet(syn_ack_packet);
+  char* res = buf;
+  return res;
 }
 
 char* request_content(Node node, uint16_t s_port, int sockfd,
@@ -305,18 +376,22 @@ char* request_content(Node node, uint16_t s_port, int sockfd,
   int n_recv;
   /* CHECK - maybe this is parsed wrong */
   //int d_host = parse_str_2_int(node->ip_hostname);
-  short d_port = node.port;
+
+  /* CHECK - both ports (source & dest) should be the same */
+  //short d_port = node->port;
 
   Pkt_t data_pkt;
   Pkt_t ack_pkt;
 
   /* creating ACK packet */
-  ack_pkt = create_packet(d_port, s_port, seq_ack_num,
-    node.content_path, PKT_FLAG_ACK);
+  ack_pkt = create_packet(s_port, s_port, seq_ack_num,
+    node->content_path, PKT_FLAG_ACK);
 
   /* creating sockaddr for peer node */
   struct sockaddr_in peer_addr = node.node_addr;
   socklen_t peer_addr_len = sizeof(peer_addr);
+
+  printf("Sending ACK packet to: %s:%d...\n", node->ip_hostname, node->port);
 
   /* sending ACK to peer node */
   n_sent = sendto(sockfd, &ack_pkt, sizeof(ack_pkt), 0,
@@ -324,22 +399,43 @@ char* request_content(Node node, uint16_t s_port, int sockfd,
 
   if(n_sent < 0) {
     /* TODO deal with fail on sending ACK */
+    printf("Error on sending ACK packet.\n");
+    exit(0);
   }
+
+  printf("Packet sent!\nBytes sent: %d\n", n_sent);
+  printf("Waiting to receive DATA packet from %s:%d...\n", node->ip_hostname, node->port);
+
 
   n_recv = recvfrom(sockfd, &data_pkt, sizeof(data_pkt), 0,
                    (struct sockaddr *) &peer_addr, &peer_addr_len);
 
   if(n_recv < 0) {
     /* TODO deal with fail on receiving data */
+    printf("Error on receiving data packet.\n");
+    exit(0);
   }
 
-  if(get_packet_type(data_pkt) != PKT_FLAG_DATA) {
+  while(get_packet_type(data_pkt) != PKT_FLAG_DATA) {
     /* TODO deal with corrupted packet */
+    n_recv = recvfrom(sockfd, &data_pkt, sizeof(data_pkt), 0,
+                   (struct sockaddr *) &peer_addr, &peer_addr_len);
+
+    if(n_recv < 0) {
+      /* TODO deal with fail on receiving data */
+      printf("Error on receiving DATA packet.\n");
+      exit(0);
+    }
   }
+
+  printf("Received DATA packet from: %s:%d\n", node->ip_hostname, node->port);
 
   /* storing buf for later return to caller & discarding local packets */
   /* CHECK - memcpy */
-  size_t b_len = strlen(data_pkt.buf);
+  //size_t b_len = strlen(data_pkt.buf);
+
+  //sets b_len to received bytes - packet header size = data size
+  size_t b_len = n_recv - P_HDR_SIZE;
   memcpy(buf, data_pkt.buf, b_len);
 
   /* CHECK - not sure i should discard these packets here */
@@ -372,15 +468,8 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
   /* CHECK - why using BUF when we have buf (copy of BUF) */
   int add_res = parse_peer_add(BUF, filepath, hostname, port_c, rate_c);
   if(!add_res) {
-    /* 500 Code  --> Failure to parse peer add request
-     * TODO      --> flag (return) val: parse fail */
-    write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
-    return 0;
+    return -1;
   }
-
-  pthread_mutex_lock(&stdout_lock);
-  printf("parsed peer add successfully.\n");
-  pthread_mutex_unlock(&stdout_lock);
 
   /* parsing string reps to ints and freeing memory */
   port = parse_str_2_int(port_c);
@@ -389,111 +478,60 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
   free(rate_c);
 
   /* creating node with parsed data */
-  Node n = create_node(filepath, hostname, port, rate);
-
-  if(n.content_rate == -1){
-    error("ERROR: on create_node");
-  }
-
+  Node* n = create_node(filepath, hostname, port, rate);
   if(!add_node(node_dir, n)){
-    /* 500 Code  --> Failure to add node to directory
-     * TODO      --> flag (return) val: add node fail */
-    write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
-    return 0;
+    return -1;
   }
-
-  pthread_mutex_lock(&stdout_lock);
-  printf("created & added node successfully. \n");
 
   /* CHECK - debug printing */
-  printf("Node hostname: %s\nNode port: %d\n", n.ip_hostname, n.port);
-  printf("Node content: %s\nNode rate: %d\n", n.content_path, n.content_rate);
-  pthread_mutex_unlock(&stdout_lock);
+  printf("Node hostname: %s\nNode port: %d\n", n->ip_hostname, n->port);
+  printf("Node content: %s\nNode rate: %d\n\n", n->content_path, n->content_rate);
 
-  /* 200 Code  --> Success!
-   * TODO      --> flag (return) val: success */
-  write_status_header(connfd, SC_OK, ST_OK);
-
-  pthread_mutex_lock(&stdout_lock);
-  printf("wrote headers!\n");
-  pthread_mutex_unlock(&stdout_lock);
   return 1;
 }
 
 /*
  *  TODO - replace writing headers/data with returning flag values
  */
-int peer_view_response(int connfd, char*BUF, struct thread_data *ct,
-                       Node_Dir* node_dir){
-  char* filepath = malloc(sizeof(char) * MAXLINE);
-  char path[MAXLINE];
-  char* file_type = malloc(sizeof(char) * MINLINE);
-  int res;
-
-  char* buf = "SUH";
-
-  struct sockaddr_in node_addr;
-  socklen_t node_addr_len;
-
-  /* return value - will be set bitwise */
-  // int ret_flag = 0;
-
-  /* parsing content filepath from original request */
-  res = parse_peer_view_content(BUF, filepath);
-  if(!res) {
-    /* 500 Error --> Failure to parse peer view request
-     * TODO      --> flag (return) val: parse fail */
-    write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
-    return 0;
-  }
-
-  pthread_mutex_lock(&stdout_lock);
-  printf("trying to get peer file: %s\n", filepath);
-  pthread_mutex_unlock(&stdout_lock);
-
-  bzero(path, MAXLINE);
-  strcpy(path, filepath);
-
-  /* parsing file type from filepath */
-  res = parse_file_type(path, file_type);
-  if(!res) {
-    /* 500 Error --> Failure to parse file type
-     * TODO      --> flag (return) val: parse fail */
-    write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
-    return 0;
-  }
+int peer_view_response(char* filepath, char* file_type, uint16_t port_be,
+                       int sockfd_be, Node_Dir* node_dir, char* COM_BUF){
+  Pkt_t syn_packet;
+  int sent;
+  struct sockaddr_in peer_addr;
+  socklen_t peer_addr_len;
 
   /* finding node with requested content */
   Node node = check_content(node_dir, filepath);
 
-  if(node.content_rate == -1){
+  if(!node) {
     /* 500 Error --> Failure to find content in node directory
-     * TODO      --> flag (return) val: no node found */
-    write_status_header(connfd, SC_NOT_FOUND, ST_NOT_FOUND);
-    return 0;
+     * TODO      --> flag (-1): no node found */
+    return -1;
   }
 
-  char *node_hostname = node.ip_hostname;
-  uint16_t node_port = node.port;
+  /* TODO: send a SYN to the peer node */
+  printf("Known node with content: %s:%d\n", node->ip_hostname, node->port);
 
-  pthread_mutex_lock(&stdout_lock);
-  printf("Node with content: %s:%d\n", node.ip_hostname, node.port);
-  pthread_mutex_unlock(&stdout_lock);
+  peer_addr = node->node_addr;
+  peer_addr_len = sizeof(peer_addr);
 
-  node_addr = get_sockaddr_in(node_hostname, (short) node_port);
-  node_addr_len = sizeof(node_addr);
+  /* TODO: send a SYN to the peer node */
+  printf("Known node with content: %s:%d\n", node->ip_hostname, node->port);
 
-  int my_sockfd;
-  my_sockfd = ct->listenfd_be;
+  /* TODO: send a SYN to the peer node */
+  syn_packet = create_packet(port_be, port_be, 0, node->content_path,
+                             PKT_FLAG_SYN, COM_BUF);
 
-  int sent = sendto(my_sockfd, buf, sizeof(buf), 0,
-                   (struct sockaddr *) &node_addr, node_addr_len);
+  sent = sendto(sockfd, &syn_packet, sizeof(syn_packet), 0,
+                  (struct sockaddr*) &peer_addr, peer_addr_len);
 
-  if(sent < 0){
-    error("ERROR on SEND.");
-  } else {
-    printf("SENT\n");
+  if(n_sent < 0) {
+  /* TODO buffer info: "send SYN fail" */
+    printf("Error on sending SYN packet.\n");
+    return -2;
   }
+
+  printf("Synced with node: %s:%d\n", node->ip_hostname, node->port);
 
   return 0;
 }
@@ -517,6 +555,7 @@ int peer_rate_response(int connfd, char* BUF, struct thread_data *ct){
 
   // CHECK 200 OK response on config_rate
   write_status_header(connfd, SC_OK, ST_OK);
+  write_empty_header(connfd);
 
   return 0;
 }
@@ -541,3 +580,5 @@ struct sockaddr_in get_sockaddr_in(char* hostname, short port){
 
   return addr;
 }
+
+/* filler end line */

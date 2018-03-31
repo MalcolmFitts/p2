@@ -44,7 +44,7 @@ typedef struct Peer_Node {
 typedef struct Node_Directory {
 	int cur_nodes;        /* current nbr of nodes             */
 	int max_nodes;        /* max possible nbr of nodes        */
-	Node *n_array;        /* array of nodes       */
+	Node *n_array;        /* array of pointers to nodes       */
 } Node_Dir;
 
 struct thread_data {
@@ -205,8 +205,8 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
 /*  TODO
  *  view_response_be
  */
-int peer_view_response(int connfd, char*BUF, struct thread_data *ct,
-											 Node_Dir* node_dir);
+ int peer_view_response(char* filepath, char* file_type, uint16_t port_be,
+                        int sockfd_be, Node_Dir* node_dir, char* COM_BUF);
 
 /*  TODO
  *  rate_response_be

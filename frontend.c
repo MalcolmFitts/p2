@@ -22,13 +22,9 @@ int init_frontend(short port_fe, struct sockaddr_in* self_addr){
   //struct sockaddr_in self_addr;
 
   /* CHECK - was not zeroing memory */
-  
-  /* we are using the Internet */
-  self_addr->sin_family = AF_INET;
-  /* accept reqs to any IP addr */
-  self_addr->sin_addr.s_addr = htonl(INADDR_ANY);
-  /* port to listen on */
-  self_addr->sin_port = htons(port_fe);
+  self_addr->sin_family = AF_INET; /* we are using the Internet */
+  self_addr->sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
+  self_addr->sin_port = htons((unsigned short) port_fe); /* port to listen on */
 
   /* bind: associate the listening socket with a port */
   if (bind(sockfd_fe, (struct sockaddr *) self_addr, sizeof(*self_addr)) < 0)
@@ -42,7 +38,6 @@ int init_frontend(short port_fe, struct sockaddr_in* self_addr){
 
   return sockfd_fe;
 }
-
 
 int frontend_response(int connfd, char* BUF, struct thread_data *ct) {
   char content_filepath[MAX_FILEPATH_LEN] = "./content";
@@ -153,4 +148,53 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct) {
     fclose(fp);
   }
   return 1;
+}
+
+void handle_be_response(char* COM_BUF, int connfd, char* content_type){
+   int cmp;
+   char BUF[BUFSIZE];
+   char* data;
+
+   while(1){
+     pthread_mutex_lock(&mutex);
+     memcpy(BUF, COM_BUF, BUFSIZE);
+     memset(COM_BUF, '\0', BUFSIZE);
+     pthread_mutex_unlock(&mutex);
+     if(BUF[0] != '\0'){
+       n_scan = sscanf(BUF, "%d %s\n", type, data);
+       if (numscanned != 2) {
+         printf("FE DOESNT UNDERSTAND BE\n");
+       }
+       switch(type){
+
+         case COM_BUF_HDR:
+          int content_len
+          n_scan = sscanf(data, "%d", content_len);
+          if (n_scan != 1){
+            /* SERVER_ERROR */
+            write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
+            wtrite_empty_header(connfd);
+            return;
+          }
+          write_status_header(connfd, SC_OK, ST_OK);
+          write_content_length_header(connfd, content_len);
+          write_content_type_header(connfd, content_type);
+          write_empty_header(connfd);
+          break;
+
+         case COM_BUF_DATA:
+          n_scan = sscanf(info, "%s", content);
+          write(connfd, info, strlen(info));
+          break;
+         case COM_BUF_FIN:
+          write_empty_header(connfd);
+          break;
+         default:
+          printf("FE DOESN'T UNDERSTAND BE\n");
+          break
+       }
+     }
+     sleep(10);
+   }
+   return;
 }
