@@ -8,22 +8,23 @@
 #include "backend.h"
 
 void* recieve_pkt(void* ptr) {
-  int sockfd = *(int*)ptr;
 
-  struct sockaddr_in sender_addr;
+  int sockfd = *(int*)ptr;        /* parsing sockfd from pointer arg */
+
+  struct sockaddr_in sender_addr; /* packet sender's address */
   socklen_t sender_addr_len = sizeof(sender_addr);
 
-  Pkt_t packet;
-  int sent_status;
-  int recv_status;
+  Pkt_t packet;                   /* packet struct */
+
+  int sent_status;                /* sent bytes */
+  int recv_status;                /* received bytes */
 
   struct hostent *hostp;          /* client host info */
   char *hostaddrp;                /* dotted decimal host addr string */
 
-  //printf("%d\n", sockfd);
-
   while(1) {
     printf("Waiting for packet on backend...\n");
+
     /* receiving packet and writing into p_buf */
     recv_status = recvfrom(sockfd, &packet, sizeof(packet), 0,
 		      (struct sockaddr *) &sender_addr, &sender_addr_len);
@@ -31,35 +32,38 @@ void* recieve_pkt(void* ptr) {
     printf("Recieved Packet!\n");
 
     if(recv_status < 0) {
-      /* TODO - Error on receive packet */
+      /* Failed to receive packet - restart listening */
+      printf("Error on receiving packet.\n");
+      continue;
     }
 
+    /* Parsing data about packet sender */
     hostp = gethostbyaddr((const char *)&sender_addr.sin_addr.s_addr,
         sizeof(sender_addr.sin_addr.s_addr), AF_INET);
     hostaddrp = inet_ntoa(sender_addr.sin_addr);
 
     printf("Packet sender: %s (%s)\n", hostp->h_name, hostaddrp);
 
+    /* parsing out the type of packet that was received */
     int type = get_packet_type(packet);
 
-    /* CHECK accepted types (SYN and ACK)*/
-    /* TODO add FIN implimentation */
+    /* checking for corrupt or unknown flagged packets */
     if(type == PKT_FLAG_UNKNOWN) {
       printf("Server received packet with unknown flag.\n");
       printf("{temp} ignoring this packet for now.\n\n");
     }
-    
     else if(type == PKT_FLAG_CORRUPT) {
       printf("Server received packet with corrupt flag.\n");
       printf("{temp} ignoring this packet for now.\n\n");
     }
     
-
+    /* responses for SYN, ACK, SYN-ACK and DATA packets */
     else {
       sent_status = serve_content(packet, sockfd, sender_addr, type);
 
-      if(sent_status < 0){
-	       /* TODO error on send */
+      if(sent_status < 0) {
+	       printf("Error: something went wrong with serving content after the fact.\n");
+
       }
     }
   }
@@ -67,41 +71,36 @@ void* recieve_pkt(void* ptr) {
 
 int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
                   int flag) {
-
-  /* parsing data from packet */
-  P_Hdr hdr = packet.header;
-
-  /* flipping ports to send packet back */
-  uint16_t s_port = hdr.dest_port;
-  uint16_t d_port = hdr.source_port;
-
-  /* CHECK s_num */
-  uint32_t s_num = hdr.seq_num;
-
-  /* local vars */
-  char filename[MAX_DATA_SIZE];
-  socklen_t server_addr_len = sizeof(server_addr);
-  int n_set;
+  /* Packet struct for sending response */
   Pkt_t data_pkt;
 
+  /* Response message length */
+  int n_set;
+
+  /* Content size from SYN-ACK packet buf */
+  int c_size;
+
+  /* Filename buffer */
+  char filename[MAX_DATA_SIZE];
+
+  /* Peer data variables */
+  socklen_t server_addr_len = sizeof(server_addr);
   struct hostent *hostp;          /* client host info */
   char *hostaddrp;                /* dotted decimal host addr string */
 
-  /* Create the packet to be sent */
-  if (flag == PKT_FLAG_ACK) {
-    printf("Received packet type: ACK\n");
+  /* Parsing header from packet */
+  P_Hdr hdr = packet.header;
 
-    /* parsing filename from ACK packet buffer */
-    sscanf(packet.buf, "Ready to send: %s\n", filename);
+  /* Assigning ports for response */
+  uint16_t s_port = hdr.dest_port;
+  uint16_t d_port = hdr.source_port;
 
-    printf("Requested file: %s\n", filename);
+  /* Packet sequence number*/
+  uint32_t s_num = hdr.seq_num;
 
-    /* respond to ACK packet with data */
-    data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_DATA);
-    printf("Sending DATA packet...\n");
-  }
 
-  else if (flag == PKT_FLAG_SYN) {
+  /* Responding to SYN packets: (peer node) */
+  if (flag == PKT_FLAG_SYN) {
     printf("Received packet type: SYN\n");
 
     /* parsing filename from SYN packet buffer */
@@ -109,23 +108,63 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
 
     printf("Requested file: %s\n", filename);
 
-    /* respond to SYN packet with SYN-ACK */
+    /* respond to SYN packet with SYN-ACK packet */
     data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_SYN_ACK);
     printf("Sending SYN-ACK packet...\n");
   }
 
-  else {
-    
-    if(flag == PKT_FLAG_SYN_ACK) {
-      printf("Server received packet with SYN-ACK flag.\n");
-      printf("Should not have received this type of packet here.\n");
+
+  /* Responding to SYN-ACK packets: (master node) */
+  else if (flag == PKT_FLAG_SYN_ACK) {
+    printf("Received packet type: SYN-ACK\n");
+
+    /* parsing filename and content size from SYN-ACK packet buffer */
+    int num_packs;
+    sscanf(packet.buf, "File: %s\nContent Size: %d\nRequired Packets: %d\n", filename, c_size, num_packs);
+
+    printf("Confirmed file: %s\nFile size: %d\nRequired Num Packets: %d\n", filename, c_size, num_packs);
+
+    /* respond to SYN-ACK packet with ACK packet */
+    /* CHECK s_num = 0 */
+    data_pkt = create_packet(d_port, s_port, 0, filename, PKT_FLAG_ACK);
+    printf("Sending ACK packet...\n");
+  }
+
+  /* Responding to ACK packets: (peer node) */
+  else if (flag == PKT_FLAG_ACK) {
+    printf("Received packet type: ACK\n");
+
+    /* parsing filename from ACK packet buffer */
+    sscanf(packet.buf, "Ready to send: %s\n", filename);
+
+    printf("Requested file: %s\n", filename);
+
+    /* respond to ACK packet with DATA packet */
+    data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_DATA);
+    printf("Sending DATA packet...\n");
+  }
+
+  /* Responding to DATA packets: (master node) */
+  else if(flag == PKT_FLAG_DATA) {
+    if((flag & PKT_FIN_MASK) > 0) {
+      /* Terminating data packet (last packet); Respond with FIN packet */
+      printf("Received packet type: DATA-FIN\n");
+
     }
-    else if(flag == PKT_FLAG_DATA) {
-      printf("Server received packet with DATA flag.\n");
-      printf("Should not have received this type of packet here.\n");
+
+    else {
+      /* Non-terminating data packet; Respond with ACK packet */
+      printf("Received packet type: DATA\n");
+
     }
-    
-    return 0;
+
+  }
+
+  /* Responding to FIN packets: (peer node) */
+  else if(flag == PKT_FLAG_FIN) {
+    printf("Received packet type: FIN\n");
+
+    /* TODO - update node state? */
   }
 
   hostp = gethostbyaddr((const char *)&server_addr.sin_addr.s_addr,
@@ -261,6 +300,7 @@ int add_node(Node_Dir* nd, Node* node) {
     (nd->n_array[n]).port = node->port;
     (nd->n_array[n]).content_rate = node->content_rate;
     (nd->n_array[n]).node_addr = node->node_addr;
+    (nd->n_array[n]).state = 0;
 
     nd->cur_nodes = n + 1;
     return 1;
@@ -509,8 +549,7 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
   printf("Node hostname: %s\nNode port: %d\n", n->ip_hostname, n->port);
   printf("Node content: %s\nNode rate: %d\n\n", n->content_path, n->content_rate);
 
-  /* 200 Code  --> Success!
-   * TODO      --> flag (return) val: success */
+  /* TODO      --> write in front-end */
   write_status_header(connfd, SC_OK, ST_OK);
   write_date_header(connfd);
   write_conn_header(connfd, CONN_KEEP_HDR);
