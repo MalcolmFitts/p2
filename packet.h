@@ -20,7 +20,7 @@
 #define MAX_PACKET_SIZE 1500
 
 
-/* Packet type (creation) flags */
+/* Packet type flags */
 #define PKT_FLAG_UNKNOWN -1
 #define PKT_FLAG_CORRUPT  0
 #define PKT_FLAG_DATA     1
@@ -29,12 +29,27 @@
 #define PKT_FLAG_SYN_ACK  4
 #define PKT_FLAG_FIN      5
 
-
 /* TODO add FIN implimentation */
 
-/*	possible future flag(s):
-#define PKT_FLAG_FRAG
-*/
+/* Packet Buffers Based On Flags:
+
+ * PKT_FLAG_SYN:
+    "Request: <filename>\n"
+
+ * PKT_FLAG_SYN_ACK:
+    "File: <filename>\nContent Size: <size>\n"
+
+ * PKT_FLAG_ACK:
+    "Ready to send: <filename>\n"
+
+ * PKT_FLAG_DATA:
+    {data buffer}
+
+ * PKT_FLAG_UNKNOWN || PKT_FLAG_CORRUPT
+    "File: Not Found\nContent Size: -1\n"
+
+
+ */
 
 /*
  *  Masks for flag in packet header

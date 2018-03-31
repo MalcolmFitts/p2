@@ -5,125 +5,110 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
 
   Pkt_t *packet = malloc(sizeof(struct Packet));
   P_Hdr *hdr = malloc(sizeof(struct Packet_Header));
-  /* CHECK - fixing file buffer size to max size */
-  // char f_buf[MAX_DATA_SIZE] = {0};
 
   hdr->source_port = s_port;
   hdr->dest_port = dest_port;
   hdr->seq_num = s_num;
 
-  /* CHECK - fixing size of packets to max size for now */
+  /* initializing length of packet's buffer to max size */
   hdr->length = MAX_PACKET_SIZE;
 
   hdr->com_buf = COM_BUF;
 
   if(flag == PKT_FLAG_DATA) {
-    /* data packet */
-
     /* set flag to DATA */
     hdr->flag = (1 << PKT_FLAG_DATA);
 
     /* checking file contents */
     FILE* fp = fopen(filename, "r");
 
-    /* CHECK - might want to return info (in buf) on not finding file */
     if(!fp){
-      /* TODO some error */
+      /* TODO fail on finding file */
       sprintf(packet->buf, "File: Not Found\nContent Size: -1\n");
+      hdr->length = 0;
     }
     else{
       /* finds correct starting point in file based on seq */
-    int file_start = s_num * MAX_DATA_SIZE;
-    fseek(fp, file_start, SEEK_SET);
+      int file_start = s_num * MAX_DATA_SIZE;
+      fseek(fp, file_start, SEEK_SET);
 
-    /* storing file contents in f_buf and closing file */
-    /* CHECK - might want to save this value for FIN flag*/
-    fread(packet->buf, 1, MAX_DATA_SIZE, fp);
-    fclose(fp);
+      /* storing file contents in f_buf and closing file */
+      /* CHECK - might want to save this value for FIN flag*/
+      hdr->length = fread(packet->buf, 1, MAX_DATA_SIZE, fp);
+
+      fclose(fp);
     }
 
   }
 
+  /* ACK packet */
   else if(flag == PKT_FLAG_ACK) {
-    /* ACK packet */
-
-    /* set flag to ACK */
+    /* set flag to ACK and fill buffer*/
     hdr->flag = (1 << PKT_FLAG_ACK);
-
-    /*
-     *  CHECK - not sure how to send ACK info - hdr->ACK_NUM (need to impelment)
-     *  NOT in buffer here
-     */
-    sprintf(packet->buf, "Ready to send: %s\n", filename);
+    hdr->length = sprintf(packet->buf, "Ready to send: %s\n", filename);
   }
+
+  /* SYN packet */
   else if(flag == PKT_FLAG_SYN) {
-    /* SYN packet */
-
-    /* set flag to SYN */
+    /* set flag to SYN and fill buffer*/
     hdr->flag =  (1 << PKT_FLAG_SYN);
-
-    /* CHECK - not sure how to send SYN info - maybe in buffer */
     /* TODO - Data offset here to pass options in the data buffer (hdr->data_offset) */
-    sprintf(packet->buf, "Request: %s\n", filename);
+    hdr->length = sprintf(packet->buf, "Request: %s\n", filename);
   }
-  else if(flag == PKT_FLAG_SYN_ACK) {
-    /* SYN-ACK packet */
 
+  /* SYN-ACK packet */
+  else if(flag == PKT_FLAG_SYN_ACK) {
     /* set flag to SYN-ACK */
     hdr->flag =  (1 << PKT_FLAG_SYN_ACK);
-
-    /* CHECK - not sure how to send SYN-ACK info - maybe in buffer */
-    /* TODO - Data offset here to pass options in the data buffer */
 
     /* attempting to find file */
     FILE* fp = fopen(filename, "r");
     if(fp) {
-      /* found file --> get file info */
+      /* getting file info */
       struct stat *fStat;
       fStat = malloc(sizeof(struct stat));
       stat(filename, fStat);
+
+      /* size of requested file */
       int f_size = fStat->st_size;
 
+      /* total number of packets for file transfer */
+      int n_packs = (f_size / MAX_DATA_SIZE) + 1;
+
       /* storing info in buffer */
-      sprintf(packet->buf, "File: %s\nContent Size: %d\n", filename, f_size);
+      hdr->length = sprintf(packet->buf,
+        "File: %s\nContent Size: %d\nRequired Packets: %d\n", filename, f_size, n_packs);
 
       /* freeing mem and closing file */
       free(fStat);
       fclose(fp);
     }
-    else if(flag == PKT_FLAG_FIN) {
 
-      /* set flag to FIN */
-      hdr->flag = (1 << PKT_FLAG_FIN);
-
-    }
-    else{
-      /* info on no file found in buffer */
+    else {
+      /* TODO fail on finding file */
       sprintf(packet->buf, "File: Not Found\nContent Size: -1\n");
+      hdr->length = 0;
     }
-
   }
 
-  else if (flag == PKT_FLAG_FIN){
-
-    /* set flag to FIN */
-    hdr->flag = PKT_FIN_MASK;
-
+  /* FIN packet */
+  else if(flag == PKT_FLAG_FIN) {
+    /* set flag to FIN and store FIN info in buffer*/
+    hdr->flag = (1 << PKT_FLAG_FIN);
+    hdr->length = sprintf(packet->buf, "FIN: %s\n", filename);
   }
+
+  /* invalid file creation flag */
   else {
-    /* invalid file creation flag */
+    hdr->flag = 0;
+    hdr->length = 0;
   }
 
-  // char* dest = strcpy(packet->buf, f_buf);
-
-  // if (dest == NULL){
-  //   /* Some error */
-  // }
-
-  /* TODO CHECK - calculate checksum value */
+  /* calculate checksum value */
   uint16_t c = calc_checksum(*hdr);
   hdr->checksum = c;
 
+  /* assign header */
   packet->header = (*hdr);
 
   return *packet;
@@ -221,7 +206,7 @@ int get_packet_type(Pkt_t packet) {
   else if ((flag & PKT_ACK_MASK) > 0) {
     return PKT_FLAG_ACK;        /* ACK packet     */
   }
-  else if ((flag & PKT_DATA_MASK) > 0){
+  else if ((flag & PKT_DATA_MASK) > 0) {
     return PKT_FLAG_DATA;       /* DATA packet    */
   }
 
