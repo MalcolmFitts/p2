@@ -94,8 +94,45 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
   return n_set;
 }
 
-Node create_node(char* path, char* name, int port, int rate) {
-  Node n;
+int init_backend(short port_be, struct sockaddr_in* self_addr) {
+  int sockfd_be;
+  int optval_be = 1;
+
+  sockfd_be = socket(AF_INET, SOCK_DGRAM, 0);
+  if(sockfd_be < 0)
+    error("ERROR opening back-end socket");
+
+  /* setsockopt: Handy debugging trick that lets
+   * us rerun the server immediately after we kill it;
+   * otherwise we have to wait about 20 secs.
+   * Eliminates "ERROR on binding: Address already in use" error.
+   */
+  setsockopt(sockfd_be, SOL_SOCKET, SO_REUSEADDR,
+    (const void *)&optval_be, sizeof(int));
+
+  /* we are using the Internet */
+  self_addr->sin_family = AF_INET;
+  /* accept reqs to any IP addr */
+  (self_addr->sin_addr).s_addr = htonl(INADDR_ANY);
+  /* port to listen on */
+  self_addr->sin_port = htons((unsigned short) port_be);
+
+  /* bind: associate the listening socket with a port */
+  if (bind(sockfd_be, (struct sockaddr *) &self_addr, sizeof(self_addr)) < 0){
+    error("ERROR on binding back-end socket with port");
+    }
+
+
+  return sockfd_be;
+}
+
+Node* create_node(char* path, char* name, int port, int rate) {
+  /* allocate mem for struct */
+  Node* pn = malloc(sizeof(Node));
+
+  /* checking for successful mem allocation */
+  if(!pn) return NULL;
+
   /* cast port to correct type - uint16_t  */
   n.port = (uint16_t) port;
 
