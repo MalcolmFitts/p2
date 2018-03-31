@@ -1,7 +1,7 @@
 
 #include "frontend.h"
 
-int init_frontend(short port_fe){
+int init_frontend(short port_fe, struct sockaddr_in* self_addr){
   int optval_fe = 1;
   int sockfd_fe;
 
@@ -18,14 +18,20 @@ int init_frontend(short port_fe){
   setsockopt(sockfd_fe, SOL_SOCKET, SO_REUSEADDR,
 	     (const void *)&optval_fe, sizeof(int));
 
-  /* build the server's back end internet address */
-  struct sockaddr_in self_addr;
-  self_addr.sin_family = AF_INET; /* we are using the Internet */
-  self_addr.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
-  self_addr.sin_port = htons(port_fe); /* port to listen on */
+  /* build the server's front end internet address */
+  //struct sockaddr_in self_addr;
+
+  /* CHECK - was not zeroing memory */
+  
+  /* we are using the Internet */
+  self_addr->sin_family = AF_INET;
+  /* accept reqs to any IP addr */
+  self_addr->sin_addr.s_addr = htonl(INADDR_ANY);
+  /* port to listen on */
+  self_addr->sin_port = htons(port_fe);
 
   /* bind: associate the listening socket with a port */
-  if (bind(sockfd_fe, (struct sockaddr *) &self_addr, sizeof(self_addr)) < 0)
+  if (bind(sockfd_fe, (struct sockaddr *) self_addr, sizeof(*self_addr)) < 0)
     error("ERROR on binding front-end socket with port");
 
   /* listen: make it a listening socket ready to accept connection requests

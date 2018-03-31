@@ -17,7 +17,7 @@ void* recieve_pkt(void* ptr) {
   int sent_status;
   int recv_status;
 
-  printf("%d\n", sockfd);
+  //printf("%d\n", sockfd);
 
   while(1) {
     printf("Waiting for Packet\n");
@@ -35,7 +35,7 @@ void* recieve_pkt(void* ptr) {
 
     /* CHECK accepted types (SYN and ACK)*/
     /* TODO add FIN implimentation */
-    if (type == PKT_FLAG_UNKNOWN || type == PKT_FLAG_CORRUPT){
+    if (type == PKT_FLAG_UNKNOWN || type == PKT_FLAG_CORRUPT) {
       /* TODO corrupted packet */
     }
 
@@ -50,7 +50,8 @@ void* recieve_pkt(void* ptr) {
 }
 
 int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
-                  int flag){
+                  int flag) {
+
   /* parsing data from packet */
   P_Hdr hdr = packet.header;
 
@@ -90,7 +91,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
   return n_set;
 }
 
-int init_backend(short port_be){
+int init_backend(short port_be, struct sockaddr_in* self_addr) {
   int sockfd_be;
   int optval_be = 1;
 
@@ -106,21 +107,18 @@ int init_backend(short port_be){
   setsockopt(sockfd_be, SOL_SOCKET, SO_REUSEADDR,
     (const void *)&optval_be, sizeof(int));
 
-  /* build the server's back end internet address */
-  struct sockaddr_in self_addr;
-  self_addr.sin_family = AF_INET; /* we are using the Internet */
-  self_addr.sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
-  self_addr.sin_port = htons(port_be); /* port to listen on */
-
+  /* we are using the Internet */
+  self_addr->sin_family = AF_INET;
+  /* accept reqs to any IP addr */
+  (self_addr->sin_addr).s_addr = htonl(INADDR_ANY);
+  /* port to listen on */
+  self_addr->sin_port = htons((unsigned short) port_be);
 
   /* bind: associate the listening socket with a port */
-<<<<<<< HEAD
-  if (bind(listenfd_be, (struct sockaddr *) &self_addr, sizeof(self_addr)) < 0){
-=======
-  if (bind(sockfd_be, (struct sockaddr *) &self_addr, sizeof(self_addr)) < 0)
->>>>>>> 73fafb4f6a05165c801da1221fa88321ef8201a6
+  if (bind(sockfd_be, (struct sockaddr *) &self_addr, sizeof(self_addr)) < 0){
     error("ERROR on binding back-end socket with port");
     }
+
 
   return sockfd_be;
 }
@@ -139,6 +137,24 @@ Node* create_node(char* path, char* name, int port, int rate) {
   pn->content_path = path;
   pn->ip_hostname = name;
   pn->content_rate = rate;
+
+  /* creating node address */
+  struct hostent* node_host;
+  node_host = gethostbyname(name);
+  if(!node_host) {
+    printf("Error: No Host Found For %s\n", name);
+    return NULL;
+  }
+
+  struct sockaddr_in addr;
+  bzero((char *) &addr, sizeof(addr));
+
+  addr.sin_family = AF_INET;
+  bcopy((char *)node_host->h_addr, (char *)&addr.sin_addr.s_addr,
+    node_host->h_length);
+  addr.sin_port = htons((unsigned short) port);
+
+  pn->node_addr = addr;
 
   return pn;
 }
@@ -187,6 +203,7 @@ int add_node(Node_Dir* nd, Node* node) {
     (nd->n_array[n]).ip_hostname = node->ip_hostname;
     (nd->n_array[n]).port = node->port;
     (nd->n_array[n]).content_rate = node->content_rate;
+    (nd->n_array[n]).node_addr = node->node_addr;
 
     nd->cur_nodes = n + 1;
     return 1;
@@ -200,57 +217,67 @@ int add_node(Node_Dir* nd, Node* node) {
 Node* check_content(Node_Dir* dir, char* filename) {
   int max = dir->cur_nodes;
   int found = 0;
-  Node ref;
+  int index = -1;
+  Node n;
 
   /* looping through directory and checking nodes */
   int i;
   for(i = 0; i < max; i++) {
-    Node t = dir->n_array[i];
+    n = dir->n_array[i];
 
     /* checking node content -- CHECK TODO - check for content rate too?  */
-    if(check_node_content(&t, filename) == 1 && !found) {
-      ref = dir->n_array[i];
+    if(check_node_content(&n, filename) == 1 && !found) {
       found = 1;
+      index = i;
     }
   }
 
   /* did not find content */
-  if(!found) return NULL;
+  if(!found || index == -1) return NULL;
 
-  Node* res = create_node(ref.content_path, ref.ip_hostname, ref.port, ref.content_rate);
+  Node* res = create_node(n.content_path, n.ip_hostname, n.port,
+                          n.content_rate);
   return res;
 }
 
 char* sync_node(Node* node, uint16_t s_port, int sockfd) {
+  printf("Made it to sync...\n");
   char buf[BUFSIZE];
   int n_sent;
   int n_recv;
   uint16_t d_port = node->port;
 
-  unsigned int peer_ip = (unsigned int) parse_str_2_int(node->ip_hostname);
-  short peer_port = (short) node->port;
-  struct sockaddr_in peer_addr = get_sockaddr_in(peer_ip, peer_port);
+  // unsigned int peer_ip = (unsigned int) parse_str_2_int(node->ip_hostname);
+  // short peer_port = (short) node->port;
+  printf("Made it to backend.c:255\n");
+  struct sockaddr_in peer_addr = node->node_addr;
   socklen_t peer_addr_len = sizeof(peer_addr);
 
   Pkt_t syn_packet;
   Pkt_t syn_ack_packet;
 
+  printf("Made it to backend.c:262\n");
+
   /* create SYN packet to send to node */
   syn_packet = create_packet(d_port, s_port, 0, node->content_path,
                                    PKT_FLAG_SYN);
+
+  printf("Made it to backend.c:268\n");
 
   printf("Sending packet!\n");
   /* sending SYN packet */
   n_sent = sendto(sockfd, &syn_packet, sizeof(syn_packet), 0,
                  (struct sockaddr*) &peer_addr, peer_addr_len);
 
-  printf("Packet sent!\n");
+  printf("Packet sent!\nBytes sent: %d\n", n_sent);
+
   if(n_sent < 0) {
     /* TODO buffer info: "send SYN fail" */
+    printf("Error on sending SYN packet.\n");
+    exit(0);
   }
 
   /* receive SYN-ACK packet */
-
   n_recv = recvfrom(sockfd, &syn_ack_packet, sizeof(syn_ack_packet), 0,
                    (struct sockaddr *) &peer_addr, &peer_addr_len);
 
@@ -270,9 +297,8 @@ char* sync_node(Node* node, uint16_t s_port, int sockfd) {
   /* CHECK - not sure i should discard these packets here */
   //discard_packet(syn_packet);
   //discard_packet(syn_ack_packet);
-
-  char* ref = buf;
-  return ref;
+  char* res = buf;
+  return res;
 }
 
 char* request_content(Node* node, uint16_t s_port, int sockfd,
@@ -281,8 +307,10 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
   char buf[MAX_DATA_SIZE] = {0};
   int n_sent;
   int n_recv;
-  int d_host = parse_str_2_int(node->ip_hostname);
+  /* CHECK - maybe this is parsed wrong */
+  //int d_host = parse_str_2_int(node->ip_hostname);
   short d_port = node->port;
+
   Pkt_t data_pkt;
   Pkt_t ack_pkt;
 
@@ -291,7 +319,7 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
     node->content_path, PKT_FLAG_ACK);
 
   /* creating sockaddr for peer node */
-  struct sockaddr_in peer_addr = get_sockaddr_in(d_host, d_port);
+  struct sockaddr_in peer_addr = node->node_addr;
   socklen_t peer_addr_len = sizeof(peer_addr);
 
   /* sending ACK to peer node */
@@ -329,7 +357,6 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
 /*
  *  TODO - replace writing headers with returning flag values
  */
-
 int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
                       Node_Dir* node_dir) {
   /* initilizing local buf and arrays for use in parsing */
@@ -375,6 +402,10 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
 
   printf("created & added node successfully. \n");
 
+  /* CHECK - debug printing */
+  printf("Node hostname: %s\nNode port: %d\n", n->ip_hostname, n->port);
+  printf("Node content: %s\nNode rate: %d\n", n->content_path, n->content_rate);
+
   /* 200 Code  --> Success!
    * TODO      --> flag (return) val: success */
   write_status_header(connfd, SC_OK, ST_OK);
@@ -383,14 +414,16 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
   return 1;
 }
 
-/*  TODO - replace writing headers/data with returning flag values
+/*
+ *  TODO - replace writing headers/data with returning flag values
  */
-int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* node_dir){
+int peer_view_response(int connfd, char*BUF, struct thread_data *ct,
+                       Node_Dir* node_dir){
   char buf[BUFSIZE];
   char* filepath = malloc(sizeof(char) * MAXLINE);
   char path[MAXLINE];
   char* file_type = malloc(sizeof(char) * MINLINE);
-  Node* node;
+  //Node* node;
   int len;
   int res;
 
@@ -424,7 +457,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   strcpy(buf, BUF);
 
   /* finding node with requested content */
-  node = check_content(node_dir, filepath);
+  Node* node = check_content(node_dir, filepath);
 
   if(!node){
     /* 500 Error --> Failure to find content in node directory
@@ -439,11 +472,21 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
 
   /* TODO - format return value in sync_node */
   /* initializing connection with node that should have requested content */
-  char* b = sync_node(node, ct->port_be, ct->listenfd_be);
+
+  /* DEBUG  */
+  if(!ct) {
+    printf("Thread data struct null.\n");
+    return 0;
+  }
+
+  printf("ct is fine.\n");
+
+  char* b = sync_node(node, (uint16_t) (ct->port_be), ct->listenfd_be);
 
   /* TODO check if fails */
 
   printf("synced node!\n");
+  printf("received syn-ack buffer:\n%s\n", b);
 
   /* TODO - will need to parse this differently once chanced sync_node {658} */
   len = parse_str_2_int(b);
@@ -452,21 +495,23 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
   write_content_length_header(connfd, len);
   write_content_type_header(connfd, file_type);
 
-  printf("wrote headers!\n");
+  printf("wrote headers to client!\n");
 
   bzero(buf, BUFSIZE);
   /* CHECK will not be full len after CP */
   char* b2 = request_content(node, ct->port_be, ct->listenfd_be, ct->c_addr,
                              len);
 
-  write(connfd, b2, strlen(buf));
+  /* CHECK - this was writing 0 bytes - strlen(buf) = 0 */
+  write(connfd, b2, strlen(b2));
 
   printf("wrote data!!@@\n");
 
   return 1;
 }
 
-/*  TODO - replace writing headers with returning flag values
+/*
+ *  TODO - replace writing headers with returning flag values
  */
 int peer_rate_response(int connfd, char* BUF, struct thread_data *ct){
   char buf[MAXLINE];
@@ -488,12 +533,23 @@ int peer_rate_response(int connfd, char* BUF, struct thread_data *ct){
   return 0;
 }
 
-/* filler end line */
-
-struct sockaddr_in get_sockaddr_in(unsigned int ip, short port){
+struct sockaddr_in get_sockaddr_in(char* hostname, short port){
+  struct hostent *server;
   struct sockaddr_in addr;
+
+  /* resolve host */
+  server = gethostbyname(hostname);
+  if (!server) {
+    printf("ERROR, no such host as %s\n", hostname);
+    exit(0);
+  }
+
+  /* build node's address */
+  bzero((char *) &addr, sizeof(addr));
   addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = ip;
+  bcopy((char *)server->h_addr, (char *)&addr.sin_addr.s_addr,
+    server->h_length);
   addr.sin_port = htons(port);
+
   return addr;
 }

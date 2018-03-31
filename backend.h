@@ -29,10 +29,11 @@
 
 /* Peer Node struct */
 typedef struct Peer_Node {
-	int content_rate;	  	/* avg content bit rate (kbps) 	  */
-	short port;		  			/* back-end port num 				  */
+	int content_rate;	  /* avg content bit rate (kbps) 	  */
+	short port;		  	  /* back-end port num 				  */
 	char* content_path;   /* filepath to content in peer node */
 	char* ip_hostname;	  /* ip/hostname of peer node 		  */
+	struct sockaddr_in node_addr; /* node's address */
 } Node;
 
 
@@ -51,6 +52,23 @@ struct thread_data {
   int listenfd_be;            /* back end listening socket */
   int port_be;                /* back end port */
 };
+
+
+/*
+ *	### FOR REFERENCE ###
+ *
+ *	struct sockaddr_in {
+ *		short            sin_family;   // e.g. AF_INET
+ *		unsigned short   sin_port;     // e.g. htons(3490)
+ *		struct in_addr   sin_addr;     // see struct in_addr, below
+ *		char             sin_zero[8];  // zero this if you want to
+ *	};
+ *
+ *	struct in_addr {
+ *		unsigned long s_addr;  // load with inet_aton()
+ *	};
+ */
+
 
 /*
  *  recieve_pkt
@@ -76,7 +94,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
  *		- initalizes the backend port for the server node
  *
  */
-int init_backend(short port_be);
+int init_backend(short port_be, struct sockaddr_in* self_addr);
 
 /*
  *  create_node
@@ -191,12 +209,14 @@ char* request_content(Node* node, uint16_t s_port, int sockfd,
 /*  TODO
  *  add_response_be
  */
-int peer_add_response(int connfd, char* BUF, struct thread_data *ct, Node_Dir* node_dir);
+int peer_add_response(int connfd, char* BUF, struct thread_data *ct,
+											Node_Dir* node_dir);
 
 /*  TODO
  *  view_response_be
  */
-int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* node_dir);
+int peer_view_response(int connfd, char*BUF, struct thread_data *ct,
+											 Node_Dir* node_dir);
 
 /*  TODO
  *  rate_response_be
@@ -204,7 +224,7 @@ int peer_view_response(int connfd, char*BUF, struct thread_data *ct, Node_Dir* n
 int peer_rate_response(int connfd, char* BUF, struct thread_data *ct);
 
 
-struct sockaddr_in get_sockaddr_in(unsigned int ip, short port);
+struct sockaddr_in get_sockaddr_in(char* hostname, short port);
 /* filler end line */
 
 

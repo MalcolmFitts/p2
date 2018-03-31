@@ -1,5 +1,5 @@
 CC = gcc
-ARGS = -Wall -O2 -I .
+ARGS = -g -pthread -Wall -O2 -I .
 
 all: clean sl pa pkt dw be fe bbbserver
 
@@ -33,4 +33,13 @@ bbbserver: bbbserver.c datawriter.h parser.h packet.h serverlog.h backend.h fron
 >>>>>>> 73fafb4f6a05165c801da1221fa88321ef8201a6
 
 clean:
-	rm -f *.o bbbserver palib.o dwlib.o pktlib.o sllib.o belib.o felib.o *~
+	rm -f *.o bbbserver send recv palib.o dwlib.o pktlib.o sllib.o belib.o felib.o *~
+
+send: send.c
+	$(CC) $(ARGS) -o send send.c
+
+recv: recieve.c
+	$(CC) $(ARGS) -o recv recieve.c
+
+serv: server.c
+	$(CC) $(ARGS) -o serv server.c

@@ -77,33 +77,38 @@ int main(int argc, char **argv) {
   struct sockaddr_in clientaddr;               /* client's addr */
   unsigned int clientlen = sizeof(clientaddr); /* size of client's address */
 
+
   /* check command line args */
-  if (argc != 2) {
-    fprintf(stderr, "usage: %s <port>\n", argv[0]);
+  if (argc != 3) {
+    fprintf(stderr, "usage: %s <port> <port>\n", argv[0]);
     exit(1);
   }
 
   port_fe = atoi(argv[1]);
-  port_be =  port_fe + 1;
+  port_be = atoi(argv[2]);
+
+  printf("front-end port: %d\nback-end port: %d\n", port_fe, port_be);
 
   /* initialize front-end and back-end data */
-  sockfd_fe = init_frontend(port_fe);
-  sockfd_be = init_backend(port_be);
+  struct sockaddr_in* self_addr_fe = malloc(sizeof(struct sockaddr_in));
+  struct sockaddr_in* self_addr_be = malloc(sizeof(struct sockaddr_in));
+
+  sockfd_fe = init_frontend(port_fe, self_addr_fe);
+  sockfd_be = init_backend(port_be, self_addr_be);
 
   /* create node directory */
   node_dir = create_node_dir(MAX_NODES);
 
-  /* allocating memory for data for thread */
-  int* sock_ptr = &sockfd_be;
-
   /* spin-off thread for listening on back-end port and serving content */
+  int* sock_ptr = &sockfd_be;
   pthread_t tid_be;
   pthread_create(&(tid_be), NULL, recieve_pkt, sock_ptr);
-  pthread_detach(tid_be);
+
+  /* CHECK - not detaching threads */
+  //pthread_detach(tid_be);
 
   /* initializing some local vars */
-  clientlen = sizeof(clientaddr);
-  numthreads = 1;
+  numthreads = 0;
   int ctr = 1;
 
   /* main loop: */
@@ -131,6 +136,7 @@ int main(int argc, char **argv) {
 
     /* spin off thread */
     pthread_create(&(tid), NULL, serve_client_thread, ct);
+
     ctr++;
   }
 }
@@ -144,6 +150,7 @@ void *serve_client_thread(void *ptr) {
   struct sockaddr_in clientaddr = ct->c_addr;
   int connfd = ct->connfd;
   int tid = ct->tid;
+  //Node_Dir* node_dir = ct->node_dir;
 
   /* defining local vars */
   struct hostent *hostp;          /* client host info */
@@ -152,7 +159,8 @@ void *serve_client_thread(void *ptr) {
   char bufcopy[BUFSIZE];          /* copy of message buffer */
   int n;                          /* message byte size */
 
-  pthread_detach(pthread_self());
+  /* CHECK - not detaching threads */
+  //pthread_detach(pthread_self());
 
   /* gethostbyaddr: determine who sent the message */
   hostp = gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr,
@@ -174,7 +182,7 @@ void *serve_client_thread(void *ptr) {
 
   sprintf(lb, "Connected client id: %d.", tid);
   log_thr(lb, ct->num, tid);
-
+  
   /* read: read input string from the client */
   bzero(buf, BUFSIZE);
   n = read(connfd, buf, BUFSIZE);
@@ -182,13 +190,13 @@ void *serve_client_thread(void *ptr) {
     numthreads--;
     server_error("ERROR reading from socket", connfd);
   }
-
+  
   sprintf(lb, "Server received %d Bytes", n);
   log_thr(lb, ct->num, tid);
   sprintf(lb, "Get Request Raw Headers:");
   log_thr(lb, ct->num, tid);
   log_msg(buf);
-
+  
   /* making copy of buffer to check for range requests */
   bzero(bufcopy, BUFSIZE);
   strcpy(bufcopy, buf);
@@ -221,11 +229,17 @@ void *serve_client_thread(void *ptr) {
       break;
   }
 
-  /* closing client connection and freeing struct */
-  close(connfd);
-  free(ct);
+  if(flag_fe) {
+    printf("Front-end Request handled.\n");
+  } else if(flag_be) {
+    printf("Back-end Request handled.\n");
+  } else{
+    numthreads--;
+    error("ERROR: Failed to handle request.\n");
+  }
 
-  sprintf(lb, "Connection with {Client %d} closed.", tid);
+  /* closing client connection and freeing struct */
+
   log_thr(lb, ct->num, tid);
 
   /* decrement num threads and return */
