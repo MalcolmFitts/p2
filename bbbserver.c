@@ -17,31 +17,7 @@
  *
  */
 
-#include "datawriter.h"
-#include "parser.h"
-#include "serverlog.h"
-#include "backend.h"
-#include "frontend.h"
-
-#include <stdio.h>
-#include <unistd.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <netdb.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <pthread.h>
-#include <time.h>
-
-#define MAX_FILEPATH_LEN 512
-#define MAXLINE 8192
-#define BUFSIZE 1024
-#define MAX_RANGE_NUM_LEN 32
-#define SERVER_NAME "BBBserver"
+#include "bbbserver.h"
 
 /* DEFINED IN backend.h -- struct to hold data for initial threads */
 // struct thread_data {
@@ -58,11 +34,8 @@ void *serve_client_thread(void *ptr);
 
 int init_port(unsigned short port, int flag);
 
-/* Global Variable(s): */
-Node_Dir* node_dir;           /* Directory for node referencing   */
 char lb[MAX_PRINT_LEN];       /* buffer for logging               */
 int numthreads;               /* number of current threads        */
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int main(int argc, char **argv) {
   /* front-end (client) vars */
@@ -92,12 +65,11 @@ int main(int argc, char **argv) {
 
   printf("front-end port: %d\nback-end port: %d\n", port_fe, port_be);
 
+  mutex = PTHREAD_MUTEX_INITIALIZER;
+
   /* initialize front-end and back-end data */
   sockfd_fe = init_frontend(port_fe, self_addr_fe);
   sockfd_be = init_backend(port_be, self_addr_be);
-
-  /* create node directory */
-  node_dir = create_node_dir(MAX_NODES);
 
   /* spin-off thread for listening on back-end port and serving content */
   pthread_t tid_be;
@@ -235,8 +207,8 @@ void *serve_client_thread(void *ptr) {
 
       memset(COM_BUF, '\0', BUFSIZE);
 
-      if((!parse_peer_view_content(BUF, filepath))
-         (!parse_file_type(filepath, file_type)) ||{
+      if((!parse_peer_view_content(BUF, filepath)) ||
+         (!parse_file_type(filepath, file_type)){
         /* 500 Error --> Failure to parse file type
          * TODO      --> flag (return) val: parse fail */
         write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);

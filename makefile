@@ -21,7 +21,7 @@ be: backend.c backend.h
 fe: frontend.c frontend.h
 	$(CC) $(ARGS) -o felib.o -c frontend.c
 
-bbbserver: bbbserver.c datawriter.h parser.h packet.h serverlog.h backend.h frontend.h
+bbbserver: bbbserver.c bbbserver.h datawriter.h parser.h packet.h serverlog.h backend.h frontend.h
 	$(CC) $(ARGS) -o bbbserver bbbserver.c dwlib.o palib.o pktlib.o sllib.o belib.o felib.o
 
 clean:

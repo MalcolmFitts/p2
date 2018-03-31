@@ -152,13 +152,13 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct) {
 
 void handle_be_response(char* COM_BUF, int connfd, char* content_type){
    int cmp;
-   char BUF[BUFSIZE];
+   char BUF[COM_BUFSIZE];
    char* data;
 
    while(1){
      pthread_mutex_lock(&mutex);
-     memcpy(BUF, COM_BUF, BUFSIZE);
-     memset(COM_BUF, '\0', BUFSIZE);
+     memcpy(BUF, COM_BUF, COM_BUFSIZE);
+     memset(COM_BUF, '\0', COM_BUFSIZE);
      pthread_mutex_unlock(&mutex);
      if(BUF[0] != '\0'){
        n_scan = sscanf(BUF, "%d %s\n", type, data);
@@ -186,15 +186,16 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
           n_scan = sscanf(info, "%s", content);
           write(connfd, info, strlen(info));
           break;
+
          case COM_BUF_FIN:
           write_empty_header(connfd);
           break;
+
          default:
           printf("FE DOESN'T UNDERSTAND BE\n");
           break
        }
      }
-     sleep(10);
    }
    return;
 }

@@ -1,11 +1,11 @@
-#ifndef FRONTEND_H
-#define FRONTEND_H
+#ifndef BBBSERVER_H
+#define BBBSERVER_H
 
 #include "datawriter.h"
 #include "parser.h"
 #include "serverlog.h"
 #include "backend.h"
-#include "bbbserver.h"
+#include "frontend.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -27,16 +27,6 @@
 #define MAX_RANGE_NUM_LEN 32
 #define SERVER_NAME "BBBserver"
 
-#define COM_BUF_DATA 1
-#define COM_BUF_HDR 2
-#define COM_BUF_FIN 3
-#define COM_BUFSIZE 1500
-
-int init_frontend(short port_fe, struct sockaddr_in* self_addr);
-
-/* Writes the frontend response to the client for a normal GET request */
-int frontend_response(int connfd, char* BUF, struct thread_data *ct);
-
-void handle_be_response(char* COM_BUF, int connfd, char* content_type);
+extern pthread_mutex_t mutex;
 
 #endif
