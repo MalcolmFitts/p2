@@ -27,7 +27,6 @@ fe: frontend.c frontend.h
 bbbserver: bbbserver.c datawriter.h parser.h packet.h serverlog.h backend.h frontend.h node.h
 	$(CC) $(ARGS) -o bbbserver bbbserver.c dwlib.o palib.o nodelib.o pktlib.o sllib.o belib.o felib.o
 
-
 clean:
 	rm -f *.o bbbserver send recv serv palib.o nodelib.o dwlib.o pktlib.o sllib.o belib.o felib.o *~
 
