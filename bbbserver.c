@@ -67,13 +67,13 @@ int main(int argc, char **argv) {
   /* front-end (client) vars */
   int sockfd_fe;                    /* listening socket */
   short port_fe;                    /* client port to listen on */
-  struct sockaddr_in* self_addr_fe = malloc(sizeof(struct sockaddr_in)); /* front end address */
+  struct sockaddr_in self_addr_fe;; /* front end address */
   int connfd;                       /* connection socket */
 
   /* back-end (node) vars */
   int sockfd_be;                    /* listening socket */
   short port_be;                    /* back-end port to use */
-  struct sockaddr_in* self_addr_be = malloc(sizeof(struct sockaddr_in));  /* back-end address */
+  struct sockaddr_in self_addr_be;;  /* back-end address */
 
   /* client vars */
   struct sockaddr_in clientaddr;               /* client's addr */
@@ -94,8 +94,8 @@ int main(int argc, char **argv) {
   pthread_mutex_init(&mutex, NULL);
 
   /* initialize front-end and back-end data */
-  sockfd_fe = init_frontend(port_fe, self_addr_fe);
-  sockfd_be = init_backend(port_be, self_addr_be);
+  sockfd_fe = init_frontend(port_fe, &self_addr_fe);
+  sockfd_be = init_backend(port_be, &self_addr_be);
 
   int* be_sockfd_ptr = &sockfd_be;
 
