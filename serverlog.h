@@ -17,7 +17,7 @@
  *    - set value to 1 for regular log
  *	  - ser value to 0 for no log
  */
-#define DB_LOG 2
+#define DB_LOG 1
 
 #define MAX_PRINT_LEN 1024
 

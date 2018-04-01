@@ -28,7 +28,7 @@ void* handle_be(void* ptr) {
     printf("Waiting for packet on backend...\n");
 
     /* receiving packet and writing into p_buf */
-    // bzero(&packet, sizeof(packet));
+    bzero(&packet, sizeof(packet));
     recv_status = recvfrom(sockfd, &packet, sizeof(packet), 0,
                         (struct sockaddr *) &sender_addr, &sender_addr_len);
 
