@@ -15,8 +15,8 @@
 #include "parser.h"
 
 /* Packet Size Constants (bytes) */
-#define P_HDR_SIZE 20
-#define MAX_DATA_SIZE 1480
+#define P_HDR_SIZE 24
+#define MAX_DATA_SIZE 1476
 #define MAX_PACKET_SIZE 1500
 
 

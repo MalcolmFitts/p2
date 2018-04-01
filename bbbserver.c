@@ -91,8 +91,6 @@ int main(int argc, char **argv) {
 
   printf("front-end port: %d\nback-end port: %d\n", port_fe, port_be);
 
-  printf("size of char*: %lu\n", sizeof(char*));
-
   pthread_mutex_init(&mutex, NULL);
 
   /* initialize front-end and back-end data */
