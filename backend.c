@@ -221,6 +221,8 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
   setsockopt(sockfd_be, SOL_SOCKET, SO_REUSEADDR,
     (const void *)&optval_be, sizeof(int));
 
+
+  bzero((char *) self_addr, sizeof(*self_addr));
   /* we are using the Internet */
   self_addr->sin_family = AF_INET;
   /* accept reqs to any IP addr */
@@ -229,7 +231,7 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
   self_addr->sin_port = htons((unsigned short) port_be);
 
   /* bind: associate the listening socket with a port */
-  if (bind(sockfd_be, (struct sockaddr *) &self_addr, sizeof(self_addr)) < 0){
+  if (bind(sockfd_be, (struct sockaddr *) self_addr, sizeof(*self_addr)) < 0){
     error("ERROR on binding back-end socket with port");
   }
 
