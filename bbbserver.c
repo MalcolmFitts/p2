@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
   /* front-end (client) vars */
   int sockfd_fe;                    /* listening socket */
   short port_fe;                    /* client port to listen on */
-  struct sockaddr_in self_addr_fe;; /* front end address */
+  struct sockaddr_in self_addr_fe; /* front end address */
   int connfd;                       /* connection socket */
 
   /* back-end (node) vars */
@@ -90,6 +90,8 @@ int main(int argc, char **argv) {
   port_be = atoi(argv[2]);
 
   printf("front-end port: %d\nback-end port: %d\n", port_fe, port_be);
+
+  printf("size of char*: %lu\n", sizeof(char*));
 
   pthread_mutex_init(&mutex, NULL);
 

@@ -59,7 +59,6 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
     /* TODO - Data offset here to pass options in the data buffer (hdr->data_offset) */
     
     len = sprintf(packet->buf, "Request: %s\n", filename);
-    printf("{creating packet} SYN packet buf: %s\n", packet->buf);
     hdr->length = len;
   }
 
