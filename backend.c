@@ -28,7 +28,7 @@ void* handle_be(void* ptr) {
     printf("Waiting for packet on backend...\n");
 
     /* receiving packet and writing into p_buf */
-    bzero(&packet, sizeof(packet));
+    // bzero(&packet, sizeof(packet));
     recv_status = recvfrom(sockfd, &packet, sizeof(packet), 0,
                         (struct sockaddr *) &sender_addr, &sender_addr_len);
 
@@ -109,7 +109,11 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
     printf("Received packet type: SYN\n");
 
     /* parsing filename from SYN packet buffer */
-    sscanf(packet.buf, "Request: %s\n", filename);
+    if(sscanf(packet.buf, "Request: %s\n", filename) != 1) {
+      printf("Error: could not parse filename from packet.\n");
+      printf("Packet Buffer: \n%s\n", packet.buf);
+      return -1;
+    }
 
     printf("Requested file: %s\n", filename);
 
