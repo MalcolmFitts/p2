@@ -87,6 +87,16 @@ int peer_rate_response(int connfd, char* BUF, struct thread_data *ct);
 
 
 struct sockaddr_in get_sockaddr_in(char* hostname, short port);
+
+
+void send_hdr_to_fe(char* com_buf, int file_size);
+
+void send_data_to_fe(char* com_buf, char* data, int fin_flag);
+
+
+
+
+
 /* filler end line */
 
 

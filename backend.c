@@ -129,9 +129,8 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
 
     printf("Confirmed file: %s\nFile size: %d\nRequired Num Packets: %d\n", filename, c_size, n_packs);
 
-    /* TODO - sending info to front-end */
-    //send_hdr_to_fe(hdr.com_buf, c_size);
-
+    /* sending info to front-end */
+    send_hdr_to_fe(hdr.com_buf, c_size);
 
     /* respond to SYN-ACK packet with ACK packet */
     /* CHECK s_num = 0 */
@@ -166,8 +165,8 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
       /* Terminating data packet (last packet); Respond with FIN packet */
       printf("Received packet type: DATA-FIN\n");
 
-      /* TODO - write buf data to frontend */
-      //send_data_to_fe(hdr.com_buf, packet.buf, 1);
+      /* write buf data to frontend */
+      send_data_to_fe(hdr.com_buf, packet.buf, 1);
 
       /* respond to DATA-FIN packet with FIN packet */
       data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_FIN, hdr.com_buf);
@@ -179,8 +178,8 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
       /* SEND TO FE: "1 {data}\n" */
       printf("Received packet type: DATA\n");
 
-      /* TODO - write buf data to frontend */
-      //send_data_to_fe(hdr.com_buf, packet.buf, 0);
+      /* write buf data to frontend */
+      send_data_to_fe(hdr.com_buf, packet.buf, 0);
 
       /* respond to DATA packet with ACK packet */
       data_pkt = create_packet(d_port, s_port, s_num + 1,
@@ -225,7 +224,7 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
   /* we are using the Internet */
   self_addr->sin_family = AF_INET;
   /* accept reqs to any IP addr */
-  (self_addr->sin_addr).s_addr = htonl(INADDR_ANY);
+  self_addr->sin_addr.s_addr = htonl(INADDR_ANY);
   /* port to listen on */
   self_addr->sin_port = htons((unsigned short) port_be);
 
@@ -320,7 +319,6 @@ int peer_view_response(char* filepath, char* file_type, uint16_t port_be,
     return -1;
   }
 
-  /* TODO: send a SYN to the peer node */
   printf("Known node with content: %s:%d\n", node->ip_hostname, node->port);
 
   peer_addr = node->node_addr;
