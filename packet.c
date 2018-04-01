@@ -15,6 +15,8 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
 
   hdr->com_buf = COM_BUF;
 
+  int len;
+
   if(flag == PKT_FLAG_DATA) {
     /* set flag to DATA */
     hdr->flag = (1 << PKT_FLAG_DATA);
@@ -45,7 +47,9 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
   else if(flag == PKT_FLAG_ACK) {
     /* set flag to ACK and fill buffer*/
     hdr->flag = (1 << PKT_FLAG_ACK);
-    hdr->length = sprintf(packet->buf, "Ready to send: %s\n", filename);
+
+    len = sprintf(packet->buf, "Ready to send: %s\n", filename);
+    hdr->length = len;
   }
 
   /* SYN packet */
@@ -53,7 +57,10 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
     /* set flag to SYN and fill buffer*/
     hdr->flag =  (1 << PKT_FLAG_SYN);
     /* TODO - Data offset here to pass options in the data buffer (hdr->data_offset) */
-    hdr->length = sprintf(packet->buf, "Request: %s\n", filename);
+    
+    len = sprintf(packet->buf, "Request: %s\n", filename);
+    printf("{creating packet} SYN packet buf: %s\n", packet->buf);
+    hdr->length = len;
   }
 
   /* SYN-ACK packet */
