@@ -150,7 +150,7 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct) {
 }
 
 void handle_be_response(char* COM_BUF, int connfd, char* content_type){
-  char BUF[BUFSIZE];
+  char* BUF = malloc(sizeof(char) * BUFSIZE);
   char* info = NULL;
   char* data = NULL;
   int type;
