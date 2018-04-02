@@ -327,7 +327,7 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct) {
   send(connfd, client_resp, strlen(client_resp), 0);
   write_empty_header(connfd);
 
-  printf("Wrote server info to client.\n");
+  printf("Wrote server info data to client.\n");
 
   return 1;
 }
