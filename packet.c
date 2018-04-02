@@ -34,10 +34,9 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
       int file_start = s_num * MAX_DATA_SIZE;
       fseek(fp, file_start, SEEK_SET);
 
-      /* storing file contents in f_buf and closing file */
       /* CHECK - might want to save this value for FIN flag*/
-      hdr->length = fread(packet->buf, 1, MAX_DATA_SIZE, fp);
-
+      len = fread(packet->buf, 1, MAX_DATA_SIZE, fp);
+      hdr->length = len;
       fclose(fp);
     }
 
@@ -82,8 +81,9 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
       int n_packs = (f_size / MAX_DATA_SIZE) + 1;
 
       /* storing info in buffer */
-      hdr->length = sprintf(packet->buf,
+      len = sprintf(packet->buf,
         "File: %s\nContent Size: %d\nRequired Packets: %d\n", filename, f_size, n_packs);
+      hdr->length = len;
 
       /* freeing mem and closing file */
       free(fStat);

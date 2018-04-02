@@ -10,7 +10,6 @@
 /* Global - Directory for node referencing   */
 Node_Dir* node_dir;
 
-
 void* handle_be(void* ptr) {
 
   int sockfd = *(int*)ptr;        /* parsing sockfd from pointer arg */
@@ -161,8 +160,28 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
   /* Responding to DATA packets: (master node) */
   else if(flag == PKT_FLAG_DATA) {
 
+    /* CHECK 1 - node_dir might be error */
+    if(!node_dir) {
+      printf("Node dir null.\n");
+      return -1;
+    }
+    else{
+      printf("Node_dir is fine.\n");
+    }
+
     /* Finding filename for response packets */
     Node* n = find_node_by_hostname(node_dir, hostaddrp);
+
+    /* CHECK 2 - node might be error */
+
+    if(!n) {
+      printf("Node is null.\n");
+      return -1;
+    }
+    else{
+      printf("found node in dir.\n");
+    }
+
     strncpy(filename, n->content_path, strlen(n->content_path));
 
     if((flag & PKT_FIN_MASK) > 0) {
