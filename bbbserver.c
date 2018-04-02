@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
 
   /* main loop: */
   while (1) {
-    printf("Waiting for a connection request...\n");
+    printf("Waiting for a client connection request...\n");
     // sprintf(lb, "Waiting for a connection request...");
     // log_main(lb, ctr);
 
@@ -191,8 +191,12 @@ void *serve_client_thread(void *ptr) {
     server_error("ERROR reading from socket", connfd);
   }
 
+  /* print formatting stuff - not important */
   printf("Server received %d Bytes.\n", n);
-  printf("Get Request Raw Headers:\n<start>\n%s<end>\n", buf);
+  printf("Get Request Raw Headers:\n    <start>\n");
+  bzero(bufcopy, BUFSIZE);
+  strncpy(bufcopy, buf, n - 2);
+  printf("%s    <end>\n", bufcopy);
 
   // sprintf(lb, "Server received %d Bytes", n);
   // log_thr(lb, ct->num, tid);
@@ -250,7 +254,7 @@ void *serve_client_thread(void *ptr) {
         write_empty_header(connfd);
         return 0;
       }
-      
+
       flag_be = peer_view_response(filepath, file_type, port_be, sockfd_be, (COM_BUF));
 
       /* couldn't find content */
