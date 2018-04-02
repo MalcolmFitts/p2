@@ -365,6 +365,8 @@ int peer_view_response(char* filepath, char* file_type, uint16_t port_be,
     return -2;
   }
 
+  printf("Sent!\n\n");
+
   return 0;
 }
 

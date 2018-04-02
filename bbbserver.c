@@ -242,7 +242,7 @@ void *serve_client_thread(void *ptr) {
         write_empty_header(connfd);
         return 0;
       }
-      flag_be = peer_view_response(filepath, file_type, port_be, sockfd_be, &(*COM_BUF));
+      flag_be = peer_view_response(filepath, file_type, port_be, sockfd_be, (COM_BUF));
       /* couldn't find content */
       if(flag_be == 0){
         write_status_header(connfd, SC_NOT_FOUND, ST_NOT_FOUND);
