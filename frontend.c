@@ -158,6 +158,9 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
   int content_len;
   char* content = NULL;
 
+  /* CHECK - seeing if this is running */
+  printf("Parsing back-end info from front-end.\n");
+
   while(1) {
     /* Locking BE-FE communication buffer to safely copy data */
     pthread_mutex_lock(&mutex);

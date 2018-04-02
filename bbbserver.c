@@ -196,7 +196,7 @@ void *serve_client_thread(void *ptr) {
   printf("Get Request Raw Headers:\n    <start>\n");
   bzero(bufcopy, BUFSIZE);
   strncpy(bufcopy, buf, n - 2);
-  printf("%s    <end>\n", bufcopy);
+  printf("%s    <end>\n\n", bufcopy);
 
   // sprintf(lb, "Server received %d Bytes", n);
   // log_thr(lb, ct->num, tid);
@@ -217,9 +217,9 @@ void *serve_client_thread(void *ptr) {
   /* TODO: flag responses for peer add, view, and rate requests */
 
   switch(rqt){
-
     case RQT_P_ADD:
       /* This goes to backend */
+      printf("Server recognized request type: peer add\n");
       flag_be = peer_add_response(connfd, buf, ct);
 
       if(flag_be){
@@ -238,6 +238,7 @@ void *serve_client_thread(void *ptr) {
 
     case RQT_P_VIEW:
       /* This goes to backend */
+      printf("Server recognized request type: peer view\n");
       filepath = malloc(sizeof(char) * MAXLINE);
       file_type = malloc(sizeof(char) * MINLINE);
       uint16_t port_be = ct->port_be;
@@ -269,6 +270,7 @@ void *serve_client_thread(void *ptr) {
       break;
 
     case RQT_P_RATE:
+      printf("Server recognized request type: peer rate\n");
       /* This goes to backend */
       flag_be = peer_rate_response(connfd, buf, ct);
       break;
@@ -279,6 +281,7 @@ void *serve_client_thread(void *ptr) {
 
     default:
       /* Standard FE response */
+      printf("Server recognized request type: front-end request\n");
       flag_fe = frontend_response(connfd, buf, ct);
       break;
   }

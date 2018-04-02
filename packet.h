@@ -73,10 +73,10 @@ typedef struct Packet_Header {
 
   uint32_t seq_num;                     /* sequence num - 4 bytes */
 
-  uint16_t flag;
-  uint16_t data_offset;
+  uint16_t flag;        /* flag  - 2 bytes */
+  uint16_t data_offset; /* data offset - 2 bytes */
 
-  char* com_buf;
+  char* com_buf;        /* com buf memory location - 8 bytes */
 
 } P_Hdr;
 

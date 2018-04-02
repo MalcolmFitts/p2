@@ -301,9 +301,10 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct) {
     return -1;
   }
 
-  /* CHECK - debug printing */
+  /* Status printing */
+  printf("Created peer node info:\n");
   printf("Node hostname: %s\nNode port: %d\n", n->ip_hostname, n->port);
-  printf("Node content: %s\nNode rate: %d\n\n", n->content_path, n->content_rate);
+  printf("Node content: %s\nNode rate: %d\n", n->content_path, n->content_rate);
 
   /* TODO      --> write in front-end */
   write_status_header(connfd, SC_OK, ST_OK);
@@ -321,7 +322,7 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct) {
   send(connfd, client_resp, strlen(client_resp), 0);
   write_empty_header(connfd);
 
-  printf("Wrote server info to client.\n");
+  printf("Wrote server info to client.\n\n");
 
   return 1;
 }
