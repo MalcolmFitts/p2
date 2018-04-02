@@ -134,6 +134,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
     printf("Confirmed file: %s\nFile size: %d\nRequired Num Packets: %d\n", filename, c_size, n_packs);
 
     /* sending info to front-end */
+    printf("{*debug*} Sending packet info to front-end for headers.\n");
     send_hdr_to_fe(hdr.com_buf, c_size);
 
     /* respond to SYN-ACK packet with ACK packet */
@@ -190,6 +191,8 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
       printf("Received packet type: DATA-FIN\n");
 
       /* write buf data to frontend */
+      printf("{*debug*} Sending packet info to front-end for data.\n");
+      /* SEND TO FE: "1 {data}\n" */
       send_data_to_fe(hdr.com_buf, packet.buf, 1);
 
       /* respond to DATA-FIN packet with FIN packet */
@@ -199,10 +202,12 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
 
     else {
       /* Non-terminating data packet; Respond with ACK packet */
-      /* SEND TO FE: "1 {data}\n" */
+      
       printf("Received packet type: DATA\n");
 
       /* write buf data to frontend */
+      printf("{*debug*} Sending packet info to front-end for data.\n");
+      /* SEND TO FE: "1 {data}\n" */
       send_data_to_fe(hdr.com_buf, packet.buf, 0);
 
       /* respond to DATA packet with ACK packet */

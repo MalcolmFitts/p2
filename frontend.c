@@ -156,10 +156,10 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
   int type;
   int n_scan = 0;
   int content_len;
-  char* content = NULL;
+  //char* content = NULL;
 
   /* CHECK - seeing if this is running */
-  printf("Front-end attempting to parse info from back-end.\n");
+  printf("{*debug*} Front-end attempting to parse info from back-end.\n");
 
   while(1) {
     /* Locking BE-FE communication buffer to safely copy data */
@@ -170,7 +170,9 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
 
     if (BUF[0] != '\0') {
       /* BUF has info for FE; parse type of response and data */
-      printf("Front-end received info from back-end!\n");
+      printf("{*debug*} Front-end received info from back-end!\n");
+      printf("{*debug*} BUF:\n%s\n", BUF);
+
       n_scan = sscanf(BUF, "%d %s\n", &type, data);
 
       if (n_scan != 2) {
@@ -179,6 +181,7 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
 
       switch(type){
         case COM_BUF_HDR:
+          printf("{*debug*} Front-end sending headers from back-end response.\n");
           n_scan = sscanf(data, "%d", &content_len);
           if (n_scan != 1) {
             /* SERVER_ERROR */
@@ -193,7 +196,9 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
           break;
 
         case COM_BUF_DATA:
-          n_scan = sscanf(info, "%s", content);
+          printf("{*debug*} Front-end sending data from back-end response.\n");
+          /* CHECK - this was scanning info when it was still null */
+          n_scan = sscanf(data, "%s", info);
           write(connfd, info, strlen(info));
           break;
 

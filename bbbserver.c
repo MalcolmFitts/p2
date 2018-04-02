@@ -259,11 +259,11 @@ void *serve_client_thread(void *ptr) {
       flag_be = peer_view_response(filepath, file_type, port_be, sockfd_be, (COM_BUF));
 
       /* couldn't find content */
-      if(flag_be == 0){
+      if(flag_be == 0) {
         write_status_header(connfd, SC_NOT_FOUND, ST_NOT_FOUND);
         write_empty_header(connfd);
-      } 
-      else if(flag_be == -1){
+      }
+      else if(flag_be == -1) {
         /* ERROR on sendto (resend?)*/
       }
       handle_be_response(COM_BUF, connfd, file_type);
