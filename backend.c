@@ -69,6 +69,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
 
   /* Packet struct for sending response */
   Pkt_t data_pkt;
+  bzero(&data_pkt, sizeof(data_pkt));
 
   /* Response message length */
   int n_set;
@@ -353,6 +354,8 @@ int peer_view_response(char* filepath, char* file_type, uint16_t port_be,
   syn_packet = create_packet(port_be, port_be, 0, node->content_path,
                              PKT_FLAG_SYN, COM_BUF);
 
+  printf("Sending SYN packet...\n");
+
   sent = sendto(sockfd_be, &syn_packet, sizeof(syn_packet), 0,
                   (struct sockaddr*) &peer_addr, peer_addr_len);
 
@@ -417,6 +420,7 @@ void send_hdr_to_fe(char* com_buf, int file_size){
   memcpy(com_buf, buf, strlen(buf));
   pthread_mutex_unlock(&mutex);
 }
+
 void send_data_to_fe(char* com_buf, char* data, int fin_flag){
   char buf[COM_BUFSIZE];
   sprintf(buf, "%d %s\n", 1, data);
