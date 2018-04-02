@@ -109,14 +109,16 @@ int main(int argc, char **argv) {
 
   /* main loop: */
   while (1) {
-    sprintf(lb, "Waiting for a connection request...");
-    log_main(lb, ctr);
+    printf("Waiting for a connection request...\n");
+    // sprintf(lb, "Waiting for a connection request...");
+    // log_main(lb, ctr);
 
     /* accept: wait for a connection request */
     connfd = accept(sockfd_fe, (struct sockaddr *) &clientaddr, &clientlen);
 
-    sprintf(lb, "Establishing connection...");
-    log_main(lb, ctr);
+    printf("Establishing connection...\n");
+    // sprintf(lb, "Establishing connection...");
+    // log_main(lb, ctr);
 
     if (connfd < 0) { error("ERROR on accept"); }
 
@@ -171,12 +173,15 @@ void *serve_client_thread(void *ptr) {
     server_error("ERROR on inet_ntoa\n", connfd);
   }
 
-  sprintf(lb, "Server established connection with %s (%s)",
+  printf("Server established connection with %s (%s)\n",
           hostp->h_name, hostaddrp);
-  log_thr(lb, ct->num, tid);
+  printf("Connected client id: %d.\n", tid);
 
-  sprintf(lb, "Connected client id: %d.", tid);
-  log_thr(lb, ct->num, tid);
+  // sprintf(lb, "Server established connection with %s (%s)",
+  //         hostp->h_name, hostaddrp);
+  // log_thr(lb, ct->num, tid);
+  // sprintf(lb, "Connected client id: %d.", tid);
+  // log_thr(lb, ct->num, tid);
 
   /* read: read input string from the client */
   bzero(buf, BUFSIZE);
@@ -186,11 +191,14 @@ void *serve_client_thread(void *ptr) {
     server_error("ERROR reading from socket", connfd);
   }
 
-  sprintf(lb, "Server received %d Bytes", n);
-  log_thr(lb, ct->num, tid);
-  sprintf(lb, "Get Request Raw Headers:");
-  log_thr(lb, ct->num, tid);
-  log_msg(buf);
+  printf("Server received %d Bytes.\n", n);
+  printf("Get Request Raw Headers:\n<start>\n%s<end>\n", buf);
+
+  // sprintf(lb, "Server received %d Bytes", n);
+  // log_thr(lb, ct->num, tid);
+  // sprintf(lb, "Get Request Raw Headers:");
+  // log_thr(lb, ct->num, tid);
+  // log_msg(buf);
 
   /* making copy of buffer to check for range requests */
   bzero(bufcopy, BUFSIZE);
@@ -242,12 +250,15 @@ void *serve_client_thread(void *ptr) {
         write_empty_header(connfd);
         return 0;
       }
+      
       flag_be = peer_view_response(filepath, file_type, port_be, sockfd_be, (COM_BUF));
+
       /* couldn't find content */
       if(flag_be == 0){
         write_status_header(connfd, SC_NOT_FOUND, ST_NOT_FOUND);
         write_empty_header(connfd);
-      } else if(flag_be == -1){
+      } 
+      else if(flag_be == -1){
         /* ERROR on sendto (resend?)*/
       }
       handle_be_response(COM_BUF, connfd, file_type);
