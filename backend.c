@@ -17,7 +17,7 @@ void* handle_be(void* ptr) {
   struct sockaddr_in sender_addr; /* packet sender's address */
   socklen_t sender_addr_len = sizeof(sender_addr);
 
-  Pkt_t packet;                   /* packet struct */
+  
 
   int sent_status;                /* sent bytes */
   int recv_status;                /* received bytes */
@@ -27,7 +27,7 @@ void* handle_be(void* ptr) {
     printf("Waiting for packet on backend...\n");
 
     /* receiving packet and writing into p_buf */
-    bzero(&packet, sizeof(packet));
+    Pkt_t packet;
     recv_status = recvfrom(sockfd, &packet, sizeof(packet), 0,
                         (struct sockaddr *) &sender_addr, &sender_addr_len);
 
@@ -322,7 +322,7 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct) {
   send(connfd, client_resp, strlen(client_resp), 0);
   write_empty_header(connfd);
 
-  printf("Wrote server info to client.\n\n");
+  printf("Wrote server info to client.\n");
 
   return 1;
 }
