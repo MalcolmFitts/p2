@@ -248,7 +248,7 @@ void *serve_client_thread(void *ptr) {
       memset(COM_BUF, '\0', BUFSIZE);
 
       if((!parse_peer_view_content(bufcopy, filepath)) ||
-         (!parse_file_type(filepath, file_type))){
+         (!parse_file_type(filepath, file_type))) {
         /* 500 Error --> Failure to parse file type
          * TODO      --> flag (return) val: parse fail */
         write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);

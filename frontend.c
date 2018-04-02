@@ -159,7 +159,7 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
   //char* content = NULL;
 
   /* CHECK - seeing if this is running */
-  printf("{*debug*} Front-end attempting to parse info from back-end.\n");
+  printf("{*debug*} Front-end ready to parse info from back-end.\n");
 
   while(1) {
     /* Locking BE-FE communication buffer to safely copy data */
@@ -173,12 +173,8 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
       printf("{*debug*} Front-end received info from back-end!\n");
       // printf("{*debug*} BUF:\n%s\n", BUF);
 
-      if(atoi(&BUF[0]) == COM_BUF_HDR) {
-        n_scan = sscanf(BUF, "%d %d\n", &type, (int*)data);
-      }
-      else{
-        n_scan = sscanf(BUF, "%d %s\n", &type, data);
-      }
+      /* FOUND THE BUG - i think */
+      n_scan = sscanf(BUF, "%d %d\n", &type, (int*) data);
 
       printf("{*debug*} n_scan: %d\n",n_scan);
       printf("{*debug*} type: %d\n",type);
