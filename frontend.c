@@ -171,9 +171,14 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
     if (BUF[0] != '\0') {
       /* BUF has info for FE; parse type of response and data */
       printf("{*debug*} Front-end received info from back-end!\n");
-      printf("{*debug*} BUF:\n%s\n", BUF);
+      // printf("{*debug*} BUF:\n%s\n", BUF);
 
-      n_scan = sscanf(BUF, "%d %s\n", &type, data);
+      if(atoi(&BUF[0]) == COM_BUF_HDR) {
+        n_scan = sscanf(BUF, "%d %d\n", &type, (int*)data);
+      }
+      else{
+        n_scan = sscanf(BUF, "%d %s\n", &type, data);
+      }
 
       printf("{*debug*} n_scan: %d\n",n_scan);
       printf("{*debug*} type: %d\n",type);
