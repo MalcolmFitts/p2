@@ -69,14 +69,14 @@ int main(int argc, char **argv) {
   short port_fe;                    /* client port to listen on */
   struct sockaddr_in self_addr_fe; /* front end address */
   int connfd;                       /* connection socket */
-  struct hostent *hostf;
+  //struct hostent *hostf;
   char *hostaddrf;
 
   /* back-end (node) vars */
   int sockfd_be;                    /* listening socket */
   short port_be;                    /* back-end port to use */
   struct sockaddr_in self_addr_be;  /* back-end address */
-  struct hostent *hostb;
+  //struct hostent *hostb;
   char *hostaddrb;
 
   /* client vars */
@@ -100,10 +100,10 @@ int main(int argc, char **argv) {
   sockfd_be = init_backend(port_be, &self_addr_be);
 
   /* Parsing IP info for easier start-up message */
-  hostf = gethostbyaddr((const char *)&self_addr_fe.sin_addr.s_addr, 
-    sizeof(self_addr_fe.sin_addr.s_addr), AF_INET);
-  hostb = gethostbyaddr((const char *)&self_addr_be.sin_addr.s_addr,
-    sizeof(self_addr_be.sin_addr.s_addr), AF_INET);
+  // hostf = gethostbyaddr((const char *)&self_addr_fe.sin_addr.s_addr, 
+  //   sizeof(self_addr_fe.sin_addr.s_addr), AF_INET);
+  // hostb = gethostbyaddr((const char *)&self_addr_be.sin_addr.s_addr,
+  //   sizeof(self_addr_be.sin_addr.s_addr), AF_INET);
 
   hostaddrf = inet_ntoa(self_addr_fe.sin_addr);
   hostaddrb = inet_ntoa(self_addr_be.sin_addr);
