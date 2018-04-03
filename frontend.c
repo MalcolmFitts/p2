@@ -174,9 +174,9 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
       // printf("{*debug*} BUF:\n%s\n", BUF);
 
       /* FOUND THE BUG - i think */
-      n_scan = sscanf(BUF, "%d %d\n", &type, (int*) data);
+      n_scan = sscanf(BUF, "%d %s\n", &type, data);
 
-      printf("{*debug*} n_scan: %d\n",n_scan);
+      printf("{*debug*} n_scan(BUF): %d\n",n_scan);
       printf("{*debug*} type: %d\n",type);
       printf("{*debug*} data: %s\n",data);
 
