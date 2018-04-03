@@ -89,13 +89,16 @@ int main(int argc, char **argv) {
   port_fe = atoi(argv[1]);
   port_be = atoi(argv[2]);
 
-  printf("front-end port: %d\nback-end port: %d\n", port_fe, port_be);
+  printf("<BBBServer start-up info>\n");
+  // printf("front-end port: %d\nback-end port: %d\n", port_fe, port_be);
 
   pthread_mutex_init(&mutex, NULL);
 
   /* initialize front-end and back-end data */
   sockfd_fe = init_frontend(port_fe, &self_addr_fe);
   sockfd_be = init_backend(port_be, &self_addr_be);
+
+  printf("\n");
 
   int* be_sockfd_ptr = &sockfd_be;
 

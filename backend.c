@@ -267,6 +267,11 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
   /* create node directory */
   node_dir = create_node_dir(MAX_NODES);
 
+  /* Parsing IP for easier start-up testing */
+  char *hostaddrp;
+  hostaddrp = inet_ntoa(self_addr->sin_addr);
+  printf("Initialized back-end address: %s:%d\n", hostaddrp, port_be);
+
   return sockfd_be;
 }
 
