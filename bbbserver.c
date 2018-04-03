@@ -69,11 +69,15 @@ int main(int argc, char **argv) {
   short port_fe;                    /* client port to listen on */
   struct sockaddr_in self_addr_fe; /* front end address */
   int connfd;                       /* connection socket */
+  struct hostent *hostf;
+  char *hostaddrf;
 
   /* back-end (node) vars */
   int sockfd_be;                    /* listening socket */
   short port_be;                    /* back-end port to use */
   struct sockaddr_in self_addr_be;;  /* back-end address */
+  struct hostent *hostb;
+  char *hostaddrb;
 
   /* client vars */
   struct sockaddr_in clientaddr;               /* client's addr */
@@ -89,15 +93,27 @@ int main(int argc, char **argv) {
   port_fe = atoi(argv[1]);
   port_be = atoi(argv[2]);
 
-  printf("<BBBServer start-up info>\n");
-  // printf("front-end port: %d\nback-end port: %d\n", port_fe, port_be);
-
   pthread_mutex_init(&mutex, NULL);
 
   /* initialize front-end and back-end data */
   sockfd_fe = init_frontend(port_fe, &self_addr_fe);
   sockfd_be = init_backend(port_be, &self_addr_be);
 
+  /* Parsing IP info for easier start-up message */
+  hostf = gethostbyaddr((const char *)&self_addr_fe.sin_addr.s_addr,
+        sizeof(self_addr_fe.sin_addr.s_addr), AF_INET);
+  hostb = gethostbyaddr((const char *)&self_addr_be.sin_addr.s_addr,
+        sizeof(self_addr_be.sin_addr.s_addr), AF_INET);
+
+  hostaddrf = inet_ntoa(self_addr_fe.sin_addr);
+  hostaddrb = inet_ntoa(self_addr_be.sin_addr);
+
+  /* Start-up info */
+  printf("<BBBServer start-up info>\n");
+  printf("Initialized front-end hostname: %s\n", hostf->h_name);
+  printf("Initialized front-end address: %s:%d\n", hostaddrf, port_fe);
+  printf("Initialized back-end hostname: %s\n", hostb->h_name);
+  printf("Initialized back-end address: %s:%d\n", hostaddrb, port_be);
   printf("\n");
 
   int* be_sockfd_ptr = &sockfd_be;

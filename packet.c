@@ -195,6 +195,8 @@ char* writeable_packet(Pkt_t* packet) {
   return p_buf;
 }
 
+
+
 int get_packet_type(Pkt_t packet) {
   P_Hdr hdr = packet.header;
   uint16_t flag = hdr.flag;
@@ -223,6 +225,7 @@ int get_packet_type(Pkt_t packet) {
   /* should not happen - not sure what kind of packet this is */
   return -1;
 }
+
 
 /* TODO: fix checksum for new packets */
 uint16_t calc_checksum(P_Hdr hdr) {

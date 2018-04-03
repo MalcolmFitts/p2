@@ -36,10 +36,7 @@ int init_frontend(short port_fe, struct sockaddr_in* self_addr){
   if (listen(sockfd_fe, 10) < 0) /* allow 10 requests to queue up */
     error("ERROR on listen");
 
-  /* Parsing IP for easier start-up testing */
-  char *hostaddrp;
-  hostaddrp = inet_ntoa(self_addr->sin_addr);
-  printf("Initialized front-end address: %s:%d\n", hostaddrp, port_fe);
+  
 
   return sockfd_fe;
 }
