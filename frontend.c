@@ -36,8 +36,6 @@ int init_frontend(short port_fe, struct sockaddr_in* self_addr){
   if (listen(sockfd_fe, 10) < 0) /* allow 10 requests to queue up */
     error("ERROR on listen");
 
-  
-
   return sockfd_fe;
 }
 
