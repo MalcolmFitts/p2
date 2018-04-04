@@ -17,8 +17,6 @@ void* handle_be(void* ptr) {
   struct sockaddr_in sender_addr; /* packet sender's address */
   socklen_t sender_addr_len = sizeof(sender_addr);
 
-  
-
   int sent_status;                /* sent bytes */
   int recv_status;                /* received bytes */
 
@@ -134,8 +132,8 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
     printf("Confirmed file: %s\nFile size: %d\nRequired Num Packets: %d\n", filename, c_size, n_packs);
 
     /* sending info to front-end */
-    printf("{*debug*} Sending packet info to front-end for headers.\n");
-    send_hdr_to_fe(hdr.com_buf, c_size);
+    printf("{*debug*} Sending SYN-ACK packet info to front-end for headers.\n");
+    //send_hdr_to_fe(hdr.com_buf, c_size);
 
     /* respond to SYN-ACK packet with ACK packet */
     /* CHECK s_num = 0 */
@@ -191,9 +189,11 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
       printf("Received packet type: DATA-FIN\n");
 
       /* write buf data to frontend */
-      printf("{*debug*} Sending packet info to front-end for data.\n");
+      printf("{*debug*} Sending DATA packet info to front-end for data.\n");
       /* SEND TO FE: "1 {data}\n" */
-      send_data_to_fe(hdr.com_buf, packet.buf, 1);
+      //send_data_to_fe(hdr.com_buf, packet.buf, 1);
+
+      
 
       /* respond to DATA-FIN packet with FIN packet */
       data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_FIN, hdr.com_buf);
@@ -202,13 +202,12 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
 
     else {
       /* Non-terminating data packet; Respond with ACK packet */
-      
       printf("Received packet type: DATA\n");
 
       /* write buf data to frontend */
       printf("{*debug*} Sending packet info to front-end for data.\n");
       /* SEND TO FE: "1 {data}\n" */
-      send_data_to_fe(hdr.com_buf, packet.buf, 0);
+      //send_data_to_fe(hdr.com_buf, packet.buf, 0);
 
       /* respond to DATA packet with ACK packet */
       data_pkt = create_packet(d_port, s_port, s_num + 1,
