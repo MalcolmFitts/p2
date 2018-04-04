@@ -111,9 +111,7 @@ int main(int argc, char **argv) {
   // //printf("Initialized front-end hostname: %s\n", hostf->h_name);
   // printf("Initialized front-end address: %s:%d\n", hostaddrf, port_fe);
   // //printf("Initialized back-end hostname: %s\n", hostb->h_name);
-  // printf("Initialized back-end address: %s:%d\n", hostaddrb, port_be);
-  printf("Size of packet: %lu\n", sizeof(struct Packet));
-  printf("Size of packet header: %lu\n", sizeof(struct Packet_Header));
+  // printf("Initialized back-end address: %s:%d\n", hostaddrb, port_be)
   printf("\n");
 
   int* be_sockfd_ptr = &sockfd_be;

@@ -168,13 +168,13 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
       /* Terminating data packet (last packet); Respond with FIN packet */
       printf("Received packet type: DATA-FIN\n");
 
-      printf("{*debug*} Data BUF: \n%s\n", packet.buf);
+      printf("{*debug*} DATA-FIN-FIN BUF: \n%s\n", packet.buf);
 
       /* write buf data to frontend */
       /* SEND TO FE: "1 {data}\n" */
-      printf("{*debug*} Sending DATA packet info to front-end for data.\n");
+      printf("{*debug*} Sending DATA-FIN packet info to front-end for data.\n");
       send_data_to_fe(hdr.com_buf, packet.buf, 1);
-      printf("{*debug*} Stored DATA packet buf info in com_buf.\n");
+      printf("{*debug*} Stored DATA-FIN packet buf info in com_buf.\n");
 
       /* respond to DATA-FIN packet with FIN packet */
       data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_FIN, hdr.com_buf);
@@ -185,7 +185,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
       /* Non-terminating data packet; Respond with ACK packet */
       printf("Received packet type: DATA\n");
 
-      printf("{*debug*} Data BUF: \n%s\n", packet.buf);
+      printf("{*debug*} DATA-FIN BUF: \n%s\n", packet.buf);
 
       /* write buf data to frontend */
       /* SEND TO FE: "1 {data}\n" */
@@ -203,6 +203,10 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
   /* Responding to FIN packets: (peer node) */
   else if(flag == PKT_FLAG_FIN) {
     printf("Received packet type: FIN\n");
+    printf("{*debug*} Sending FIN packet info to front-end for data.\n");
+    send_data_to_fe(hdr.com_buf, packet.buf, 2);
+    printf("{*debug*} Stored FIN packet buf info in com_buf.\n");
+
     printf("Finished sending.\n");
     return 0;
   }
@@ -414,7 +418,9 @@ void send_hdr_to_fe(char* com_buf, int file_size) {
 
 void send_data_to_fe(char* com_buf, char* data, int fin_flag) {
   char buf[COM_BUFSIZE];
-  sprintf(buf, "1 %s\n", data);
+  if(fin_flag == 0) { sprintf(buf, "1 %s\n", data); }
+  else if(fin_flag == 1) { sprintf(buf, "3 %s\n", data); }
+  else if(fin_flag == 2) { sprintf(buf, "4 %s\n", data); }
   pthread_mutex_lock(&mutex);
   memcpy(com_buf, buf, strlen(buf));
   pthread_mutex_unlock(&mutex);

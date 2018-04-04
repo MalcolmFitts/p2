@@ -15,11 +15,12 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
 
   hdr->com_buf = COM_BUF;
 
+  bzero(packet->buf, MAX_DATA_SIZE);
+
   int len;
 
   if(flag == PKT_FLAG_DATA) {
-    /* set flag to DATA */
-    hdr->flag = (1 << PKT_FLAG_DATA);
+    
 
     /* checking file contents */
     FILE* fp = fopen(filename, "r");
@@ -36,10 +37,25 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
 
       /* CHECK - might want to save this value for FIN flag*/
       len = fread(packet->buf, 1, MAX_DATA_SIZE, fp);
-      hdr->length = len;
+
+      if(len == 0) {
+        /* Fail on reading file */
+        sprintf(packet->buf, "File: Not Found\nContent Size: -1\n");
+        hdr->length = 0;
+        hdr->flag = 0;
+      }
+      else if(len < MAX_DATA_SIZE) {
+        /* Reached EOF -- mark as DATA-FIN */
+        hdr->flag = (1 << PKT_FLAG_FIN) | (1 << PKT_FLAG_DATA);
+        hdr->length = len;
+      }
+      else {
+        /* Read Data normally */
+        hdr->flag = (1 << PKT_FLAG_DATA);
+        hdr->length = len;
+      }
       fclose(fp);
     }
-
   }
 
   /* ACK packet */

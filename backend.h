@@ -91,6 +91,14 @@ struct sockaddr_in get_sockaddr_in(char* hostname, short port);
 
 void send_hdr_to_fe(char* com_buf, int file_size);
 
+
+/*
+ *  fin_flag:
+ *		0 - DATA
+ *		1 - DATA-FIN
+ *		2 - FIN
+ *		
+ */
 void send_data_to_fe(char* com_buf, char* data, int fin_flag);
 
 

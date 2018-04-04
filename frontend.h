@@ -29,7 +29,8 @@
 
 #define COM_BUF_DATA 1
 #define COM_BUF_HDR 2
-#define COM_BUF_FIN 3
+#define COM_BUF_DATA_FIN 3
+#define COM_BUF_FIN 4
 #define COM_BUFSIZE 1500
 
 extern pthread_mutex_t mutex;

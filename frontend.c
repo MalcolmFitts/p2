@@ -207,10 +207,18 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
           break;
 
         case COM_BUF_DATA:
-          printf("{*debug*} Front-end sending data from back-end response.\n");
+          printf("{*debug*} Front-end sending data from back-end response to client.\n");
           /* CHECK - this was scanning info when it was still null */
-          n_scan = sscanf(data, "%s", info);
-          write(connfd, info, strlen(info));
+          //n_scan = sscanf(data, "%s", info);
+          write(connfd, data, strlen(data));
+          break;
+
+        case COM_BUF_DATA_FIN:
+          printf("{*debug*} Front-end sending data from back-end response to client.\n");
+          /* CHECK - this was scanning info when it was still null */
+          //n_scan = sscanf(data, "%s", info);
+          write(connfd, data, strlen(data));
+          write_empty_header(connfd);
           break;
 
         case COM_BUF_FIN:
