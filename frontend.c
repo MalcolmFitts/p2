@@ -150,22 +150,24 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct) {
 }
 
 void handle_be_response(char* COM_BUF, int connfd, char* content_type){
-  char* BUF = malloc(sizeof(char) * BUFSIZE);
-  char* info = NULL;
-  char* data = malloc(sizeof(char) * BUFSIZE);
+  char* BUF = malloc(sizeof(char) * COM_BUFSIZE);
+  char* info = malloc(sizeof(char) * COM_BUFSIZE);
+  char* data = malloc(sizeof(char) * COM_BUFSIZE);
   int type;
   int n_scan = 0;
   int content_len;
   //char* content = NULL;
 
-  /* CHECK - seeing if this is running */
-  printf("{*debug*} Front-end ready to parse info from back-end.\n");
+  bzero(BUF, COM_BUFSIZE);
+  bzero(info, COM_BUFSIZE);
+  bzero(data, COM_BUFSIZE);
 
+  printf("{*debug*} Front-end ready to parse info from back-end.\n");
   while(1) {
     /* Locking BE-FE communication buffer to safely copy data */
     pthread_mutex_lock(&mutex);
-    memcpy(BUF, COM_BUF, BUFSIZE);
-    memset(COM_BUF, '\0', BUFSIZE);
+    memcpy(BUF, COM_BUF, COM_BUFSIZE);
+    memset(COM_BUF, '\0', COM_BUFSIZE);
     pthread_mutex_unlock(&mutex);
 
     if (BUF[0] != '\0') {
@@ -177,10 +179,10 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
       // n_scan = sscanf(BUF, "%d %s\n", &type, data);
 
       type = atoi(&(BUF[0]));
-      strncpy(data, BUF + 2, BUFSIZE);
+      strncpy(data, BUF + 2, COM_BUFSIZE);
       
       //printf("{*debug*} n_scan(BUF): %d\n",n_scan);
-      
+
       printf("{*debug*} type: %d\n",type);
       printf("{*debug*} data: %s\n",data);
 

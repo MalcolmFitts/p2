@@ -107,12 +107,14 @@ int main(int argc, char **argv) {
   // hostaddrf = inet_ntoa(self_addr_fe.sin_addr);
   // hostaddrb = inet_ntoa(self_addr_be.sin_addr);
   // /* Start-up info */
-  // printf("<BBBServer start-up info>\n");
+  printf("<BBBServer start-up info>\n");
   // //printf("Initialized front-end hostname: %s\n", hostf->h_name);
   // printf("Initialized front-end address: %s:%d\n", hostaddrf, port_fe);
   // //printf("Initialized back-end hostname: %s\n", hostb->h_name);
   // printf("Initialized back-end address: %s:%d\n", hostaddrb, port_be);
-  // printf("\n");
+  printf("Size of packet: %lu\n", sizeof(struct Packet));
+  printf("Size of packet header: %lu\n", sizeof(struct Packet_Header));
+  printf("\n");
 
   int* be_sockfd_ptr = &sockfd_be;
 
@@ -260,9 +262,9 @@ void *serve_client_thread(void *ptr) {
       file_type = malloc(sizeof(char) * MINLINE);
       uint16_t port_be = ct->port_be;
       int sockfd_be = ct->listenfd_be;
-      char* COM_BUF = malloc(sizeof(char) * BUFSIZE);
+      char* COM_BUF = malloc(sizeof(char) * COM_BUFSIZE);
 
-      memset(COM_BUF, '\0', BUFSIZE);
+      memset(COM_BUF, '\0', COM_BUFSIZE);
 
       if((!parse_peer_view_content(bufcopy, filepath)) ||
          (!parse_file_type(filepath, file_type))) {

@@ -133,7 +133,8 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
 
     /* sending info to front-end */
     printf("{*debug*} Sending SYN-ACK packet info to front-end for headers.\n");
-    //send_hdr_to_fe(hdr.com_buf, c_size);
+    send_hdr_to_fe(hdr.com_buf, c_size);
+    printf("{*debug*} Stored SYN-ACK packet buf info in com_buf.\n");
 
     /* respond to SYN-ACK packet with ACK packet */
     /* CHECK s_num = 0 */
@@ -159,41 +160,21 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
 
   /* Responding to DATA packets: (master node) */
   else if(flag == PKT_FLAG_DATA) {
-
-    /* CHECK 1 - node_dir might be error */
-    if(!node_dir) {
-      printf("Node dir null.\n");
-      return -1;
-    }
-    else{
-      printf("Node_dir is fine.\n");
-    }
-
     /* Finding filename for response packets */
     Node* n = find_node_by_hostname(node_dir, hostaddrp);
-
-    /* CHECK 2 - node might be error */
-
-    if(!n) {
-      printf("Node is null.\n");
-      return -1;
-    }
-    else{
-      printf("found node in dir.\n");
-    }
-
     strncpy(filename, n->content_path, strlen(n->content_path));
 
     if((flag & PKT_FIN_MASK) > 0) {
       /* Terminating data packet (last packet); Respond with FIN packet */
       printf("Received packet type: DATA-FIN\n");
 
-      /* write buf data to frontend */
-      printf("{*debug*} Sending DATA packet info to front-end for data.\n");
-      /* SEND TO FE: "1 {data}\n" */
-      //send_data_to_fe(hdr.com_buf, packet.buf, 1);
+      printf("{*debug*} Data BUF: \n%s\n", packet.buf);
 
-      
+      /* write buf data to frontend */
+      /* SEND TO FE: "1 {data}\n" */
+      printf("{*debug*} Sending DATA packet info to front-end for data.\n");
+      send_data_to_fe(hdr.com_buf, packet.buf, 1);
+      printf("{*debug*} Stored DATA packet buf info in com_buf.\n");
 
       /* respond to DATA-FIN packet with FIN packet */
       data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_FIN, hdr.com_buf);
@@ -204,10 +185,13 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
       /* Non-terminating data packet; Respond with ACK packet */
       printf("Received packet type: DATA\n");
 
+      printf("{*debug*} Data BUF: \n%s\n", packet.buf);
+
       /* write buf data to frontend */
-      printf("{*debug*} Sending packet info to front-end for data.\n");
       /* SEND TO FE: "1 {data}\n" */
-      //send_data_to_fe(hdr.com_buf, packet.buf, 0);
+      printf("{*debug*} Sending DATA packet info to front-end for data.\n");
+      send_data_to_fe(hdr.com_buf, packet.buf, 0);
+      printf("{*debug*} Stored DATA packet buf info in com_buf.\n");
 
       /* respond to DATA packet with ACK packet */
       data_pkt = create_packet(d_port, s_port, s_num + 1,
@@ -422,7 +406,7 @@ struct sockaddr_in get_sockaddr_in(char* hostname, short port){
 
 void send_hdr_to_fe(char* com_buf, int file_size) {
   char buf[COM_BUFSIZE];
-  sprintf(buf, "%d %d\n", 2, file_size);
+  sprintf(buf, "2 %d\n", file_size);
   pthread_mutex_lock(&mutex);
   memcpy(com_buf, buf, strlen(buf));
   pthread_mutex_unlock(&mutex);
@@ -430,7 +414,7 @@ void send_hdr_to_fe(char* com_buf, int file_size) {
 
 void send_data_to_fe(char* com_buf, char* data, int fin_flag) {
   char buf[COM_BUFSIZE];
-  sprintf(buf, "%d %s\n", 1, data);
+  sprintf(buf, "1 %s\n", data);
   pthread_mutex_lock(&mutex);
   memcpy(com_buf, buf, strlen(buf));
   pthread_mutex_unlock(&mutex);
