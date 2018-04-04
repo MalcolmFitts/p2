@@ -156,6 +156,7 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
   int type;
   //int n_scan = 0;
   int content_len;
+  int done = 0;
   //char* content = NULL;
 
   bzero(BUF, COM_BUFSIZE);
@@ -163,7 +164,7 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
   bzero(data, COM_BUFSIZE);
 
   printf("{*debug*} Front-end ready to parse info from back-end.\n");
-  while(1) {
+  while(!done) {
     /* Locking BE-FE communication buffer to safely copy data */
     pthread_mutex_lock(&mutex);
     memcpy(BUF, COM_BUF, COM_BUFSIZE);
@@ -173,22 +174,9 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
     if (BUF[0] != '\0') {
       /* BUF has info for FE; parse type of response and data */
       printf("{*debug*} Front-end received info from back-end!\n");
-      //printf("{*debug*} BUF:\n%s\n", BUF);
-
-      /* FOUND THE BUG - i think */
-      // n_scan = sscanf(BUF, "%d %s\n", &type, data);
 
       type = atoi(&(BUF[0]));
       strncpy(data, BUF + 2, COM_BUFSIZE);
-      
-      //printf("{*debug*} n_scan(BUF): %d\n",n_scan);
-
-      // printf("{*debug*} type: %d\n",type);
-      // printf("{*debug*} data: %s\n",data);
-
-      // if (n_scan != 2) {
-      //   printf("FE DOESNT UNDERSTAND BE\n");
-      // }
 
       switch(type){
         case COM_BUF_HDR:
@@ -223,11 +211,13 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
           /* CHECK - this was scanning info when it was still null */
           //n_scan = sscanf(data, "%s", info);
           write(connfd, data, strlen(data));
-          write_empty_header(connfd);
+          //write_empty_header(connfd);
+          done = 1;
           break;
 
         case COM_BUF_FIN:
           write_empty_header(connfd);
+          done = 1;
           break;
 
         default:

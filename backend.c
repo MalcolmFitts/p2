@@ -46,6 +46,7 @@ void* handle_be(void* ptr) {
       printf("Finished serving.\n\n");
       continue;
     }
+    
     // else if(type == PKT_FLAG_CORRUPT) {
     //   printf("Server received packet with corrupt flag.\n");
     //   printf("{temp} ignoring this packet for now.\n\n");
@@ -82,15 +83,15 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
 
   /* Peer data variables */
   socklen_t server_addr_len = sizeof(server_addr);
-  struct hostent *hostp;          /* client host info */
+  //struct hostent *hostp;          /* client host info */
   char *hostaddrp;                /* dotted decimal host addr string */
 
   /* Parsing data about packet sender */
-  hostp = gethostbyaddr((const char *)&server_addr.sin_addr.s_addr,
-        sizeof(server_addr.sin_addr.s_addr), AF_INET);
+  //hostp = gethostbyaddr((const char *)&server_addr.sin_addr.s_addr,
+  //      sizeof(server_addr.sin_addr.s_addr), AF_INET);
   hostaddrp = inet_ntoa(server_addr.sin_addr);
 
-  printf("Packet sender: %s (%s)\n", hostp->h_name, hostaddrp);
+  printf("Packet sender: %s\n", hostaddrp);
 
   /* Parsing header from packet */
   P_Hdr hdr = packet.header;
@@ -212,7 +213,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
     return 0;
   }
 
-  printf("Packet destination: %s (%s)\n", hostp->h_name, hostaddrp);
+  printf("Packet destination: %s\n", hostaddrp);
 
   n_set = sendto(sockfd, &data_pkt, sizeof(data_pkt), 0,
 		 (struct sockaddr *) &server_addr, server_addr_len);
@@ -354,7 +355,6 @@ int peer_view_response(char* filepath, char* file_type, uint16_t port_be,
  */
 int peer_rate_response(int connfd, char* BUF, struct thread_data *ct){
   char buf[MAXLINE];
-  //int rate;
   char* rate_c = malloc(sizeof(char) * MAXLINE);
 
   bzero(buf, BUFSIZE);
@@ -363,12 +363,7 @@ int peer_rate_response(int connfd, char* BUF, struct thread_data *ct){
   /* TODO this returns something */
   parse_peer_config_rate(BUF, rate_c);
 
-  //rate = parse_str_2_int(rate_c);
   free(rate_c);
-
-  // CHECK 200 OK response on config_rate
-  write_status_header(connfd, SC_OK, ST_OK);
-  write_empty_header(connfd);
 
   return 0;
 }

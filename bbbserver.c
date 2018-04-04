@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
   sockfd_be = init_backend(port_be, &self_addr_be);
 
   /* Parsing IP info for easier start-up message */
-  // hostf = gethostbyaddr((const char *)&self_addr_fe.sin_addr.s_addr, 
+  // hostf = gethostbyaddr((const char *)&self_addr_fe.sin_addr.s_addr,
   //   sizeof(self_addr_fe.sin_addr.s_addr), AF_INET);
   // hostb = gethostbyaddr((const char *)&self_addr_be.sin_addr.s_addr,
   //   sizeof(self_addr_be.sin_addr.s_addr), AF_INET);
@@ -195,12 +195,6 @@ void *serve_client_thread(void *ptr) {
           hostp->h_name, hostaddrp);
   printf("Connected client id: %d.\n", tid);
 
-  // sprintf(lb, "Server established connection with %s (%s)",
-  //         hostp->h_name, hostaddrp);
-  // log_thr(lb, ct->num, tid);
-  // sprintf(lb, "Connected client id: %d.", tid);
-  // log_thr(lb, ct->num, tid);
-
   /* read: read input string from the client */
   bzero(buf, BUFSIZE);
   n = read(connfd, buf, BUFSIZE);
@@ -215,12 +209,6 @@ void *serve_client_thread(void *ptr) {
   bzero(bufcopy, BUFSIZE);
   strncpy(bufcopy, buf, n - 2);
   printf("%s    <end>\n\n", bufcopy);
-
-  // sprintf(lb, "Server received %d Bytes", n);
-  // log_thr(lb, ct->num, tid);
-  // sprintf(lb, "Get Request Raw Headers:");
-  // log_thr(lb, ct->num, tid);
-  // log_msg(buf);
 
   /* making copy of buffer to check for range requests */
   bzero(bufcopy, BUFSIZE);
@@ -249,14 +237,7 @@ void *serve_client_thread(void *ptr) {
         write_conn_header(connfd, CONN_KEEP_HDR);
         write_keep_alive_header(connfd, 0, 100);
         write_empty_header(connfd);
-
-        printf("Wrote headers to client!\n");
-
-        write(connfd, resp_buf, strlen(resp_buf));
-        write_empty_header(connfd);
-
-        printf("Wrote Peer data to client!\n");
-      } 
+      }
       else {
         /* 500 Code  --> Failure on peer_add request */
         write_headers_500(connfd);
@@ -285,12 +266,13 @@ void *serve_client_thread(void *ptr) {
       flag_be = peer_view_response(filepath, file_type, port_be, sockfd_be, (COM_BUF));
 
       /* couldn't find content */
-      if(flag_be == 0) {
+      if(flag_be == -1) {
         write_status_header(connfd, SC_NOT_FOUND, ST_NOT_FOUND);
         write_empty_header(connfd);
       }
-      else if(flag_be == -1) {
-        /* CHECK - server error, send 500 code*/
+
+      /* server error, send 500 code*/
+      else if(flag_be == -2) {
         write_headers_500(connfd);
       }
       handle_be_response(COM_BUF, connfd, file_type);
@@ -300,6 +282,8 @@ void *serve_client_thread(void *ptr) {
       printf("Server recognized request type: peer rate\n");
       /* This goes to backend */
       flag_be = peer_rate_response(connfd, buf, ct);
+      write_status_header(connfd, SC_OK, ST_OK);
+      write_empty_header(connfd);
       break;
     case RQT_INV:
       numthreads--;
@@ -316,6 +300,11 @@ void *serve_client_thread(void *ptr) {
   /* TODO: closing client connection and freeing struct */
 
   log_thr(lb, ct->num, tid);
+
+  int flag;
+  flag = shutdown(connfd, SHUT_RDWR);
+  close(connfd);
+  printf("Connection with client closed.\n\n");
 
   /* decrement num threads and return */
   numthreads--;

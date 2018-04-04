@@ -71,7 +71,7 @@ int init_backend(short port_be, struct sockaddr_in* self_addr);
 
 /*  params:
  *  	connfd - socket to use for writing - might not need after using resp_buf
- *		BUF - stores raw GET request 
+ *		BUF - stores raw GET request
  *		ct - stores info - not needed?
  *		resp_buf - used to recover data to write to client for peer add responses
  */
@@ -100,7 +100,7 @@ void send_hdr_to_fe(char* com_buf, int file_size);
  *		0 - DATA
  *		1 - DATA-FIN
  *		2 - FIN
- *		
+ *
  */
 void send_data_to_fe(char* com_buf, char* data, int fin_flag);
 
