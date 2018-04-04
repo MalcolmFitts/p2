@@ -169,7 +169,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
       /* Terminating data packet (last packet); Respond with FIN packet */
       printf("Received packet type: DATA-FIN\n");
 
-      printf("{*debug*} DATA-FIN-FIN BUF: \n%s\n", packet.buf);
+      // printf("{*debug*} DATA-FIN BUF: \n%s\n", packet.buf);
 
       /* write buf data to frontend */
       /* SEND TO FE: "1 {data}\n" */
@@ -186,7 +186,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
       /* Non-terminating data packet; Respond with ACK packet */
       printf("Received packet type: DATA\n");
 
-      printf("{*debug*} DATA BUF: \n%s\n", packet.buf);
+      // printf("{*debug*} DATA BUF: \n%s\n", packet.buf);
 
       /* write buf data to frontend */
       /* SEND TO FE: "1 {data}\n" */

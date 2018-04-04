@@ -183,8 +183,8 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
       
       //printf("{*debug*} n_scan(BUF): %d\n",n_scan);
 
-      printf("{*debug*} type: %d\n",type);
-      printf("{*debug*} data: %s\n",data);
+      // printf("{*debug*} type: %d\n",type);
+      // printf("{*debug*} data: %s\n",data);
 
       // if (n_scan != 2) {
       //   printf("FE DOESNT UNDERSTAND BE\n");
