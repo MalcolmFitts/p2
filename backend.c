@@ -40,24 +40,25 @@ void* handle_be(void* ptr) {
     /* parsing out the type of packet that was received */
     int type = get_packet_type(packet);
 
-    // /* checking for corrupt or unknown flagged packets */
-    // if(type == PKT_FLAG_UNKNOWN) {
-    //   printf("Server received packet with unknown flag.\n");
-    //   printf("{temp} ignoring this packet for now.\n\n");
-    // }
+    /* checking for corrupt or unknown flagged packets */
+    if(type == PKT_FLAG_FIN) {
+      printf("Server received FIN packet.\n");
+      printf("Finished serving.\n\n");
+      continue;
+    }
     // else if(type == PKT_FLAG_CORRUPT) {
     //   printf("Server received packet with corrupt flag.\n");
     //   printf("{temp} ignoring this packet for now.\n\n");
     // }
 
     /* responses for SYN, ACK, SYN-ACK and DATA packets */
-    // else {
+    else {
       sent_status = serve_content(packet, sockfd, sender_addr, type);
 
       if(sent_status < 0) {
 	       printf("Error: something went wrong with serving content after the fact.\n");
       }
-    // }
+    }
   }
 }
 
