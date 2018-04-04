@@ -173,6 +173,11 @@ void write_headers_206(int connfd, char* name, int full_length,
 	char* content_type, time_t t, int sb, int eb, int content_length);
 
 /*
+ *        Write headers to the client with "500 Internal Server Error" Status Code
+ */
+void write_headers_500(int connfd);
+
+/*
  *        Write the data requested to the client.
  *	note:
  *			{start_byte} indicates where in the file this will start writing from

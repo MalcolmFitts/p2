@@ -261,7 +261,7 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
 /*
  *  TODO - replace writing headers with returning flag values
  */
-int peer_add_response(int connfd, char* BUF, struct thread_data *ct) {
+int peer_add_response(char* BUF, char* resp_buf) {
   /* initilizing local buf and arrays for use in parsing */
   char buf[BUFSIZE];
   char* filepath = malloc(sizeof(char) * MAXLINE);
@@ -279,7 +279,7 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct) {
   /* CHECK - why using BUF when we have buf (copy of BUF) */
   int add_res = parse_peer_add(BUF, filepath, hostname, port_c, rate_c);
   if(!add_res) {
-    return -1;
+    return 0;
   }
 
   /* parsing string reps to ints and freeing memory */
@@ -291,7 +291,7 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct) {
   /* creating node with parsed data */
   Node* n = create_node(filepath, hostname, port, rate);
   if(!add_node(node_dir, n)){
-    return -1;
+    return 0;
   }
 
   /* Status printing */
@@ -299,23 +299,8 @@ int peer_add_response(int connfd, char* BUF, struct thread_data *ct) {
   printf("Node hostname: %s\nNode port: %d\n", n->ip_hostname, n->port);
   printf("Node content: %s\nNode rate: %d\n", n->content_path, n->content_rate);
 
-  /* TODO      --> write in front-end */
-  write_status_header(connfd, SC_OK, ST_OK);
-  write_date_header(connfd);
-  write_conn_header(connfd, CONN_KEEP_HDR);
-  write_keep_alive_header(connfd, 0, 100);
-  write_empty_header(connfd);
-
-  printf("Wrote headers to client.\n");
-
-  char client_resp[BUFSIZE] = {0};
-  sprintf(client_resp, "Peer Add Success!\nNode hostname: %s\nNode port: %d\nNode content: %s\nNode rate: %d\n",
+  sprintf(resp_buf, "Peer Add Success!\nNode hostname: %s\nNode port: %d\nNode content: %s\nNode rate: %d\n",
     n->ip_hostname, n->port, n->content_path, n->content_rate);
-
-  send(connfd, client_resp, strlen(client_resp), 0);
-  write_empty_header(connfd);
-
-  printf("Wrote server info data to client.\n");
 
   return 1;
 }

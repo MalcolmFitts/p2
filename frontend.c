@@ -197,11 +197,14 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
           if (content_len <= 0) {
             /* SERVER_ERROR */
             printf("{*debug*} Front-end failed sending headers from back-end response.\n");
-            write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
-            write_empty_header(connfd);
+            write_headers_500(connfd);
             return;
           }
           write_status_header(connfd, SC_OK, ST_OK);
+          write_date_header(connfd);
+          write_server_name_header(connfd, SERVER_NAME);
+          write_conn_header(connfd, CONN_KEEP_HDR);
+          write_keep_alive_header(connfd, 0, 100);
           write_content_length_header(connfd, content_len);
           write_content_type_header(connfd, content_type);
           write_empty_header(connfd);

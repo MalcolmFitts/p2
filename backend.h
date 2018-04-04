@@ -69,10 +69,13 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
 
 int init_backend(short port_be, struct sockaddr_in* self_addr);
 
-/*  TODO
- *  add_response_be
+/*  params:
+ *  	connfd - socket to use for writing - might not need after using resp_buf
+ *		BUF - stores raw GET request 
+ *		ct - stores info - not needed?
+ *		resp_buf - used to recover data to write to client for peer add responses
  */
-int peer_add_response(int connfd, char* BUF, struct thread_data *ct);
+int peer_add_response(char* BUF, char* resp_buf);
 
 /*  TODO
  *  view_response_be

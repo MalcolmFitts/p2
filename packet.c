@@ -230,6 +230,7 @@ int get_packet_type(Pkt_t packet) {
   else if ((flag & PKT_ACK_MASK) > 0) {
     return PKT_FLAG_ACK;        /* ACK packet     */
   }
+
   else if ((flag & PKT_DATA_MASK) > 0) {
     return PKT_FLAG_DATA;       /* DATA packet    */
   }
@@ -237,6 +238,8 @@ int get_packet_type(Pkt_t packet) {
   else if ((flag & PKT_FIN_MASK) > 0){
     return PKT_FLAG_FIN;        /* FIN packet     */
   }
+
+  
 
   /* should not happen - not sure what kind of packet this is */
   return -1;

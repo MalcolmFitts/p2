@@ -175,6 +175,7 @@ void *serve_client_thread(void *ptr) {
 
   char* filepath;
   char* file_type;
+  char* resp_buf;
 
   /* gethostbyaddr: determine who sent the message */
   hostp = gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr,
@@ -237,19 +238,28 @@ void *serve_client_thread(void *ptr) {
     case RQT_P_ADD:
       /* This goes to backend */
       printf("Server recognized request type: peer add\n");
-      flag_be = peer_add_response(connfd, buf, ct);
+      resp_buf = malloc(sizeof(char) * BUFSIZE);
+      flag_be = peer_add_response(buf, resp_buf);
 
       if(flag_be){
         /* 200 Code  --> Success! */
         write_status_header(connfd, SC_OK, ST_OK);
         write_date_header(connfd);
+        write_server_name_header(connfd, SERVER_NAME);
         write_conn_header(connfd, CONN_KEEP_HDR);
         write_keep_alive_header(connfd, 0, 100);
         write_empty_header(connfd);
-      } else /* flag_be < 1 */ {
-        /* 500 Code  --> Failure on peer_add request */
-        write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
+
+        printf("Wrote headers to client!\n");
+
+        write(connfd, resp_buf, strlen(resp_buf));
         write_empty_header(connfd);
+
+        printf("Wrote Peer data to client!\n");
+      } 
+      else {
+        /* 500 Code  --> Failure on peer_add request */
+        write_headers_500(connfd);
       }
       break;
 
@@ -268,8 +278,7 @@ void *serve_client_thread(void *ptr) {
          (!parse_file_type(filepath, file_type))) {
         /* 500 Error --> Failure to parse file type
          * TODO      --> flag (return) val: parse fail */
-        write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
-        write_empty_header(connfd);
+        write_headers_500(connfd);
         return 0;
       }
 
@@ -281,7 +290,8 @@ void *serve_client_thread(void *ptr) {
         write_empty_header(connfd);
       }
       else if(flag_be == -1) {
-        /* ERROR on sendto (resend?)*/
+        /* CHECK - server error, send 500 code*/
+        write_headers_500(connfd);
       }
       handle_be_response(COM_BUF, connfd, file_type);
       break;

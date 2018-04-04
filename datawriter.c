@@ -235,6 +235,15 @@ void write_headers_206(int connfd, char* name, int full_length, char* content_ty
 }
 
 /*
+ * sending headers for "Internal Server Error" status code (500)
+ *
+ */ 
+void write_headers_500(int connfd) {
+  write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
+  write_empty_header(connfd);
+}
+
+/*
  * writes data to client connected to connfd from
  * file pointed to by fp where file's size is content_size
  */
