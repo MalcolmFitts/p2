@@ -40,24 +40,24 @@ void* handle_be(void* ptr) {
     /* parsing out the type of packet that was received */
     int type = get_packet_type(packet);
 
-    /* checking for corrupt or unknown flagged packets */
-    if(type == PKT_FLAG_UNKNOWN) {
-      printf("Server received packet with unknown flag.\n");
-      printf("{temp} ignoring this packet for now.\n\n");
-    }
-    else if(type == PKT_FLAG_CORRUPT) {
-      printf("Server received packet with corrupt flag.\n");
-      printf("{temp} ignoring this packet for now.\n\n");
-    }
+    // /* checking for corrupt or unknown flagged packets */
+    // if(type == PKT_FLAG_UNKNOWN) {
+    //   printf("Server received packet with unknown flag.\n");
+    //   printf("{temp} ignoring this packet for now.\n\n");
+    // }
+    // else if(type == PKT_FLAG_CORRUPT) {
+    //   printf("Server received packet with corrupt flag.\n");
+    //   printf("{temp} ignoring this packet for now.\n\n");
+    // }
 
     /* responses for SYN, ACK, SYN-ACK and DATA packets */
-    else {
+    // else {
       sent_status = serve_content(packet, sockfd, sender_addr, type);
 
       if(sent_status < 0) {
 	       printf("Error: something went wrong with serving content after the fact.\n");
       }
-    }
+    // }
   }
 }
 
@@ -185,7 +185,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
       /* Non-terminating data packet; Respond with ACK packet */
       printf("Received packet type: DATA\n");
 
-      printf("{*debug*} DATA-FIN BUF: \n%s\n", packet.buf);
+      printf("{*debug*} DATA BUF: \n%s\n", packet.buf);
 
       /* write buf data to frontend */
       /* SEND TO FE: "1 {data}\n" */
@@ -196,7 +196,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
       /* respond to DATA packet with ACK packet */
       data_pkt = create_packet(d_port, s_port, s_num + 1,
         filename, PKT_FLAG_ACK, hdr.com_buf);
-      printf("Sending DATA packet...\n");
+      printf("Sending ACK packet...\n");
     }
   }
 

@@ -154,7 +154,7 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
   char* info = malloc(sizeof(char) * COM_BUFSIZE);
   char* data = malloc(sizeof(char) * COM_BUFSIZE);
   int type;
-  int n_scan = 0;
+  //int n_scan = 0;
   int content_len;
   //char* content = NULL;
 
@@ -173,7 +173,7 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
     if (BUF[0] != '\0') {
       /* BUF has info for FE; parse type of response and data */
       printf("{*debug*} Front-end received info from back-end!\n");
-      printf("{*debug*} BUF:\n%s\n", BUF);
+      //printf("{*debug*} BUF:\n%s\n", BUF);
 
       /* FOUND THE BUG - i think */
       // n_scan = sscanf(BUF, "%d %s\n", &type, data);
@@ -193,9 +193,10 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
       switch(type){
         case COM_BUF_HDR:
           printf("{*debug*} Front-end sending headers from back-end response.\n");
-          n_scan = sscanf(data, "%d", &content_len);
-          if (n_scan != 1) {
+          content_len = atoi(data);
+          if (content_len <= 0) {
             /* SERVER_ERROR */
+            printf("{*debug*} Front-end failed sending headers from back-end response.\n");
             write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
             write_empty_header(connfd);
             return;
@@ -204,6 +205,7 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
           write_content_length_header(connfd, content_len);
           write_content_type_header(connfd, content_type);
           write_empty_header(connfd);
+          printf("{*debug*} Front-end success in sending headers from back-end response.\n");
           break;
 
         case COM_BUF_DATA:
@@ -214,7 +216,7 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
           break;
 
         case COM_BUF_DATA_FIN:
-          printf("{*debug*} Front-end sending data from back-end response to client.\n");
+          printf("{*debug*} Front-end sending data (fin) from back-end response to client.\n");
           /* CHECK - this was scanning info when it was still null */
           //n_scan = sscanf(data, "%s", info);
           write(connfd, data, strlen(data));
