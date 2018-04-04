@@ -165,7 +165,7 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
     Node* n = find_node_by_hostname(node_dir, hostaddrp);
     strncpy(filename, n->content_path, strlen(n->content_path));
 
-    if((flag & PKT_FIN_MASK) > 0) {
+    if((hdr.flag & PKT_FIN_MASK) > 0) {
       /* Terminating data packet (last packet); Respond with FIN packet */
       printf("Received packet type: DATA-FIN\n");
 
