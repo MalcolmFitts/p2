@@ -75,12 +75,12 @@ int init_backend(short port_be, struct sockaddr_in* self_addr);
  *		ct - stores info - not needed?
  *		resp_buf - used to recover data to write to client for peer add responses
  */
-int peer_add_response(char* BUF, char* resp_buf);
+int peer_add_response(char* BUF);
 
 /*  TODO
  *  view_response_be
  */
- int peer_view_response(char* filepath, char* file_type, uint16_t port_be,
+int peer_view_response(char* filepath, char* file_type, uint16_t port_be,
                         int sockfd_be, char* COM_BUF);
 
 /*  TODO

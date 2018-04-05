@@ -10,36 +10,27 @@ int init_frontend(short port_fe, struct sockaddr_in* self_addr){
   if (sockfd_fe < 0)
     error("ERROR opening front-end socket");
 
-  /* setsockopt: Handy debugging trick that lets
-   * us rerun the server immediately after we kill it;
-   * otherwise we have to wait about 20 secs.
-   * Eliminates "ERROR on binding: Address already in use" error.
-   */
   setsockopt(sockfd_fe, SOL_SOCKET, SO_REUSEADDR,
 	     (const void *)&optval_fe, sizeof(int));
 
   /* build the server's front end internet address */
-
-  /* CHECK - was not zeroing memory */
   bzero((char *) self_addr, sizeof(*self_addr));
-  self_addr->sin_family = AF_INET; /* we are using the Internet */
-  self_addr->sin_addr.s_addr = htonl(INADDR_ANY); /* accept reqs to any IP addr */
-  self_addr->sin_port = htons((unsigned short) port_fe); /* port to listen on */
+  self_addr->sin_family = AF_INET;
+  self_addr->sin_addr.s_addr = htonl(INADDR_ANY);   /* accept reqs to any IP */
+  self_addr->sin_port = htons((unsigned short) port_fe);  /* port to listen */
 
   /* bind: associate the listening socket with a port */
   if (bind(sockfd_fe, (struct sockaddr *) self_addr, sizeof(*self_addr)) < 0)
     error("ERROR on binding front-end socket with port");
 
-  /* listen: make it a listening socket ready to accept connection requests
-   *         - only need to listen for front-end
-   */
+  /* listen: make it a listening socket ready to accept connection requests */
   if (listen(sockfd_fe, 10) < 0) /* allow 10 requests to queue up */
     error("ERROR on listen");
 
   return sockfd_fe;
 }
 
-int frontend_response(int connfd, char* BUF, struct thread_data *ct) {
+void frontend_response(int connfd, char* BUF, struct thread_data *ct) {
   char content_filepath[MAX_FILEPATH_LEN] = "./content";
   char buf[BUFSIZE];              /* message buffer */
   char path[MAXLINE];
@@ -63,10 +54,8 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct) {
   /* parsing get request */
   bzero(path, MAXLINE);
   if(parse_get_request(buf, path) == 0) {
-    /* CHECK to see if this works with threading */
-    //CHECK numthreads--;
-    error("ERROR Parsing get request");
-    return 0;
+    write_headers_500(connfd);
+    return;
   }
 
   /* getting image file and checking for existence */
@@ -74,13 +63,8 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct) {
   FILE *fp = fopen(fname, "r");
 
   if(fp == NULL) {
-    /* this is a 404 status code */
-    sprintf(lb, "File (%s) not found", fname);
-    log_thr(lb, ct->num, tid);
-
     write_headers_404(connfd, SERVER_NAME);
-    //CHECK
-    return 1;
+    return;
   }
   else{
     sprintf(lb, "Found file: %s", fname);
@@ -96,9 +80,8 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct) {
     /* getting file type (extension) */
     char fileExt[MAXLINE] = {0};
     if(parse_file_type(path, fileExt) == 0) {
-      //CHECK
-      error("File path error");
-      return 0;
+      write_headers_500(connfd);
+      return;
     }
 
     /* making copy of buffer to check for range requests */
@@ -146,7 +129,7 @@ int frontend_response(int connfd, char* BUF, struct thread_data *ct) {
     /* closing file*/
     fclose(fp);
   }
-  return 1;
+  return;
 }
 
 void handle_be_response(char* COM_BUF, int connfd, char* content_type){
@@ -154,16 +137,13 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
   char* info = malloc(sizeof(char) * COM_BUFSIZE);
   char* data = malloc(sizeof(char) * COM_BUFSIZE);
   int type;
-  //int n_scan = 0;
   int content_len;
   int done = 0;
-  //char* content = NULL;
 
   bzero(BUF, COM_BUFSIZE);
   bzero(info, COM_BUFSIZE);
   bzero(data, COM_BUFSIZE);
 
-  printf("{*debug*} Front-end ready to parse info from back-end.\n");
   while(!done) {
     /* Locking BE-FE communication buffer to safely copy data */
     pthread_mutex_lock(&mutex);
@@ -173,45 +153,33 @@ void handle_be_response(char* COM_BUF, int connfd, char* content_type){
 
     if (BUF[0] != '\0') {
       /* BUF has info for FE; parse type of response and data */
-      printf("{*debug*} Front-end received info from back-end!\n");
-
       type = atoi(&(BUF[0]));
       strncpy(data, BUF + 2, COM_BUFSIZE);
 
       switch(type){
         case COM_BUF_HDR:
-          printf("{*debug*} Front-end sending headers from back-end response.\n");
           content_len = atoi(data);
+
           if (content_len <= 0) {
-            /* SERVER_ERROR */
-            printf("{*debug*} Front-end failed sending headers from back-end response.\n");
-            write_headers_500(connfd);
-            return;
+            write_headers_500(connfd); /* SERVER_ERROR */
+          } else {
+            write_status_header(connfd, SC_OK, ST_OK);
+            write_date_header(connfd);
+            write_server_name_header(connfd, SERVER_NAME);
+            write_conn_header(connfd, CONN_KEEP_HDR);
+            write_keep_alive_header(connfd, 0, 100);
+            write_content_length_header(connfd, content_len);
+            write_content_type_header(connfd, content_type);
+            write_empty_header(connfd);
           }
-          write_status_header(connfd, SC_OK, ST_OK);
-          write_date_header(connfd);
-          write_server_name_header(connfd, SERVER_NAME);
-          write_conn_header(connfd, CONN_KEEP_HDR);
-          write_keep_alive_header(connfd, 0, 100);
-          write_content_length_header(connfd, content_len);
-          write_content_type_header(connfd, content_type);
-          write_empty_header(connfd);
-          printf("{*debug*} Front-end success in sending headers from back-end response.\n");
           break;
 
         case COM_BUF_DATA:
-          printf("{*debug*} Front-end sending data from back-end response to client.\n");
-          /* CHECK - this was scanning info when it was still null */
-          //n_scan = sscanf(data, "%s", info);
           write(connfd, data, strlen(data));
           break;
 
         case COM_BUF_DATA_FIN:
-          printf("{*debug*} Front-end sending data (fin) from back-end response to client.\n");
-          /* CHECK - this was scanning info when it was still null */
-          //n_scan = sscanf(data, "%s", info);
           write(connfd, data, strlen(data));
-          //write_empty_header(connfd);
           done = 1;
           break;
 

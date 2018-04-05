@@ -33,12 +33,16 @@
 #define COM_BUF_FIN 4
 #define COM_BUFSIZE 1500
 
+// BE_FLAGS
+#define FILE_NOT_FOUND -1
+#define SERVER_ERROR -2
+
 extern pthread_mutex_t mutex;
 
 int init_frontend(short port_fe, struct sockaddr_in* self_addr);
 
 /* Writes the frontend response to the client for a normal GET request */
-int frontend_response(int connfd, char* BUF, struct thread_data *ct);
+void frontend_response(int connfd, char* BUF, struct thread_data *ct);
 
 void handle_be_response(char* COM_BUF, int connfd, char* content_type);
 

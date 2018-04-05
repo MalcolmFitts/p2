@@ -46,7 +46,7 @@ void* handle_be(void* ptr) {
       printf("Finished serving.\n\n");
       continue;
     }
-    
+
     // else if(type == PKT_FLAG_CORRUPT) {
     //   printf("Server received packet with corrupt flag.\n");
     //   printf("{temp} ignoring this packet for now.\n\n");
@@ -57,7 +57,7 @@ void* handle_be(void* ptr) {
       sent_status = serve_content(packet, sockfd, sender_addr, type);
 
       if(sent_status < 0) {
-	       printf("Error: something went wrong with serving content after the fact.\n");
+	       printf("Error: something went wrong with serving content.\n");
       }
     }
   }
@@ -128,10 +128,12 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
   else if (flag == PKT_FLAG_SYN_ACK) {
     printf("Received packet type: SYN-ACK\n");
 
-    /* parsing filename, content size and num packets from SYN-ACK packet buffer */
-    sscanf(packet.buf, "File: %s\nContent Size: %d\nRequired Packets: %d\n", filename, &c_size, &n_packs);
+    /* parsing filename, content size and num packets from SYN-ACK packet */
+    sscanf(packet.buf, "File: %s\nContent Size: %d\nRequired Packets: %d\n",
+           filename, &c_size, &n_packs);
 
-    printf("Confirmed file: %s\nFile size: %d\nRequired Num Packets: %d\n", filename, c_size, n_packs);
+    printf("Confirmed file: %s\nFile size: %d\nRequired Num Packets: %d\n",
+           filename, c_size, n_packs);
 
     /* sending info to front-end */
     printf("{*debug*} Sending SYN-ACK packet info to front-end for headers.\n");
@@ -179,7 +181,8 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
       printf("{*debug*} Stored DATA-FIN packet buf info in com_buf.\n");
 
       /* respond to DATA-FIN packet with FIN packet */
-      data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_FIN, hdr.com_buf);
+      data_pkt = create_packet(d_port, s_port, s_num, filename, PKT_FLAG_FIN,
+                               hdr.com_buf);
       printf("Sending FIN packet...\n");
     }
 
@@ -262,7 +265,7 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
 /*
  *  TODO - replace writing headers with returning flag values
  */
-int peer_add_response(char* BUF, char* resp_buf) {
+int peer_add_response(char* BUF) {
   /* initilizing local buf and arrays for use in parsing */
   char buf[BUFSIZE];
   char* filepath = malloc(sizeof(char) * MAXLINE);
@@ -280,7 +283,7 @@ int peer_add_response(char* BUF, char* resp_buf) {
   /* CHECK - why using BUF when we have buf (copy of BUF) */
   int add_res = parse_peer_add(BUF, filepath, hostname, port_c, rate_c);
   if(!add_res) {
-    return 0;
+    return -2;
   }
 
   /* parsing string reps to ints and freeing memory */
@@ -292,16 +295,14 @@ int peer_add_response(char* BUF, char* resp_buf) {
   /* creating node with parsed data */
   Node* n = create_node(filepath, hostname, port, rate);
   if(!add_node(node_dir, n)){
-    return 0;
+    return -2;
   }
 
   /* Status printing */
   printf("Created peer node info:\n");
   printf("Node hostname: %s\nNode port: %d\n", n->ip_hostname, n->port);
-  printf("Node content: %s\nNode rate: %d\n", n->content_path, n->content_rate);
-
-  sprintf(resp_buf, "Peer Add Success!\nNode hostname: %s\nNode port: %d\nNode content: %s\nNode rate: %d\n",
-    n->ip_hostname, n->port, n->content_path, n->content_rate);
+  printf("Node content: %s\nNode rate: %d\n",
+         n->content_path, n->content_rate);
 
   return 1;
 }

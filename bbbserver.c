@@ -43,6 +43,11 @@
 #define MAX_RANGE_NUM_LEN 32
 #define SERVER_NAME "BBBserver"
 
+pthread_mutex_t mutex;
+
+char lb[MAX_PRINT_LEN];       /* buffer for logging               */
+int numthreads;               /* number of current threads        */
+
 /* DEFINED IN backend.h -- struct to hold data for initial threads */
 // struct thread_data {
 //   struct sockaddr_in c_addr;  /* client address struct */
@@ -53,15 +58,8 @@
 //   int port_be;                /* back end port */
 // };
 
-pthread_mutex_t mutex;
-
 /* function prototype */
 void *serve_client_thread(void *ptr);
-
-int init_port(unsigned short port, int flag);
-
-char lb[MAX_PRINT_LEN];       /* buffer for logging               */
-int numthreads;               /* number of current threads        */
 
 int main(int argc, char **argv) {
   /* front-end (client) vars */
@@ -69,20 +67,15 @@ int main(int argc, char **argv) {
   short port_fe;                    /* client port to listen on */
   struct sockaddr_in self_addr_fe; /* front end address */
   int connfd;                       /* connection socket */
-  //struct hostent *hostf;
-  //char *hostaddrf;
 
   /* back-end (node) vars */
   int sockfd_be;                    /* listening socket */
   short port_be;                    /* back-end port to use */
   struct sockaddr_in self_addr_be;  /* back-end address */
-  //struct hostent *hostb;
-  //char *hostaddrb;
 
   /* client vars */
   struct sockaddr_in clientaddr;               /* client's addr */
   unsigned int clientlen = sizeof(clientaddr); /* size of client's address */
-
 
   /* check command line args */
   if (argc != 3) {
@@ -99,20 +92,7 @@ int main(int argc, char **argv) {
   sockfd_fe = init_frontend(port_fe, &self_addr_fe);
   sockfd_be = init_backend(port_be, &self_addr_be);
 
-  /* Parsing IP info for easier start-up message */
-  // hostf = gethostbyaddr((const char *)&self_addr_fe.sin_addr.s_addr,
-  //   sizeof(self_addr_fe.sin_addr.s_addr), AF_INET);
-  // hostb = gethostbyaddr((const char *)&self_addr_be.sin_addr.s_addr,
-  //   sizeof(self_addr_be.sin_addr.s_addr), AF_INET);
-  // hostaddrf = inet_ntoa(self_addr_fe.sin_addr);
-  // hostaddrb = inet_ntoa(self_addr_be.sin_addr);
-  // /* Start-up info */
-  printf("<BBBServer start-up info>\n");
-  // //printf("Initialized front-end hostname: %s\n", hostf->h_name);
-  // printf("Initialized front-end address: %s:%d\n", hostaddrf, port_fe);
-  // //printf("Initialized back-end hostname: %s\n", hostb->h_name);
-  // printf("Initialized back-end address: %s:%d\n", hostaddrb, port_be)
-  printf("\n");
+  printf("<BBBServer start-up info>\n\n");
 
   int* be_sockfd_ptr = &sockfd_be;
 
@@ -127,15 +107,11 @@ int main(int argc, char **argv) {
   /* main loop: */
   while (1) {
     printf("Waiting for a client connection request...\n");
-    // sprintf(lb, "Waiting for a connection request...");
-    // log_main(lb, ctr);
 
     /* accept: wait for a connection request */
     connfd = accept(sockfd_fe, (struct sockaddr *) &clientaddr, &clientlen);
 
     printf("Establishing connection...\n");
-    // sprintf(lb, "Establishing connection...");
-    // log_main(lb, ctr);
 
     if (connfd < 0) { error("ERROR on accept"); }
 
@@ -177,6 +153,10 @@ void *serve_client_thread(void *ptr) {
   char* file_type;
   char* resp_buf;
 
+  int shutdown_flag = 0;         /* Flag for shutdown of client conn */
+  int flag_be = 0;               /* Flag coming from peer functions */
+  int rqt;                       /* Request Type */
+
   /* gethostbyaddr: determine who sent the message */
   hostp = gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr,
         sizeof(clientaddr.sin_addr.s_addr), AF_INET);
@@ -215,33 +195,24 @@ void *serve_client_thread(void *ptr) {
   strcpy(bufcopy, buf);
 
   /* checking type of received request */
-  int rqt = check_request_type(bufcopy);
-
-  int flag_be = 0;
-  int flag_fe = 0;
-
-  /* TODO: flag responses for peer add, view, and rate requests */
+  rqt = check_request_type(bufcopy);
 
   switch(rqt){
     case RQT_P_ADD:
-      /* This goes to backend */
+
       printf("Server recognized request type: peer add\n");
       resp_buf = malloc(sizeof(char) * BUFSIZE);
-      flag_be = peer_add_response(buf, resp_buf);
+      flag_be = peer_add_response(buf);
 
-      if(flag_be){
-        /* 200 Code  --> Success! */
+
+      if(flag_be == SERVER_ERROR) {
+        write_headers_500(connfd);
+      } else /* 200 Code  --> Success! */ {
         write_status_header(connfd, SC_OK, ST_OK);
-        write_date_header(connfd);
         write_server_name_header(connfd, SERVER_NAME);
-        write_conn_header(connfd, CONN_KEEP_HDR);
-        write_keep_alive_header(connfd, 0, 100);
         write_empty_header(connfd);
       }
-      else {
-        /* 500 Code  --> Failure on peer_add request */
-        write_headers_500(connfd);
-      }
+
       break;
 
     case RQT_P_VIEW:
@@ -255,36 +226,33 @@ void *serve_client_thread(void *ptr) {
 
       memset(COM_BUF, '\0', COM_BUFSIZE);
 
+      /* 500 Error --> Failure to parse file type */
       if((!parse_peer_view_content(bufcopy, filepath)) ||
          (!parse_file_type(filepath, file_type))) {
-        /* 500 Error --> Failure to parse file type
-         * TODO      --> flag (return) val: parse fail */
         write_headers_500(connfd);
         return 0;
       }
 
       flag_be = peer_view_response(filepath, file_type, port_be, sockfd_be, (COM_BUF));
 
-      /* couldn't find content */
-      if(flag_be == -1) {
-        write_status_header(connfd, SC_NOT_FOUND, ST_NOT_FOUND);
-        write_empty_header(connfd);
-      }
-
-      /* server error, send 500 code*/
-      else if(flag_be == -2) {
+      if(flag_be == FILE_NOT_FOUND) {
+        write_headers_404(connfd, SERVER_NAME);
+      } else if(flag_be == SERVER_ERROR) {
         write_headers_500(connfd);
       }
+
       handle_be_response(COM_BUF, connfd, file_type);
       break;
 
     case RQT_P_RATE:
       printf("Server recognized request type: peer rate\n");
-      /* This goes to backend */
+
       flag_be = peer_rate_response(connfd, buf, ct);
+
       write_status_header(connfd, SC_OK, ST_OK);
       write_empty_header(connfd);
       break;
+
     case RQT_INV:
       numthreads--;
       error("ERROR Invalid GET request");
@@ -293,61 +261,19 @@ void *serve_client_thread(void *ptr) {
     default:
       /* Standard FE response */
       printf("Server recognized request type: front-end request\n");
-      flag_fe = frontend_response(connfd, buf, ct);
+      frontend_response(connfd, buf, ct);
       break;
   }
 
-  /* TODO: closing client connection and freeing struct */
+  /* TODO: Make sure the client closes the connection */
 
   log_thr(lb, ct->num, tid);
 
-  int flag;
-  flag = shutdown(connfd, SHUT_RDWR);
+  shutdown_flag = shutdown(connfd, SHUT_RDWR);
   close(connfd);
   printf("Connection with client closed.\n\n");
 
   /* decrement num threads and return */
   numthreads--;
   return NULL;
-}
-
-int init_port(unsigned short port, int flag) {
-  int optval;
-  int sockfd;
-  struct sockaddr_in addr;
-  socklen_t lenaddr;
-
-  if(!flag){
-    sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-  } else {
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  }
-  if (sockfd < 0)
-    error("ERROR opening socket");
-
- /*
-  *  setsockopt: Handy debugging trick that lets
-  *              us rerun the server immediately after we kill it;
-  *              otherwise we have to wait about 20 secs.
-  *              Eliminates "ERROR on binding: Address already in use" error.
-  */
-  optval = 1;
-  setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,
-            (const void *)&optval , sizeof(int));
-
-  bzero((char *) &addr, sizeof(addr));
-  addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = htonl(INADDR_ANY);
-  addr.sin_port = htons(port);
-  lenaddr = sizeof(addr);
-
-  if (bind(sockfd, (struct sockaddr *) &addr, lenaddr) < 0)
-    error("ERROR biding");
-
-  if (flag){
-    if (listen(sockfd, 10) < 0) /* allow 10 requests to queue up */
-      error("ERROR on listen");
-  }
-
-  return sockfd;
 }

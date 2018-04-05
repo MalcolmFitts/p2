@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <netdb.h>
-#include <sys/types.h> 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -55,9 +55,9 @@
 #define CONTENT_TYPE_VIDEO_OGG "video/ogg"
 
 /*	  Status Headers
- *     
+ *
  * write_status_header( {fd} , {STATUS_CODE} , {DESCRIPTION} );
- * 
+ *
  * Output:  "HTTP/1.1 {STATUS_CODE} {DESCRIPTION}\r\n"
  */
 void write_status_header(int fd, char* rc, char* def);
@@ -75,7 +75,7 @@ void write_date_header(int fd);
 /* 	  Server Name Headers
  *
  * write_server_name_header( {fd} , {SERVER_NAME} );
- * 
+ *
  * output: "Server: {SERVER_NAME}\r\n"
  */
 void write_server_name_header(int fd, char* sn);
@@ -84,15 +84,15 @@ void write_server_name_header(int fd, char* sn);
 /*	  Connection Type Headers
  *
  * write_conn_header( {fd} , {CONN_TYPE} );
- * 
+ *
  * output: "Connection: {CONN_TYPE}\r\n"
  */
 void write_conn_header(int fd, char* conn_type);
 
 /* 	  Connection Keep Alive Headers
  *
- * write_conn_header( {fd} , {TIMEOUT} , {MAX} ); 
- *	
+ * write_conn_header( {fd} , {TIMEOUT} , {MAX} );
+ *
  * output: "Keep-Alive: timeout={TIMEOUT}, max={MAX}\r\n
  */
 void write_keep_alive_header(int fd, int t, int m);
@@ -100,7 +100,7 @@ void write_keep_alive_header(int fd, int t, int m);
 
 /*        Empty Line Header
  *
- * write_empty_header( {fd} ); 
+ * write_empty_header( {fd} );
  *
  * output: "\r\n"
  */
@@ -108,7 +108,7 @@ void write_empty_header(int fd);
 
 
 /*        Content Length Header
- * 
+ *
  * write_content_length_header( {fd} , {CONTENT_LEN} );
  *
  * output: "Content-Length: {CONTENT_LEN}\r\n"
@@ -128,26 +128,27 @@ void write_last_modified_header(int fd, time_t t);
 
 
 /*        Content Type Header
- * 
+ *
  * write_content_type_header( {fd}, {CONTENT_TYPE} );
- * 
+ *
  * output: "Content-Type: "{CONTENT_TYPE}\r\n"
  */
 void write_content_type_header(int fd, char* content_type);
 
 /*        Content Range Header
- * 
- * write_content_range_header( {fd}, {start_bytes}, {end_bytes}, {content_length});
- * 
- * output: "Content-Range: bytes {start_bytes}-{end_bytes}/{content_length}\r\n"
+ *
+ * write_content_range_header( {fd}, {start_bytes}, {end_bytes},
+                               {content_length});
+ *
+ *output: "Content-Range: bytes {start_bytes}-{end_bytes}/{content_length}\r\n"
  */
-void write_content_range_header(int fd, int start_bytes, 
+void write_content_range_header(int fd, int start_bytes,
       int end_bytes, int content_length);
 
 /*        Accept Ranges Header
- * 
+ *
  * write_accept_ranges_header( {fd} );
- * 
+ *
  * output: "Accept-Ranges: bytes\r\n"
  */
 void write_accept_ranges_header(int fd);
@@ -169,11 +170,11 @@ void write_headers_404(int connfd, char *name);
  *			{full_length} is full size of content
  *			{content_length} is requested content size
  */
-void write_headers_206(int connfd, char* name, int full_length, 
+void write_headers_206(int connfd, char* name, int full_length,
 	char* content_type, time_t t, int sb, int eb, int content_length);
 
 /*
- *        Write headers to the client with "500 Internal Server Error" Status Code
+ *     Write headers to the client with "500 Internal Server Error" Status Code
  */
 void write_headers_500(int connfd);
 
@@ -185,11 +186,11 @@ void write_headers_500(int connfd);
 void write_data(int connfd, FILE* fp, int content_size, long start_byte);
 
 
-void write_partial_content(int connfd, FILE* fp, char* fileExt, 
+void write_partial_content(int connfd, FILE* fp, char* fileExt,
 			   int sb, int eb, int full_content_size,
 			   time_t last_modified);
 
-void write_full_content(int connfd, FILE* fp, char* fileExt, 
+void write_full_content(int connfd, FILE* fp, char* fileExt,
 			int content_size, time_t last_modified);
 
 /*
@@ -198,7 +199,7 @@ void write_full_content(int connfd, FILE* fp, char* fileExt,
 void server_error(char *msg, int connfd);
 
 /*
- * error - wrapper for perror 
+ * error - wrapper for perror
  *       - where we will handle 500 error codes
  */
 void error(char *msg);
