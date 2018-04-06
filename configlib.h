@@ -124,19 +124,23 @@ int check_file(char* filename);
  *    - will add the field and value if file does not have it yet
  *    - NOTE: this fn will open file if it finds it and close the file once
  *              its done so as to prevent bad scary things
-
+ *
  *    params:
  *      filename - config file name; use CF_DEFAULT_FILENAME for default file
  *      field_tag - one of the CF_TAG_<tag> constants defined above
+ *      peer_num - only used when field_tag = CF_TAG_PEER_INFO and is used
+ *                  to search for the specific peer number, i.e. peer_1 or peer_2
  *      new_value - new value to be written to config file's <field_tag> field
  *      old_buf - if not NULL, will store old value in this pointer
  *
  *    return values:
- *        0 --> failure to find (config) file
+ *       -1 --> failure to find file "filename"
+ *        0 --> failure to find valid config file
  *        1 --> added tag and value to file
  *        2 --> updated tag and value
  */
-int update_config_file(char* filename, char* field_tag, char* new_value, char* old_buf);
+int update_config_file(char* filename, char* field_tag, int peer_num,
+                        char* new_value, char* old_buf);
 
 
 #endif
