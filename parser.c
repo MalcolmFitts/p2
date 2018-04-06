@@ -1,5 +1,5 @@
 /*  (Version: p2)
- *  parser.c 
+ *  parser.c
  *    - created for use with "bbbserver.c"
  *    - implementations of string parsing functions
  *    - documentation/usage notes in "parser.h"
@@ -25,6 +25,27 @@ int check_request_type(char* buf) {
     }
     else if(parse_range_request(buf, b8, b9)) {
       return RQT_C_RNG;     /*           Client Range Request */
+    }
+    else if(parse_peer_add_uuid(buf, b1, b2, b3)){
+      return RQT_P_ADD_UUID;
+    }
+    else if(parse_peer_kill(buf)){
+      return RQT_P_KILL;
+    }
+    else if(parse_peer_uuid(buf)){
+      return RQT_P_UUID;
+    }
+    else if(parse_peer_neighbors(buf)){
+      return RQT_P_NEIGH;
+    }
+    else if(parse_peer_add_neighbor(buf, b1, b2, b3, b4, b5)){
+      return RQT_P_ADD_NEIGH;
+    }
+    else if(parse_peer_map(buf)){
+      return RQT_P_MAP;
+    }
+    else if(parse_peer_rank(buf, b1)){
+      return RQT_P_RANK;
     }
     else{
       return RQT_GET;       /*              Valid GET Request */
@@ -65,7 +86,7 @@ int parse_file_type(char* filepath, char* buf) {
 
 int parse_range_request(char* buf, char* start_bytes, char* end_bytes) {
   char *rangeptr;
-  
+
   char bufcopy[MAXLINE];
   strcpy(bufcopy, buf);
 
@@ -81,7 +102,7 @@ int parse_range_request(char* buf, char* start_bytes, char* end_bytes) {
     sprintf(end_bytes, "%d", eb);
 
     if((scanned == 2 || scanned == 1) && eb == -1) return 1;
-    
+
     if(scanned == 0) return 0;
   }
   else {
@@ -100,7 +121,7 @@ int parse_peer_add(char* buf, char* fp, char* ip_hostname, char* port, char* rat
 
   /* not a peer add request */
   if(n != 5) return 0;
-  
+
   return 1;
 }
 
@@ -121,6 +142,83 @@ int parse_peer_config_rate(char* buf, char* rate) {
   if(sscanf(buf, "GET /peer/config?rate=%s %s", rate, extrabuf) != 2) {
     return 0;
   }
+  return 1;
+}
+
+int parse_peer_add_uuid(char* buf, char* fp, char* uuid, char* rate){
+  char extrabuf[MAXLINE];
+
+  int n = sscanf(buf, "GET /peer/add?path=%[^&]&peer=%[^&]&rate=%s %s",
+                 fp, uuid, rate, extrabuf);
+
+  if(n != 5) return 0;
+
+  return 1;
+}
+
+int parse_peer_kill(char* buf){
+
+  char extrabuf[MAXLINE];
+
+  int n = sscanf(buf, "GET /peer/kill %s", extrabuf);
+
+  if (n != 1) return 0;
+
+  return 1;
+}
+
+int parse_peer_uuid(char* buf){
+
+  char extrabuf[MAXLINE];
+
+  int n = sscanf(buf, "GET /peer/uuid %s", extrabuf);
+
+  if(n != 1) return 0;
+
+  return 1;
+}
+
+int parse_peer_neighbors(char* buf){
+
+  char extrabuf[MAXLINE];
+
+  int n = sscanf(buf, "GET /peer/neighbors %s", extrabuf);
+
+  if (n != 1) return 0;
+
+  return 1;
+}
+
+int parse_peer_add_neighbor(char* buf, char* uuid, char* host, char* fe_port,
+                             char* be_port, char* metric){
+  char extrabuf[MAXLINE];
+
+  int n = sscanf(buf, "GET /peer/addneighbor?uuid=%[^&]&host=%[^&]&frontend=%[^&]&backend=%[^&]&metric=%s %s", uuid, host, fe_port, be_port, metric, extrabuf);
+
+  if (n != 6) return 0;
+
+  return 1;
+}
+
+int parse_peer_map(char* buf){
+
+  char extrabuf[MAXLINE];
+
+  int n = sscanf(buf, "GET /peer/map %s", extrabuf);
+
+  if (n != 1) return 0;
+
+  return 1;
+}
+
+int parse_peer_rank(char* buf, char* fp){
+
+  char extrabuf[MAXLINE];
+
+  int n = sscanf(buf, "GET /peer/rank/%s %s", fp, extrabuf);
+
+  if (n != 2) return 0;
+
   return 1;
 }
 

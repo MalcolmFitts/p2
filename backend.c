@@ -47,10 +47,10 @@ void* handle_be(void* ptr) {
       continue;
     }
 
-    // else if(type == PKT_FLAG_CORRUPT) {
-    //   printf("Server received packet with corrupt flag.\n");
-    //   printf("{temp} ignoring this packet for now.\n\n");
-    // }
+    else if(type == PKT_FLAG_CORRUPT) {
+       printf("Server received packet with corrupt flag.\n");
+       continue;
+    }
 
     /* responses for SYN, ACK, SYN-ACK and DATA packets */
     else {
@@ -87,8 +87,6 @@ int serve_content(Pkt_t packet, int sockfd, struct sockaddr_in server_addr,
   char *hostaddrp;                /* dotted decimal host addr string */
 
   /* Parsing data about packet sender */
-  //hostp = gethostbyaddr((const char *)&server_addr.sin_addr.s_addr,
-  //      sizeof(server_addr.sin_addr.s_addr), AF_INET);
   hostaddrp = inet_ntoa(server_addr.sin_addr);
 
   printf("Packet sender: %s\n", hostaddrp);

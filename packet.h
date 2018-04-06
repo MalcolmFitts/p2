@@ -21,11 +21,10 @@
 
 
 /* Packet type flags */
-#define PKT_FLAG_UNKNOWN -1
-#define PKT_FLAG_CORRUPT  0
+#define PKT_FLAG_CORRUPT  -1
 #define PKT_FLAG_DATA     1
 #define PKT_FLAG_ACK      2
-#define PKT_FLAG_SYN 	    3
+#define PKT_FLAG_SYN 	  3
 #define PKT_FLAG_SYN_ACK  4
 #define PKT_FLAG_FIN      5
 

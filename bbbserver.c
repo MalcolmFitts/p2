@@ -253,6 +253,34 @@ void *serve_client_thread(void *ptr) {
       write_empty_header(connfd);
       break;
 
+    case RQT_P_ADD_UUID:
+      /* TODO: Handle peer ADD UUID request*/
+      break;
+
+    case RQT_P_KILL:
+      /* TODO: Handle peer KILL request */
+      break;
+
+    case RQT_P_UUID:
+      /* TODO: Handle peer UUID request*/
+      break;
+
+    case RQT_P_NEIGH:
+      /* TODO: Handle peer NEIGHBORS request */
+      break;
+
+    case RQT_P_ADD_NEIGH:
+      /* TODO: Handle peer ADD NEIGHBOR request */
+      break;
+
+    case RQT_P_MAP:
+      /* TODO: Handle peer MAP request */
+      break;
+
+    case RQT_P_RANK:
+      /* TODO: Hanlde peer RANK request */
+      break;
+
     case RQT_INV:
       numthreads--;
       error("ERROR Invalid GET request");
