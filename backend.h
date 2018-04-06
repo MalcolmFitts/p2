@@ -25,8 +25,10 @@
 #include "datawriter.h"
 #include "packet.h"
 #include "node.h"
+#include "configlib.h"
 
 #define COM_BUFSIZE 1500
+#define JSON_BUFSIZE 4096
 
 extern pthread_mutex_t mutex;
 
@@ -104,6 +106,18 @@ void send_hdr_to_fe(char* com_buf, int file_size);
  */
 void send_data_to_fe(char* com_buf, char* data, int fin_flag);
 
+/*
+ *  handle_uuid_rqt -> Handles: "GET /peer/uuid"
+ *                  -> Sends: "{"uuid":"<uuid_node>"}" to client
+ */
+void handle_uuid_rqt(int connfd);
+
+
+/*
+ *  handle_neighbors_rqt -> Handles: "GET /peer/neighbors"
+ *                       -> Sends: JSON list of neighbors and data
+ */
+void handle_neighbors_rqt(int connfd);
 
 
 

@@ -405,3 +405,74 @@ void send_data_to_fe(char* com_buf, char* data, int fin_flag) {
   memcpy(com_buf, buf, strlen(buf));
   pthread_mutex_unlock(&mutex);
 }
+
+void handle_uuid_rqt(int connfd){
+
+  char* uuid;
+  char json_content[BUFSIZE];
+  bzero(json_content, BUFSIZE);
+
+  uuid = get_config_field(CF_DEFAULT_FILENAME, CF_TAG_UUID, 0);
+  sprintf(json_content, "{\"uuid\":\"%s\"}", uuid);
+  write_json_content(connfd, json_content);
+}
+
+void handle_neighbors_rqt(int connfd){
+  int num_peers;
+  char* num_peers_c;
+
+  char json_content[JSON_BUFSIZE] = "\0";
+
+  char* neighbor;
+  char  node_name[BUFSIZE];
+  char  neighbor_json[BUFSIZE];
+  char* uuid = malloc(sizeof(char) * BUFSIZE);
+  char* hostname = malloc(sizeof(char) * BUFSIZE);
+  char* fe_port = malloc(sizeof(char) * BUFSIZE);
+  char* be_port = malloc(sizeof(char) * BUFSIZE);
+  char* metric = malloc(sizeof(char) * BUFSIZE);
+
+
+  int i = 0;
+
+  num_peers_c = get_config_field(CF_DEFAULT_FILENAME, CF_TAG_PEER_COUNT, 0);
+  num_peers = atoi(num_peers_c);
+
+  strcat(json_content, "[");
+  while(i < num_peers){
+
+    bzero(neighbor, strlen(neighbor));
+    bzero(neighbor_json, strlen(neighbor_json));
+    bzero(uuid, strlen(uuid));
+    bzero(node_name, strlen(node_name));
+    bzero(hostname, strlen(hostname));
+    bzero(fe_port, strlen(fe_port));
+    bzero(be_port, strlen(be_port));
+    bzero(metric, strlen(metric));
+
+    neighbor = get_config_field(CF_DEFAULT_FILENAME, CF_TAG_PEER_INFO, i);
+
+    printf("%s\n", neighbor);
+    parse_neighbor_info(neighbor, uuid, hostname, fe_port, be_port, metric);
+
+    /* TODO: Find Node name */
+    sprintf(node_name, "name_%d", i);
+    sprintf(neighbor_json, "{\"uuid\":\"%s\", \"name\":\"%s\", \"host\":\"%s\", \"frontend\":%s, \"backend\":%s, \"metric\":%s}",
+            uuid, node_name, hostname, fe_port, be_port, metric);
+
+    strcat(json_content, neighbor_json);
+    i ++;
+    if(i < num_peers){
+      strcat(json_content, ", ");
+    }
+  }
+  strcat(json_content, "]");
+
+  write_json_content(connfd, json_content);
+
+  free(uuid);
+  free(hostname);
+  free(fe_port);
+  free(be_port);
+  free(metric);
+}

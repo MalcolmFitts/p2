@@ -222,6 +222,30 @@ int parse_peer_rank(char* buf, char* fp){
   return 1;
 }
 
+void parse_neighbor_info(char* neighbor_info, char* uuid, char* hostname,
+                        char* fe_port, char* be_port, char* metric){
+  char *pt;
+
+  pt = strtok(neighbor_info,",");
+  strcpy(uuid, pt);
+  pt = strtok(NULL, ",");
+  strcpy(hostname, pt);
+  pt = strtok(NULL, ",");
+  strcpy(fe_port, pt);
+  pt = strtok(NULL, ",");
+  strcpy(be_port, pt);
+  pt = strtok(NULL, ",");
+  strcpy(metric, pt);
+
+  printf("%s\n", uuid);
+  printf("%s\n", hostname);
+  printf("%s\n", fe_port);
+  printf("%s\n", be_port);
+  printf("%s\n", metric);
+
+  return;
+}
+
 int parse_str_2_int(char* str){
   int i = 0;
   int d = 0;

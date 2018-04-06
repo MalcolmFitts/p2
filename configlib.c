@@ -14,13 +14,12 @@ char* get_config_field(char* filename, char* field_tag, int peer_num) {
 
   bzero(res_buf, CF_MAX_LINE_LEN);
   bzero(buf, CF_MAX_LINE_LEN);
-  
 
   if(check_file(filename)) {
     /* If file exists, open for reading */
     fp = fopen(filename, "r");
 
-    /* UUID */ 
+    /* UUID */
     if(strcmp(field_tag, CF_TAG_UUID) == 0) {
       /* read lines until we find uuid */
       while(fgets(buf, CF_MAX_LINE_LEN, (FILE*) fp)) {
@@ -111,7 +110,7 @@ char* get_config_field(char* filename, char* field_tag, int peer_num) {
             /* found matching peer */
             fclose(fp);
             return res_buf;
-          }        
+          }
         }
       }
     }
@@ -122,86 +121,6 @@ char* get_config_field(char* filename, char* field_tag, int peer_num) {
   /* Failed finding tag */
   return NULL;
 }
-
-
-  //   char* tag_line
-
-  //   tag_line = ;
-
-  //   /* read through the whole file */
-  //   
-  //     
-
-  //     printf("IN WHILE LOOP\n");
-
-  //     /* UUID, Name and Content Directory */
-  //     if( (strcmp(field_tag, CF_TAG_UUID) == 0) ||
-  //         (strcmp(field_tag, CF_TAG_NAME) == 0) ||
-  //         (strcmp(field_tag, CF_TAG_CONTENT_DIR) == 0)) {
-
-  //       printf("Scanning file for field: %s\n", field_tag);
-  //       printf("buf: \n%s\n", buf);
-
-
-
-  //       /* Searching for tag and value */
-  //       if(sscanf(buf, "%s = %s", field_tag, res_buf) == 2) {
-  //         /* Found tag and value; close file and return data */
-  //         printf("Scanned success.{47}\n");
-  //         fclose(fp);
-  //         return res_buf;
-  //       }
-  //       printf("Failed if check.\n");
-  //     }
-
-  //     /* Front-end Ports, Back-end Ports and Peer Count */
-  //     else if((strcmp(field_tag, CF_TAG_FE_PORT) == 0) ||
-  //             (strcmp(field_tag, CF_TAG_BE_PORT) == 0) || 
-  //             (strcmp(field_tag, CF_TAG_PEER_COUNT) == 0)) {
-
-  //       printf("Scanned file's field: %s\n", field_tag);
-  //       printf("buf: %s\n", buf);
-
-  //       /* Searching for tag and value */
-  //       if(sscanf(buf, "%s = %d", field_tag, &num) == 2) {
-  //         /* Found tag and value; close file and return data */
-  //         sprintf(res_buf, "%d", num);
-  //         fclose(fp);
-  //         return res_buf;
-  //       }
-  //     }
-
-  //     /* Peer Info */
-  //     else if((strcmp(field_tag, CF_TAG_PEER_INFO) == 0)) {
-  //       /* Creating peer info string to search for using peer_num */
-  //       sprintf(peer_num_tag, "%s%d =", CF_TAG_PEER_INFO, peer_num);
-
-  //       printf("Scanned file's field: %s\n", peer_num_tag);
-  //       printf("buf: %s\n", buf);
-
-  //       /* Searching for tag and value */
-  //       if(sscanf(buf, "%s = %s", peer_num_tag, res_buf) == 2) {
-  //         /* Found tag and value; close file and return data */
-  //         fclose(fp);
-  //         return res_buf;
-  //       }
-  //     }
-
-  //     /* Clear buffers for next iteration */
-  //     bzero(buf, CF_MAX_LINE_LEN);
-  //     bzero(peer_num_tag, CF_MAX_LINE_LEN);
-  //     bzero(res_buf, CF_MAX_LINE_LEN);
-
-  //     fgets(buf, CF_MAX_LINE_LEN, (FILE*)fp);
-  //     read = strlen(buf);
-  //   }
-  //   fclose(fp);
-  //   /* Read the whole file and didnt find tag */
-  // }
-  // return NULL;
-  // }
-
-
 
 int validate_config_file(char* filename) {
   /* Check for file and search for UUID tag */
