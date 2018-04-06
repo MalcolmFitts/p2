@@ -124,84 +124,6 @@ char* get_config_field(char* filename, char* field_tag, int peer_num) {
 }
 
 
-  //   char* tag_line
-
-  //   tag_line = ;
-
-  //   /* read through the whole file */
-  //   
-  //     
-
-  //     printf("IN WHILE LOOP\n");
-
-  //     /* UUID, Name and Content Directory */
-  //     if( (strcmp(field_tag, CF_TAG_UUID) == 0) ||
-  //         (strcmp(field_tag, CF_TAG_NAME) == 0) ||
-  //         (strcmp(field_tag, CF_TAG_CONTENT_DIR) == 0)) {
-
-  //       printf("Scanning file for field: %s\n", field_tag);
-  //       printf("buf: \n%s\n", buf);
-
-
-
-  //       /* Searching for tag and value */
-  //       if(sscanf(buf, "%s = %s", field_tag, res_buf) == 2) {
-  //         /* Found tag and value; close file and return data */
-  //         printf("Scanned success.{47}\n");
-  //         fclose(fp);
-  //         return res_buf;
-  //       }
-  //       printf("Failed if check.\n");
-  //     }
-
-  //     /* Front-end Ports, Back-end Ports and Peer Count */
-  //     else if((strcmp(field_tag, CF_TAG_FE_PORT) == 0) ||
-  //             (strcmp(field_tag, CF_TAG_BE_PORT) == 0) || 
-  //             (strcmp(field_tag, CF_TAG_PEER_COUNT) == 0)) {
-
-  //       printf("Scanned file's field: %s\n", field_tag);
-  //       printf("buf: %s\n", buf);
-
-  //       /* Searching for tag and value */
-  //       if(sscanf(buf, "%s = %d", field_tag, &num) == 2) {
-  //         /* Found tag and value; close file and return data */
-  //         sprintf(res_buf, "%d", num);
-  //         fclose(fp);
-  //         return res_buf;
-  //       }
-  //     }
-
-  //     /* Peer Info */
-  //     else if((strcmp(field_tag, CF_TAG_PEER_INFO) == 0)) {
-  //       /* Creating peer info string to search for using peer_num */
-  //       sprintf(peer_num_tag, "%s%d =", CF_TAG_PEER_INFO, peer_num);
-
-  //       printf("Scanned file's field: %s\n", peer_num_tag);
-  //       printf("buf: %s\n", buf);
-
-  //       /* Searching for tag and value */
-  //       if(sscanf(buf, "%s = %s", peer_num_tag, res_buf) == 2) {
-  //         /* Found tag and value; close file and return data */
-  //         fclose(fp);
-  //         return res_buf;
-  //       }
-  //     }
-
-  //     /* Clear buffers for next iteration */
-  //     bzero(buf, CF_MAX_LINE_LEN);
-  //     bzero(peer_num_tag, CF_MAX_LINE_LEN);
-  //     bzero(res_buf, CF_MAX_LINE_LEN);
-
-  //     fgets(buf, CF_MAX_LINE_LEN, (FILE*)fp);
-  //     read = strlen(buf);
-  //   }
-  //   fclose(fp);
-  //   /* Read the whole file and didnt find tag */
-  // }
-  // return NULL;
-  // }
-
-
 
 int validate_config_file(char* filename) {
   /* Check for file and search for UUID tag */
@@ -291,3 +213,110 @@ int check_file(char* filename) {
   fclose(cfp);
   return 1;
 }
+
+
+int update_config_file(char* filename, char* field_tag, int peer_num,
+                        char* new_value, char* old_buf) {
+  /* locals */
+  int valid_flag;
+  FILE* fp;
+  FILE* fp_temp;
+
+  char* read_buf = malloc(CF_MAX_LINE_LEN);
+  char* buf = malloc(CF_MAX_LINE_LEN);
+  char* temp_fname = malloc(CF_MAX_LINE_LEN);
+
+  char* buf_ptr = NULL;
+
+  bzero(read_buf, CF_MAX_LINE_LEN);
+  bzero(buf, CF_MAX_LINE_LEN);
+  bzero(temp_fname, CF_MAX_LINE_LEN);
+
+  sprintf(temp_fname, CF_DEFAULT_FILENAME);
+
+  /* Checking status of given file */
+  valid_flag = validate_config_file(filename);
+  if(valid_flag == -1) {
+    /* Could not find file "filename" */
+    free(read_buf);
+    free(buf);
+    free(temp_fname)
+    return valid_flag;
+  }
+
+  if(valid_flag == 0 && (strcmp(field_tag, CF_TAG_UUID) != 0)) {
+    /* Could not find UUID field in "filename" 
+     * AND UUID field is not being added */
+    free(read_buf);
+    free(buf);
+    free(temp_fname)
+    return 0;
+  }
+
+  /* Searching file for "field_tag" and storing possible past value old_buf */
+  buf_ptr = get_config_field(filename, field_tag, peer_num);
+
+  /* Did not find "field_tag" in file "filename" */ 
+  if(!buf_ptr) {
+    /* Adding field and value to end of file */
+    fp = fopen(filename, "a");
+    sprintf(buf, "%s = %s", field_tag, new_value);
+    /* need to print new line so value is on next line lol */
+    fprintf(fp, "\n%s", buf);
+    fclose(fp);
+
+    /* Returning "added field" flag */
+    old_buf = NULL;
+    free(read_buf);
+    free(buf);
+    return 1;
+  }
+
+  /* Storing existing field "field_tag" value in old_buf */ 
+  sprintf(old_buf, "%s", buf_ptr);
+
+  /* Opening file and temporary file to fill with */
+  fp = fopen(filename, "r+");
+  fp_temp = fopen(temp_fname, "w");
+  if(!fp_temp) {
+    printf("Error updating config file; Unable to create temp file.\n");
+    fclose(fp);
+    free(read_buf);
+    free(buf);
+    return 0;
+  }
+
+
+  
+
+  /* Iterating through file and storing contents in temp file */
+  while(fgets(read_buf, CF_MAX_LINE_LEN, fp)) {
+    bzero(buf, CF_MAX_LINE_LEN);
+    if(strstr(read_buf, field_tag)) {
+      /* Read the desired field to update, so write new value */
+      sprintf(buf, "%s = %s", field_tag, new_value);
+      fprintf(fp_temp, "%s\n", buf);
+    }
+    else {
+      /* Did not read desired field, so re-write preexisting field and value */
+      sprintf(buf, "%s", read_buf);
+      fprintf(fp_temp, "%s", buf);
+    }
+    
+  }
+
+  /* Closing files */ 
+  fclose(fp);
+  fclose(fp_temp);
+
+  /* Renaming temp as "filename" and removing old "filename" */
+  remove(filename);
+  rename(temp_fname, filename);
+
+  /* Returning "updated" flag */
+  free(read_buf);
+  free(buf);
+  return 2;
+}
+
+
