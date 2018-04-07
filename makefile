@@ -28,7 +28,7 @@ fe: frontend.c frontend.h
 	$(CC) $(ARGS) -o felib.o -c frontend.c
 
 con: configlib.c configlib.h
-	$(CC) $(ARGS) -o conlib.o -c configlib.c
+	$(CC) $(ARGS) -o conlib.o -c configlib.c -luuid
 
 bbbserver: bbbserver.c datawriter.h parser.h node.h packet.h serverlog.h backend.h frontend.h configlib.h neighbor.h
 	$(CC) $(ARGS) -o bbbserver bbbserver.c dwlib.o palib.o nodelib.o neighblib.o pktlib.o sllib.o belib.o felib.o conlib.o
