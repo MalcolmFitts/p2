@@ -12,8 +12,8 @@
 #include <string.h>
 #include <uuid/uuid.h>
 
+#include </usr/include/uuid/uuid.h>
 
-#include "/usr/include/uuid/uuid.h"
 #include "parser.h"
 
 /* default config file: filename */
