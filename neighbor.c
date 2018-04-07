@@ -33,6 +33,10 @@ int add_neighbor(N_Dir* n_dir, char* uuid,
   (n_dir->nbr_list[i]).seq_num = s_num;
   (n_dir->nbr_list[i]).num_missed = 0;
   (n_dir->nbr_list[i]).active = 1;
+  (n_dir->nbr_list[i]).hostname = NULL;
+
+  /* init port to default backend port */
+  (n_dir->nbr_list[i]).port_be = CF_DEFAULT_PORT_BE;
 
   n_dir->cur_nbrs = i + 1;
 

@@ -26,6 +26,7 @@
 #include "packet.h"
 #include "node.h"
 #include "configlib.h"
+#include "neighbor.h"
 
 #define COM_BUFSIZE 1500
 #define JSON_BUFSIZE 4096

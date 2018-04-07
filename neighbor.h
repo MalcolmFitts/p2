@@ -21,6 +21,8 @@
 struct Neighbor {
   char* uuid;
   char* nbr_metrics;
+  int port_be;
+  char* hostname;
   int seq_num;
   int num_missed;
   int active;
