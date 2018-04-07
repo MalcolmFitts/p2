@@ -352,3 +352,64 @@ int update_config_file(char* filename, char* field_tag, int peer_num,
   /* Returning "updated" flag */
   return 2;
 }
+
+
+
+
+
+int create_config_file(char* filename, char* node_name, 
+                        int fe_port, int be_port, char* content_dir) {
+  /* local vars */
+  FILE* fp;
+  uuid_t new_uuid;
+  char uuid_arr[CF_UUID_STR_LEN];
+  char buf[CF_MAX_LINE_LEN];
+
+  if(check_file(filename)) {
+    return 0;
+  }
+
+  fp = fopen(filename, "w+");
+  if(!fp) {
+    printf("Server Error: Failed to create config file: %s\n", filename);
+    return 0;
+  }
+
+  /* Generating new UUID for node and parsing to char[] */
+  uuid_generate(new_uuid);
+  uuid_unparse_upper(new_uuid, uuid_arr);
+
+  /* writing UUID to created file */
+  sprintf(buf, "%s = %s", CF_TAG_UUID, uuid_arr);
+  fprintf(fp, "%s\n", buf);
+  bzero(buf, CF_MAX_LINE_LEN);
+
+  /* writing default front-end port to created file */
+  sprintf(buf, "%s = %d", CF_TAG_FE_PORT, fe_port);
+  fprintf(fp, "%s\n", buf);
+  bzero(buf, CF_MAX_LINE_LEN);
+
+  /* writing default back-end port to created file */
+  sprintf(buf, "%s = %d", CF_TAG_BE_PORT, be_port);
+  fprintf(fp, "%s\n", buf);
+  bzero(buf, CF_MAX_LINE_LEN);
+
+  /* writing default content directory to created file */
+  sprintf(buf, "%s = %s", CF_TAG_CONTENT_DIR, content_dir);
+  fprintf(fp, "%s\n", buf);
+  bzero(buf, CF_MAX_LINE_LEN);
+
+  /* writing default peer_count to created file */
+  sprintf(buf, "%s = %d", CF_TAG_PEER_COUNT, 0);
+  fprintf(fp, "%s\n", buf);
+  bzero(buf, CF_MAX_LINE_LEN);
+
+  /* Done creating new default config file */
+  fclose(fp);
+  return 1;
+
+}
+
+
+
+
