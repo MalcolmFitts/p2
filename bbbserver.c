@@ -298,7 +298,7 @@ void *serve_client_thread(void *ptr) {
     case RQT_P_ADD_UUID:
       /* TODO: Handle peer ADD UUID request */
       printf("Handling ADD UUID\n");
-      flag_be = handle_add_uuid_rqt(bufcopy);
+      flag_be = handle_add_uuid_rqt(bufcopy, ct->config_fn);
 
       if(flag_be == SERVER_ERROR) {
         write_headers_500(connfd);
@@ -316,18 +316,18 @@ void *serve_client_thread(void *ptr) {
 
     case RQT_P_UUID:
       /* Handle peer UUID request*/
-      handle_uuid_rqt(connfd);
+      handle_uuid_rqt(connfd, ct->config_fn);
       break;
 
     case RQT_P_NEIGH:
       /* TODO: Handle peer NEIGHBORS request */
       printf("Handling: ADD NEIGHBOR\n");
-      handle_neighbors_rqt(connfd);
+      handle_neighbors_rqt(connfd, ct->config_fn);
       break;
 
     case RQT_P_ADD_NEIGH:
       /* TODO: Handle peer ADD NEIGHBOR request */
-      handle_add_neighbor_rqt(bufcopy);
+      handle_add_neighbor_rqt(bufcopy, ct->config_fn);
       write_status_header(connfd, SC_OK, ST_OK);
       write_empty_header(connfd);
       break;

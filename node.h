@@ -14,6 +14,7 @@
 #include <arpa/inet.h>
 #include <sys/stat.h>
 
+#include "configlib.h"
 
 /* Peer Node Constant(s) */
 #define MAX_NODES 50
@@ -34,6 +35,14 @@ typedef struct Node_Directory {
 	int max_nodes;        /* max possible nbr of nodes        */
 	Node *n_array;        /* array of pointers to nodes       */
 } Node_Dir;
+
+
+struct Neighbor {
+  char uuid[CF_UUID_STR_LEN];
+  char* neighbors;
+
+};
+
 
 
 
