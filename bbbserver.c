@@ -38,6 +38,8 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <time.h>
+#include <uuid/uuid.h>
+#include </usr/include/uuid/uuid.h>
 
 #define MAX_FILEPATH_LEN 512
 #define MAXLINE 8192
