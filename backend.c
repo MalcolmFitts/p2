@@ -9,6 +9,7 @@
 
 /* Global - Directory for node referencing   */
 Node_Dir* node_dir;
+N_Dir* neighbor_dir;
 
 void* handle_be(void* ptr) {
 
@@ -256,6 +257,8 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
 
   /* create node directory */
   node_dir = create_node_dir(MAX_NODES);
+  /* Created neighbor dir */
+  neighbor_dir = crteate_neighbor_dir(100);
 
   return sockfd_be;
 }
@@ -443,7 +446,24 @@ int handle_add_uuid_rqt(char* buf, char* fname){
   parse_peer_add_uuid(buf, filepath, uuid, rate);
 
   num_peers_c = get_config_field(fname, CF_TAG_PEER_COUNT, 0);
-  num_peers = atoi(num_peers_c);
+  if(num_peers_c) {
+    num_peers = atoi(num_peers_c);
+  }
+  else {
+    num_peers = 0;
+  }
+
+  bzero(node, strlen(node));
+  bzero(peer_uuid, strlen(peer_uuid));
+  bzero(hostname, strlen(hostname));
+  bzero(fe_port, strlen(fe_port));
+  bzero(be_port, strlen(be_port));
+  bzero(metric, strlen(metric));
+
+  node = get_config_field(fname, CF_TAG_PEER_INFO, i);
+
+  parse_neighbor_info(node, peer_uuid, hostname, fe_port, be_port, metric);
+  
 
   while(i < num_peers){
 
@@ -484,7 +504,7 @@ int handle_add_uuid_rqt(char* buf, char* fname){
   return -2;
 }
 
-void handle_neighbors_rqt(int connfd, char* find_node_by_hostname){
+void handle_neighbors_rqt(int connfd, char* fname){
   int num_peers;
   char* num_peers_c;
 
@@ -503,7 +523,13 @@ void handle_neighbors_rqt(int connfd, char* find_node_by_hostname){
   int i = 0;
 
   num_peers_c = get_config_field(fname, CF_TAG_PEER_COUNT, 0);
-  num_peers = atoi(num_peers_c);
+  /* NULL check! */
+  if(num_peers_c) {
+    num_peers = atoi(num_peers_c);
+  }
+  else {
+    num_peers = 0;
+  }
 
   strcat(json_content, "[");
   while(i < num_peers){
@@ -568,7 +594,13 @@ void handle_add_neighbor_rqt(char* buf, char* fname){
   parse_peer_add_neighbor(buf, uuid, host, fe_port, be_port, metric);
 
   num_peers_c = get_config_field(fname, CF_TAG_PEER_COUNT, 0);
-  new_peer_num = atoi(num_peers_c);
+  if(num_peers_c) {
+    new_peer_num = atoi(num_peers_c);
+  }
+  else {
+    new_peer_num = 0;
+  }
+  
 
   sprintf(value, "%s,%s,%s,%s,%s", uuid, host, fe_port, be_port, metric);
 
