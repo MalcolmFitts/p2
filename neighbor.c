@@ -36,7 +36,7 @@ int add_neighbor(N_Dir* n_dir, char* uuid,
   (n_dir->nbr_list[i]).hostname = NULL;
 
   /* init port to default backend port */
-  (n_dir->nbr_list[i]).port_be = CF_DEFAULT_PORT_BE;
+  (n_dir->nbr_list[i]).port = CF_DEFAULT_BE_PORT;
 
   n_dir->cur_nbrs = i + 1;
 
@@ -77,14 +77,15 @@ int update_neighbor(N_Dir* n_dir, char* uuid,
         n->active = 1;
       }
       
-      
+      return 1;
     }
   }
+  return 0;
 }
 
 
 
-char* get_map(N_Dir n_dir, char* conf_file) {
+char* get_map(N_Dir *n_dir, char* conf_file) {
 
   char* metric_ptr;
   char* uuid_ptr;
@@ -106,6 +107,7 @@ char* get_map(N_Dir n_dir, char* conf_file) {
 
   char* my_uuid = NULL;
 
+  n_own_nbs = 0;
   neighb_cnt = get_config_field(conf_file, CF_TAG_PEER_COUNT, 0);
   if(neighb_cnt) {
     n_own_nbs = atoi(neighb_cnt);

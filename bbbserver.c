@@ -23,6 +23,7 @@
 #include "backend.h"
 #include "frontend.h"
 #include "configlib.h"
+#include "neighbor.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -94,9 +95,11 @@ int main(int argc, char **argv) {
   if(argc == 3) {
     config_filename = argv[2];
     /* Validating given config file */
-    if(validate_config_file(config_filename) != 1) {
+    config_init_flag = validate_config_file(config_filename);
+    if(config_init_flag != 1) {
       /* Checking default config file if given invalid filename */
-      if(!check_default_config_file) {
+      config_init_flag = check_default_config_file();
+      if(config_init_flag == 0) {
         printf("Error creating config file.\n");
         exit(0);
       }
@@ -107,8 +110,9 @@ int main(int argc, char **argv) {
   }
 
   else {
+    config_init_flag = check_default_config_file();
     /* Not given config file - find/create default */
-    if(!check_default_config_file) {
+    if(config_init_flag == 0) {
       printf("Error creating config file.\n");
       exit(0);
     }

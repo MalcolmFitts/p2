@@ -112,19 +112,19 @@ void send_data_to_fe(char* com_buf, char* data, int fin_flag);
  *  handle_uuid_rqt -> Handles: "GET /peer/uuid"
  *                  -> Sends: "{"uuid":"<uuid_node>"}" to client
  */
-void handle_uuid_rqt(int connfd);
+void handle_uuid_rqt(int connfd, char* fname);
 
 
 /*
  *  handle_neighbors_rqt -> Handles: "GET /peer/neighbors"
  *                       -> Sends: JSON list of neighbors and data
  */
-void handle_neighbors_rqt(int connfd);
+void handle_neighbors_rqt(int connfd, char* fname);
 
 
-int handle_add_uuid_rqt(char* buf);
+int handle_add_uuid_rqt(char* buf, char* fname);
 
-void handle_add_neighbor_rqt(char* buf);
+void handle_add_neighbor_rqt(char* buf, char* fname);
 
 void* advertise(void* ptr);
 

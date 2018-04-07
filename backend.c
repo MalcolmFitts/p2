@@ -431,7 +431,7 @@ int handle_add_uuid_rqt(char* buf, char* fname){
   char* uuid = malloc(sizeof(char) * MAXLINE);
   char* rate = malloc(sizeof(char) * MAXLINE);
 
-  char* node;
+  char* node = malloc(sizeof(char) * MAXLINE);
   char* peer_uuid = malloc(sizeof(char) * MAXLINE);
   char* hostname = malloc(sizeof(char) * MAXLINE);
   char* fe_port = malloc(sizeof(char) * MAXLINE);
@@ -618,7 +618,7 @@ void* advertise(void* ptr){
   int sockfd = *(int*)ptr;        /* parsing sockfd from pointer arg */
   char buf[MAX_DATA_SIZE];
   int num_neighbors;
-  Neighbor* neighbors;
+  struct Neighbor* neighbors;
 
   char* neighbor;
   char neighbor_json[BUFSIZE];

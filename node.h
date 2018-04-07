@@ -37,14 +37,6 @@ typedef struct Node_Directory {
 } Node_Dir;
 
 
-struct Neighbor {
-  char uuid[CF_UUID_STR_LEN];
-  char* neighbors;
-
-};
-
-
-
 
 /*
  *  create_node
