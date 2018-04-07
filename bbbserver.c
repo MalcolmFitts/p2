@@ -367,4 +367,3 @@ void *serve_client_thread(void *ptr) {
   numthreads--;
   return NULL;
 }
-

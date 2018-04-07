@@ -41,7 +41,7 @@ N_Dir* create_neighbor_dir(int max);
 int add_neighbor(N_Dir* n_dir, char* uuid, char* new_neighbors, int s_num);
 
 
-int update_neighbor(N_Dir* n_dir, char* uuid, 
+int update_neighbor(N_Dir* n_dir, char* uuid,
                       char* new_neighbors, int s_num, int received);
 
 
