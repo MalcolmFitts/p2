@@ -27,6 +27,7 @@
 #define PKT_FLAG_SYN 	  3
 #define PKT_FLAG_SYN_ACK  4
 #define PKT_FLAG_FIN      5
+#define PKT_FLAG_AD       6
 
 /* TODO add FIN implimentation */
 

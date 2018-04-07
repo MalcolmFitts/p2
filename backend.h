@@ -125,6 +125,7 @@ int handle_add_uuid_rqt(char* buf);
 
 void handle_add_neighbor_rqt(char* buf);
 
+void* advertise(void* ptr);
 
 /* filler end line */
 

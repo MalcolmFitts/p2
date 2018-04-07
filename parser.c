@@ -236,13 +236,7 @@ void parse_neighbor_info(char* neighbor_info, char* uuid, char* hostname,
   strcpy(be_port, pt);
   pt = strtok(NULL, ",");
   strcpy(metric, pt);
-
-  printf("%s\n", uuid);
-  printf("%s\n", hostname);
-  printf("%s\n", fe_port);
-  printf("%s\n", be_port);
-  printf("%s\n", metric);
-
+  
   return;
 }
 

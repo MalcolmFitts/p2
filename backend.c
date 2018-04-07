@@ -579,3 +579,99 @@ void handle_add_neighbor_rqt(char* buf, char* fname){
 
   return;
 }
+
+void* advertise(void* ptr){
+  printf("About to advertise: \n");
+  ptr = NULL;
+
+  int sequence_num = 0;
+
+  int sockfd = *(int*)ptr;        /* parsing sockfd from pointer arg */
+
+  char buf[MAX_DATA_SIZE];
+
+  while(1){
+     sleep(10);
+     int num_neighbors;
+     char* num_neighbors_c;
+
+     char* neighbor;
+     char neighbor_json[BUFSIZE];
+     char* uuid = malloc(sizeof(char) * 100);
+     char* hostname = malloc(sizeof(char) * 100);
+     char* fe_port = malloc(sizeof(char) * 100);
+     char* be_port = malloc(sizeof(char) * 100);
+     char* metric = malloc(sizeof(char) * 100);
+
+     int i = 0;
+
+     num_neighbors_c = get_config_field(CF_DEFAULT_FILENAME, CF_TAG_PEER_COUNT, 0);
+     num_neighbors = atoi(num_neighbors_c);
+
+     char* neighbor_hosts[num_neighbors];
+     for(i = 0; i < num_neighbors; i ++){
+       neighbor_hosts[i] = malloc(sizeof(char) * 100);
+     }
+     int neighbor_ports[num_neighbors];
+
+     i = 0;
+     bzero(neighbor_json, strlen(neighbor_json));
+     strcat(neighbor_json, "{");
+     while(i < num_neighbors){
+
+       bzero(neighbor, strlen(neighbor));
+       bzero(uuid, strlen(uuid));
+       bzero(hostname, strlen(hostname));
+       bzero(be_port, strlen(be_port));
+       bzero(metric, strlen(metric));
+
+       neighbor = get_config_field(CF_DEFAULT_FILENAME, CF_TAG_PEER_INFO, i);
+
+       parse_neighbor_info(neighbor, uuid, hostname, fe_port, be_port, metric);
+
+       neighbor_ports[i] = atoi(be_port);
+       strcpy(neighbor_hosts[i], hostname);
+
+       sprintf(neighbor, "\"%s\":%s", uuid, metric);
+
+       strcat(neighbor_json, neighbor);
+       i ++;
+       if(i < num_neighbors){
+         strcat(neighbor_json, ", ");
+       }
+     }
+     strcat(neighbor_json, "}");
+
+     bzero(buf, strlen(buf));
+
+     sprintf(buf, "%s\n", neighbor_json);
+
+     printf("%s\n", neighbor_json);
+
+     Pkt_t ad;
+     struct sockaddr_in peeraddr;
+     struct hostent *peer_server;
+     socklen_t peer_addr_len;
+     int n;
+     for(i = 0; i < num_neighbors; i ++){
+       ad = create_packet(neighbor_ports[i], 0, sequence_num, buf, PKT_FLAG_AD,
+                          NULL);
+
+       peer_server = gethostbyname(neighbor_hosts[i]);
+
+       /* build the server's Internet address */
+       bzero((char *) &peeraddr, sizeof(peeraddr));
+       peeraddr.sin_family = AF_INET;
+       bcopy((char *)peer_server->h_addr,
+             (char *)&peeraddr.sin_addr.s_addr, peer_server->h_length);
+       peeraddr.sin_port = htons(neighbor_ports[i]);
+
+       /* send the message to the server */
+       peer_addr_len = sizeof(peeraddr);
+
+       n = sendto(sockfd, &ad, sizeof(ad), 0,
+                  (struct sockaddr *) &peeraddr, peer_addr_len);
+     }
+     sequence_num ++;
+  }
+}
