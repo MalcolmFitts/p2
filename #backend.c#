@@ -588,7 +588,7 @@ void* advertise(void* ptr){
 
   int sockfd = *(int*)ptr;        /* parsing sockfd from pointer arg */
 
-  char buf[MAX_DATA_SIZE];
+  char buf = malloc(siz);
 
   while(1){
      sleep(10);
