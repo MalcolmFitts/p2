@@ -21,7 +21,6 @@ void* handle_be(void* ptr) {
   int sent_status;                /* sent bytes */
   int recv_status;                /* received bytes */
 
-
   while(1) {
     printf("Waiting for packet on backend...\n");
 
@@ -258,7 +257,7 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
   /* create node directory */
   node_dir = create_node_dir(MAX_NODES);
   /* Created neighbor dir */
-  neighbor_dir = crteate_neighbor_dir(100);
+  neighbor_dir = create_neighbor_dir(100);
 
   return sockfd_be;
 }
@@ -463,7 +462,7 @@ int handle_add_uuid_rqt(char* buf, char* fname){
   node = get_config_field(fname, CF_TAG_PEER_INFO, i);
 
   parse_neighbor_info(node, peer_uuid, hostname, fe_port, be_port, metric);
-  
+
 
   while(i < num_peers){
 
@@ -600,7 +599,7 @@ void handle_add_neighbor_rqt(char* buf, char* fname){
   else {
     new_peer_num = 0;
   }
-  
+
 
   sprintf(value, "%s,%s,%s,%s,%s", uuid, host, fe_port, be_port, metric);
 
@@ -614,39 +613,28 @@ void handle_add_neighbor_rqt(char* buf, char* fname){
 
 void* advertise(void* ptr){
   printf("About to advertise: \n");
-  ptr = NULL;
 
   int sequence_num = 0;
-
   int sockfd = *(int*)ptr;        /* parsing sockfd from pointer arg */
-
   char buf[MAX_DATA_SIZE];
+  int num_neighbors;
+  Neighbor* neighbors;
+
+  char* neighbor;
+  char neighbor_json[BUFSIZE];
+  char* uuid = malloc(sizeof(char) * 100);
+  char* hostname = malloc(sizeof(char) * 100);
+  char* fe_port = malloc(sizeof(char) * 100);
+  char* be_port = malloc(sizeof(char) * 100);
+  char* metric = malloc(sizeof(char) * 100);
 
   while(1){
      sleep(10);
-     int num_neighbors;
-     char* num_neighbors_c;
-
-     char* neighbor;
-     char neighbor_json[BUFSIZE];
-     char* uuid = malloc(sizeof(char) * 100);
-     char* hostname = malloc(sizeof(char) * 100);
-     char* fe_port = malloc(sizeof(char) * 100);
-     char* be_port = malloc(sizeof(char) * 100);
-     char* metric = malloc(sizeof(char) * 100);
+     num_neighbors = neighbor_dir->cur_nbrs;
+     neighbors = neighbor_dir->nbr_list;
 
      int i = 0;
 
-     num_neighbors_c = get_config_field(CF_DEFAULT_FILENAME, CF_TAG_PEER_COUNT, 0);
-     num_neighbors = atoi(num_neighbors_c);
-
-     char* neighbor_hosts[num_neighbors];
-     for(i = 0; i < num_neighbors; i ++){
-       neighbor_hosts[i] = malloc(sizeof(char) * 100);
-     }
-     int neighbor_ports[num_neighbors];
-
-     i = 0;
      bzero(neighbor_json, strlen(neighbor_json));
      strcat(neighbor_json, "{");
      while(i < num_neighbors){
@@ -660,9 +648,6 @@ void* advertise(void* ptr){
        neighbor = get_config_field(CF_DEFAULT_FILENAME, CF_TAG_PEER_INFO, i);
 
        parse_neighbor_info(neighbor, uuid, hostname, fe_port, be_port, metric);
-
-       neighbor_ports[i] = atoi(be_port);
-       strcpy(neighbor_hosts[i], hostname);
 
        sprintf(neighbor, "\"%s\":%s", uuid, metric);
 
@@ -678,25 +663,32 @@ void* advertise(void* ptr){
 
      sprintf(buf, "%s\n", neighbor_json);
 
-     printf("%s\n", neighbor_json);
-
      Pkt_t ad;
      struct sockaddr_in peeraddr;
      struct hostent *peer_server;
      socklen_t peer_addr_len;
+
+     int peer_port;
+     char* peer_host;
      int n;
      for(i = 0; i < num_neighbors; i ++){
-       ad = create_packet(neighbor_ports[i], 0, sequence_num, buf, PKT_FLAG_AD,
+
+       Neighbor peer = neighbors[i];
+
+       peer_port = peer.port;
+       peer_host = peer.hostname;
+
+       ad = create_packet(peer_port, 0, sequence_num, buf, PKT_FLAG_AD,
                           NULL);
 
-       peer_server = gethostbyname(neighbor_hosts[i]);
+       peer_server = gethostbyname(peer_host);
 
        /* build the server's Internet address */
        bzero((char *) &peeraddr, sizeof(peeraddr));
        peeraddr.sin_family = AF_INET;
        bcopy((char *)peer_server->h_addr,
              (char *)&peeraddr.sin_addr.s_addr, peer_server->h_length);
-       peeraddr.sin_port = htons(neighbor_ports[i]);
+       peeraddr.sin_port = htons(peer_port);
 
        /* send the message to the server */
        peer_addr_len = sizeof(peeraddr);
