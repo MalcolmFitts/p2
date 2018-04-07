@@ -151,7 +151,7 @@ int parse_peer_add_uuid(char* buf, char* fp, char* uuid, char* rate){
   int n = sscanf(buf, "GET /peer/add?path=%[^&]&peer=%[^&]&rate=%s %s",
                  fp, uuid, rate, extrabuf);
 
-  if(n != 5) return 0;
+  if(n != 4) return 0;
 
   return 1;
 }

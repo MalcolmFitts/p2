@@ -239,14 +239,20 @@ int update_config_file(char* filename, char* field_tag, int peer_num,
   /* Checking status of given file */
   valid_flag = validate_config_file(filename);
 
-  /* Could not find file "filename" */
   if(valid_flag == -1) {
+    /* Could not find file "filename" */
+    free(read_buf);
+    free(buf);
+    free(temp_fname);
     return valid_flag;
   }
 
   if(valid_flag == 0 && (strcmp(field_tag, CF_TAG_UUID) != 0)) {
-    /* Could not find UUID field in "filename" 
+    /* Could not find UUID field in "filename"
      * AND UUID field is not being added */
+    free(read_buf);
+    free(buf);
+    free(temp_fname);
     return 0;
   }
 
@@ -254,7 +260,7 @@ int update_config_file(char* filename, char* field_tag, int peer_num,
   buf_ptr = get_config_field(filename, field_tag, peer_num);
   peer_count_ptr = get_config_field(filename, CF_TAG_PEER_COUNT, peer_num);
 
-  /* Did not find "field_tag" in file "filename" */ 
+  /* Did not find "field_tag" in file "filename" */
   if(!buf_ptr) {
     /* Checking if new tag being added is peer_info tag */
     if(strcmp(field_tag, CF_TAG_PEER_INFO) == 0) {
@@ -270,7 +276,7 @@ int update_config_file(char* filename, char* field_tag, int peer_num,
 
       /* Updating config file's peer_count before adding peer
        *  so that peer_info lines will be below peer_count */
-      update_config_file(filename, CF_TAG_PEER_COUNT, 
+      update_config_file(filename, CF_TAG_PEER_COUNT,
                           peer_num, update_buf, NULL);
       /* CHECK - Might want to store this flag value */
 
@@ -287,14 +293,14 @@ int update_config_file(char* filename, char* field_tag, int peer_num,
     /* note: need to print new line before buf so this prints on next line */
     fp = fopen(filename, "a");
     sprintf(buf, "%s = %s", field_buf, new_value);
-    fprintf(fp, "%s\n", buf);  
+    fprintf(fp, "%s\n", buf);
     fclose(fp);
 
     /* Returning "added field" flag */
     return 1;
   }
 
-  /* Storing existing field "field_tag" value in old_buf if not NULL */ 
+  /* Storing existing field "field_tag" value in old_buf if not NULL */
   if(old_buf) sprintf(old_buf, "%s", buf_ptr);
 
   /* Opening file and temporary file to fill with */
@@ -306,7 +312,7 @@ int update_config_file(char* filename, char* field_tag, int peer_num,
     return 0;
   }
 
-  
+
   if(strcmp(field_tag, CF_TAG_PEER_INFO) == 0) {
     /* Formatting field buf to be able to differentiate peer_info cases */
     sprintf(field_buf, "peer_%d", peer_num);
@@ -332,10 +338,10 @@ int update_config_file(char* filename, char* field_tag, int peer_num,
 
       /* Formatting - print new-line at EOF for future added vals */
       if(feof(fp)) { fputs("\n", fp_temp); }
-    } 
+    }
   }
 
-  /* Closing files */ 
+  /* Closing files */
   fclose(fp);
   fclose(fp_temp);
 
