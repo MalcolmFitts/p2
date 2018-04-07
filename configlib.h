@@ -12,6 +12,8 @@
 #include <string.h>
 #include <uuid/uuid.h>
 
+#include "parser.h"
+
 /* default config file: filename */
 #define CF_DEFAULT_FILENAME "node.conf"
 /* default config file: front-end port */
@@ -65,8 +67,8 @@
  *
  *          CF_TAG_PEER_INFO    --> res = "<peer info string>"
  *            *result also depends on peer_num*
- *                              
- *            
+ *
+ *
  */
 char* get_config_field(char* filename, char* field_tag, int peer_num);
 
@@ -90,13 +92,13 @@ int validate_config_file(char* filename);
  *  check_default_config_file
  *		- searches for config file matching defined default config file name
  *		- if default file is not found, it generates one for this peer
- *    - NOTE: this fn will open and close file once its done so as to prevent 
+ *    - NOTE: this fn will open and close file once its done so as to prevent
  *              bad scary things
  *
  *		return values:
- *        0 --> fail on both finding default config file and 
+ *        0 --> fail on both finding default config file and
  *                creating a default file
- *        1 --> did not find existing default config but 
+ *        1 --> did not find existing default config but
  *                created one successfully
  *        2 --> found existing default config file
  */
@@ -105,7 +107,7 @@ int check_default_config_file();
 
 /*
  *  check_file
- *    - searches in own directory for file matching given filename 
+ *    - searches in own directory for file matching given filename
  *    - NOTE: this fn will open file if it finds it and close the file once
  *              its done so as to prevent bad scary things
  *
@@ -139,8 +141,6 @@ int check_file(char* filename);
  */
 int update_config_file(char* filename, char* field_tag, int peer_num,
                         char* new_value, char* old_buf);
-
-
 
 
 #endif

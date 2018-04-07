@@ -53,6 +53,7 @@
 #define CONTENT_TYPE_VIDEO_WEBM "video/webm"
 #define CONTENT_TYPE_VIDEO_MP4 "video/mp4"
 #define CONTENT_TYPE_VIDEO_OGG "video/ogg"
+#define CONTENT_TYPE_JSON "application/json"
 
 /*	  Status Headers
  *
@@ -192,6 +193,8 @@ void write_partial_content(int connfd, FILE* fp, char* fileExt,
 
 void write_full_content(int connfd, FILE* fp, char* fileExt,
 			int content_size, time_t last_modified);
+
+void write_json_content(int connfd, char* content);
 
 /*
  * server_error - server wrapper for perror

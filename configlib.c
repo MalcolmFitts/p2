@@ -14,13 +14,12 @@ char* get_config_field(char* filename, char* field_tag, int peer_num) {
 
   bzero(res_buf, CF_MAX_LINE_LEN);
   bzero(buf, CF_MAX_LINE_LEN);
-  
 
   if(check_file(filename)) {
     /* If file exists, open for reading */
     fp = fopen(filename, "r");
 
-    /* UUID */ 
+    /* UUID */
     if(strcmp(field_tag, CF_TAG_UUID) == 0) {
       /* read lines until we find uuid */
       while(fgets(buf, CF_MAX_LINE_LEN, (FILE*) fp)) {
@@ -111,7 +110,7 @@ char* get_config_field(char* filename, char* field_tag, int peer_num) {
             /* found matching peer */
             fclose(fp);
             return res_buf;
-          }        
+          }
         }
       }
     }
@@ -122,8 +121,6 @@ char* get_config_field(char* filename, char* field_tag, int peer_num) {
   /* Failed finding tag */
   return NULL;
 }
-
-
 
 int validate_config_file(char* filename) {
   /* Check for file and search for UUID tag */
@@ -353,5 +350,3 @@ int update_config_file(char* filename, char* field_tag, int peer_num,
   /* Returning "updated" flag */
   return 2;
 }
-
-

@@ -104,6 +104,9 @@ int parse_peer_map(char* buf);
 
 int parse_peer_rank(char* buf, char* fp);
 
+void parse_neighbor_info(char* neigbor_info, char* uuid, char* hostname, char* fe_port,
+                        char* be_port, char* metric);
+
 /*
  *  str_2_int
  *       - Converts type char* to type int;

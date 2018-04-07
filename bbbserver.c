@@ -254,19 +254,23 @@ void *serve_client_thread(void *ptr) {
       break;
 
     case RQT_P_ADD_UUID:
-      /* TODO: Handle peer ADD UUID request*/
+      /* TODO: Handle peer ADD UUID request */
       break;
 
     case RQT_P_KILL:
-      /* TODO: Handle peer KILL request */
+      /* Handle peer KILL request */
+      exit(EXIT_SUCCESS);
       break;
 
     case RQT_P_UUID:
-      /* TODO: Handle peer UUID request*/
+      /* Handle peer UUID request*/
+      handle_uuid_rqt(connfd);
       break;
 
     case RQT_P_NEIGH:
       /* TODO: Handle peer NEIGHBORS request */
+      printf("Handling /peer/neighbors\n");
+      handle_neighbors_rqt(connfd);
       break;
 
     case RQT_P_ADD_NEIGH:

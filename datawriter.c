@@ -54,24 +54,24 @@ void write_server_name_header(int fd, char* sn) {
 
 
 /*	Connection Type Headers
- * ex: 
+ * ex:
  *	Connection: Close
  */
 void write_conn_header(int fd, char* conn_type) {
   char buf[SHORT_HEADER_LEN];
   sprintf(buf, "Connection: %s\r\n", conn_type);
-  
+
   write(fd, buf, strlen(buf));
 }
 
 /* 	Connection Keep Alive Headers
- * ex: 
+ * ex:
  *	Keep-Alive: timeout=3, max=100
  */
 void write_keep_alive_header(int fd, int t, int m) {
   char buf[SHORT_HEADER_LEN];
   sprintf(buf, "Keep-Alive: timeout=%d, max=%d\r\n", t, m);
-  
+
   write(fd, buf, strlen(buf));
 }
 
@@ -98,7 +98,7 @@ void write_content_length_header(int fd, int content_len) {
  * ex:
  *      Content-Type: text/html
  */
-    
+
 void write_content_type_header(int fd, char *content_type){
   char buf[SHORT_HEADER_LEN];
   //mapping extension to header string and then writing header
@@ -108,14 +108,14 @@ void write_content_type_header(int fd, char *content_type){
   else if(strcmp(content_type, "css") == 0) {
     sprintf(buf, "Content-Type: %s\r\n", CONTENT_TYPE_TEXT_CSS);
   }
-  else if((strcmp(content_type, "htm") == 0) || 
+  else if((strcmp(content_type, "htm") == 0) ||
           (strcmp(content_type, "html") == 0)) {
     sprintf(buf, "Content-Type: %s\r\n", CONTENT_TYPE_TEXT_HTML);
   }
   else if(strcmp(content_type, "gif") == 0) {
     sprintf(buf, "Content-Type: %s\r\n", CONTENT_TYPE_GIF);
   }
-  else if((strcmp(content_type, "jpg") == 0) || 
+  else if((strcmp(content_type, "jpg") == 0) ||
           (strcmp(content_type, "jpeg") == 0)) {
     sprintf(buf, "Content-Type: %s\r\n", CONTENT_TYPE_JPEG);
   }
@@ -137,7 +137,7 @@ void write_content_type_header(int fd, char *content_type){
   else {
     sprintf(buf, "Content-Type: %s\r\n", CONTENT_TYPE_DEFAULT);
   }
-  
+
   write(fd, buf, strlen(buf));
 }
 
@@ -149,15 +149,15 @@ void write_content_type_header(int fd, char *content_type){
  */
 void write_last_modified_header(int fd, time_t t){
   struct tm *timeptr = gmtime(&t);
-  
+
   //formatting raw time
   char raw_date[SHORT_HEADER_LEN];
   strftime(raw_date, MAX_HEADER_LEN, "%a, %d %b %Y %H:%M:%S %Z", timeptr);
-  
+
   //formatting header
   char buf[SHORT_HEADER_LEN];
   sprintf(buf, "Last-Modified: %s\r\n", raw_date);
-  
+
   write(fd, buf, strlen(buf));
 }
 
@@ -166,13 +166,13 @@ void write_last_modified_header(int fd, time_t t){
  * ex:
  *        Content-Range: bytes 21010-47021/47022
  */
-void write_content_range_header(int fd, int start_bytes, 
+void write_content_range_header(int fd, int start_bytes,
       int end_bytes, int content_length) {
   char buf[SHORT_HEADER_LEN];
 
   sprintf(buf, "Content-Range: bytes %d-%d/%d\r\n",
     start_bytes, end_bytes, content_length);
-  
+
   write(fd, buf, strlen(buf));
 }
 
@@ -184,7 +184,7 @@ void write_content_range_header(int fd, int start_bytes,
 void write_accept_ranges_header(int fd) {
   char buf[SHORT_HEADER_LEN];
   sprintf(buf, "Accept-Ranges: bytes\r\n");
-  
+
   write(fd, buf, strlen(buf));
 }
 
@@ -209,7 +209,7 @@ void write_headers_200(int connfd, char* name, int content_length, char* content
 /*
  * sending headers for "Not Found" status code (404)
  *
- */ 
+ */
 void write_headers_404(int connfd, char* name) {
   write_status_header(connfd, SC_NOT_FOUND, ST_NOT_FOUND);
   write_date_header(connfd);
@@ -221,7 +221,7 @@ void write_headers_404(int connfd, char* name) {
 /*
  * sending headers for "Partial Content" status code (206)
  *
- */ 
+ */
 void write_headers_206(int connfd, char* name, int full_length, char* content_type,
       time_t t, int sb, int eb, int content_length) {
   write_status_header(connfd, SC_PARTIAL, ST_PARTIAL);
@@ -237,7 +237,7 @@ void write_headers_206(int connfd, char* name, int full_length, char* content_ty
 /*
  * sending headers for "Internal Server Error" status code (500)
  *
- */ 
+ */
 void write_headers_500(int connfd) {
   write_status_header(connfd, SC_SERVER_ERROR, ST_SERVER_ERROR);
   write_empty_header(connfd);
@@ -266,25 +266,37 @@ void write_data(int connfd, FILE* fp, int content_size, long start_byte){
   }
 }
 
-void write_partial_content(int connfd, FILE* fp, char* fileExt, 
+void write_partial_content(int connfd, FILE* fp, char* fileExt,
 			   int sb, int eb, int full_content_size,
 			   time_t last_modified) {
 
   /* getting size of requested content */
   int content_size = eb - sb + 1;
-    
+
   /* writing headers and data */
-  write_headers_206(connfd, SERVER_NAME, full_content_size, fileExt, 
+  write_headers_206(connfd, SERVER_NAME, full_content_size, fileExt,
 		    last_modified, sb, eb, content_size);
   write_data(connfd, fp, content_size, (long) sb);
 }
 
-void write_full_content(int connfd, FILE* fp, char* fileExt, 
-			int content_size, time_t last_modified) { 
+void write_full_content(int connfd, FILE* fp, char* fileExt,
+			int content_size, time_t last_modified) {
 
   /* writing headers and data */
   write_headers_200(connfd, SERVER_NAME, content_size, fileExt, last_modified);
   write_data(connfd, fp, content_size, 0L);
+}
+
+void write_json_content(int connfd, char* content){
+  int content_len;
+
+  content_len = strlen(content);
+
+  write_status_header(connfd, SC_OK, ST_OK);
+  write_content_type_header(connfd, CONTENT_TYPE_JSON);
+  write_content_length_header(connfd, content_len);
+  write_empty_header(connfd);
+  write(connfd, content, content_len);
 }
 
 /*
@@ -298,7 +310,7 @@ void server_error(char *msg, int connfd) {
 }
 
 /*
- * error - wrapper for perror 
+ * error - wrapper for perror
  *       - where we will handle 500 error codes
  */
 void error(char *msg) {

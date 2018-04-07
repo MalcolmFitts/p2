@@ -1,7 +1,7 @@
 CC = gcc
 ARGS = -g -pthread -Wall -O2 -I .
 
-all: clean sl pa nd pkt dw be fe bbbserver
+all: clean sl pa nd pkt dw be fe con bbbserver
 
 sl: serverlog.c serverlog.h
 	$(CC) $(ARGS) -o sllib.o -c serverlog.c
@@ -24,9 +24,11 @@ be: backend.c backend.h
 fe: frontend.c frontend.h
 	$(CC) $(ARGS) -o felib.o -c frontend.c
 
-bbbserver: bbbserver.c datawriter.h parser.h node.h packet.h serverlog.h backend.h frontend.h
-	$(CC) $(ARGS) -o bbbserver bbbserver.c dwlib.o palib.o nodelib.o pktlib.o sllib.o belib.o felib.o
+con: configlib.c configlib.h
+	$(CC) $(ARGS) -o conlib.o -c configlib.c
+
+bbbserver: bbbserver.c datawriter.h parser.h node.h packet.h serverlog.h backend.h frontend.h configlib.h
+	$(CC) $(ARGS) -o bbbserver bbbserver.c dwlib.o palib.o nodelib.o pktlib.o sllib.o belib.o felib.o conlib.o
 
 clean:
-	rm -f *.o bbbserver send recv serv palib.o nodelib.o dwlib.o pktlib.o sllib.o belib.o felib.o *~
-	
+	rm -f *.o bbbserver send recv serv palib.o nodelib.o dwlib.o pktlib.o sllib.o belib.o felib.o conlib.o*~
