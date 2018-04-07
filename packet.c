@@ -20,7 +20,6 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
   int len;
 
   if(flag == PKT_FLAG_DATA) {
-    
 
     /* checking file contents */
     FILE* fp = fopen(filename, "r");
@@ -72,7 +71,7 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
     /* set flag to SYN and fill buffer*/
     hdr->flag =  (1 << PKT_FLAG_SYN);
     /* TODO - Data offset here to pass options in the data buffer (hdr->data_offset) */
-    
+
     len = sprintf(packet->buf, "Request: %s\n", filename);
     hdr->length = len;
   }
@@ -120,6 +119,10 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
     hdr->length = sprintf(packet->buf, "FIN: %s\n", filename);
   }
 
+  else if(flag == PKT_FLAG_AD){
+    strcpy(packet->buf, filename);
+  }
+  
   /* invalid file creation flag */
   else {
     hdr->flag = 0;
@@ -239,10 +242,8 @@ int get_packet_type(Pkt_t packet) {
     return PKT_FLAG_FIN;        /* FIN packet     */
   }
 
-  
-
   /* should not happen - not sure what kind of packet this is */
-  return -1;
+  return PKT_FLAG_CORRUPT;
 }
 
 
