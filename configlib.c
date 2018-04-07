@@ -237,7 +237,7 @@ int update_config_file(char* filename, char* field_tag, int peer_num,
     /* Could not find file "filename" */
     free(read_buf);
     free(buf);
-    free(temp_fname)
+    free(temp_fname);
     return valid_flag;
   }
 
@@ -246,7 +246,7 @@ int update_config_file(char* filename, char* field_tag, int peer_num,
      * AND UUID field is not being added */
     free(read_buf);
     free(buf);
-    free(temp_fname)
+    free(temp_fname);
     return 0;
   }
 

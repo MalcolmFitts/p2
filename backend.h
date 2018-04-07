@@ -120,6 +120,9 @@ void handle_uuid_rqt(int connfd);
 void handle_neighbors_rqt(int connfd);
 
 
+int handle_add_uuid_rqt(char* buf);
+
+void handle_add_neighbor_rqt(char* buf);
 
 
 /* filler end line */

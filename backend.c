@@ -417,6 +417,73 @@ void handle_uuid_rqt(int connfd){
   write_json_content(connfd, json_content);
 }
 
+int handle_add_uuid_rqt(char* buf){
+
+  Node* n;
+
+  char* num_peers_c;
+  int num_peers;
+  int i = 0;
+
+  char* filepath = malloc(sizeof(char) * MAXLINE);
+  char* uuid = malloc(sizeof(char) * MAXLINE);
+  char* rate = malloc(sizeof(char) * MAXLINE);
+
+  char* node;
+  char* peer_uuid = malloc(sizeof(char) * MAXLINE);
+  char* hostname = malloc(sizeof(char) * MAXLINE);
+  char* fe_port = malloc(sizeof(char) * MAXLINE);
+  char* be_port = malloc(sizeof(char) * MAXLINE);
+  char* metric = malloc(sizeof(char) * MAXLINE);
+
+  bzero(filepath, strlen(filepath));
+  bzero(uuid, strlen(uuid));
+  bzero(rate, strlen(rate));
+
+  parse_peer_add_uuid(buf, filepath, uuid, rate);
+
+  num_peers_c = get_config_field(CF_DEFAULT_FILENAME, CF_TAG_PEER_COUNT, 0);
+  num_peers = atoi(num_peers_c);
+
+  while(i < num_peers){
+
+    bzero(node, strlen(node));
+    bzero(peer_uuid, strlen(peer_uuid));
+    bzero(hostname, strlen(hostname));
+    bzero(fe_port, strlen(fe_port));
+    bzero(be_port, strlen(be_port));
+    bzero(metric, strlen(metric));
+
+    node = get_config_field(CF_DEFAULT_FILENAME, CF_TAG_PEER_INFO, i);
+
+    parse_neighbor_info(node, peer_uuid, hostname, fe_port, be_port, metric);
+
+    if(strcmp(peer_uuid, uuid) == 0){
+      n = create_node(filepath, hostname, atoi(be_port), atoi(rate));
+      free(peer_uuid);
+      free(hostname);
+      free(fe_port);
+      free(be_port);
+      free(metric);
+      free(uuid);
+      free(rate);
+
+      if(!add_node(node_dir, n)) return -2;
+
+      /* Status printing */
+      printf("Created peer node info:\n");
+      printf("Node hostname: %s\nNode port: %d\n", n->ip_hostname, n->port);
+      printf("Node content: %s\nNode rate: %d\n",
+             n->content_path, n->content_rate);
+      return 1;
+    }
+
+    i ++;
+  }
+
+  return -2;
+}
+
 void handle_neighbors_rqt(int connfd){
   int num_peers;
   char* num_peers_c;
@@ -475,4 +542,40 @@ void handle_neighbors_rqt(int connfd){
   free(fe_port);
   free(be_port);
   free(metric);
+}
+
+void handle_add_neighbor_rqt(char* buf){
+
+  char* num_peers_c;
+  int new_peer_num;
+
+  int update_flag = 0;
+
+  char value[BUFSIZE];
+  char* uuid = malloc(sizeof(char) * BUFSIZE);
+  char* host = malloc(sizeof(char) * BUFSIZE);
+  char* fe_port = malloc(sizeof(char) * BUFSIZE);
+  char* be_port = malloc(sizeof(char) * BUFSIZE);
+  char* metric = malloc(sizeof(char) * BUFSIZE);
+
+  bzero(value, strlen(value));
+  bzero(uuid, strlen(uuid));
+  bzero(host, strlen(host));
+  bzero(fe_port, strlen(fe_port));
+  bzero(be_port, strlen(be_port));
+  bzero(metric, strlen(metric));
+
+  parse_peer_add_neighbor(buf, uuid, host, fe_port, be_port, metric);
+
+  num_peers_c = get_config_field(CF_DEFAULT_FILENAME, CF_TAG_PEER_COUNT, 0);
+  new_peer_num = atoi(num_peers_c);
+
+  sprintf(value, "%s,%s,%s,%s,%s", uuid, host, fe_port, be_port, metric);
+
+  printf("%s\n", value);
+
+  update_flag = update_config_file(CF_DEFAULT_FILENAME, CF_TAG_PEER_INFO,
+                                   new_peer_num, value, NULL);
+
+  return;
 }
