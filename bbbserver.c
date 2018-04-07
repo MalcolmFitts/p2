@@ -22,6 +22,7 @@
 #include "serverlog.h"
 #include "backend.h"
 #include "frontend.h"
+#include "configlib.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -77,14 +78,53 @@ int main(int argc, char **argv) {
   struct sockaddr_in clientaddr;               /* client's addr */
   unsigned int clientlen = sizeof(clientaddr); /* size of client's address */
 
+  /* config file vars */
+  char* config_filename;
+  int config_init_flag;
+
+  char* cf_port_fe = NULL;
+  char* cf_port_be = NULL;
+
   /* check command line args */
-  if (argc != 3) {
-    fprintf(stderr, "usage: %s <port> <port>\n", argv[0]);
+  if (argc != 1 && argc != 3) {
+    fprintf(stderr, "usage: %s [-c] <config file name>\n", argv[0]);
     exit(1);
   }
 
-  port_fe = atoi(argv[1]);
-  port_be = atoi(argv[2]);
+  if(argc == 3) {
+    config_filename = argv[2];
+    /* Validating given config file */
+    if(validate_config_file(config_filename) != 1) {
+      /* Checking default config file if given invalid filename */
+      if(!check_default_config_file) {
+        printf("Error creating config file.\n");
+        exit(0);
+      }
+      /* Created/Found default config file */
+      config_filename = malloc(MAXLINE);
+      sprintf(config_filename, "%s", CF_DEFAULT_FILENAME);
+    }
+  }
+
+  else {
+    /* Not given config file - find/create default */
+    if(!check_default_config_file) {
+      printf("Error creating config file.\n");
+      exit(0);
+    }
+    config_filename = malloc(MAXLINE);
+    sprintf(config_filename, "%s", CF_DEFAULT_FILENAME);
+  }
+
+  /* assigning front and backend ports */
+  cf_port_fe = get_config_field(config_filename, CF_TAG_FE_PORT, 0);
+  cf_port_be = get_config_field(config_filename, CF_TAG_BE_PORT, 0);
+
+  if(cf_port_fe)  { port_fe = atoi(cf_port_fe);   }
+  else            { port_fe = CF_DEFAULT_FE_PORT; }
+
+  if(cf_port_be)  { port_be = atoi(cf_port_be);   }
+  else            { port_be = CF_DEFAULT_BE_PORT; }
 
   pthread_mutex_init(&mutex, NULL);
 
@@ -124,6 +164,7 @@ int main(int argc, char **argv) {
     ct->num = ctr;
     ct->listenfd_be = sockfd_be;
     ct->port_be = port_be;
+    ct->config_fn = config_filename;
 
     /* spin off thread */
     pthread_create(&(tid), NULL, serve_client_thread, ct);

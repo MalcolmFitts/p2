@@ -256,12 +256,8 @@ int update_config_file(char* filename, char* field_tag, int peer_num,
 
   /* Did not find "field_tag" in file "filename" */ 
   if(!buf_ptr) {
-
-    printf("Adding field (%s) to file...\n", field_tag);
-
     /* Checking if new tag being added is peer_info tag */
     if(strcmp(field_tag, CF_TAG_PEER_INFO) == 0) {
-      printf("Adding new peer info tag.\n");
       if(!peer_count_ptr) {
         /* No peer count field found exists */
         sprintf(update_buf, "1");

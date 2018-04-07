@@ -39,6 +39,7 @@ struct thread_data {
   int num;                    /* DEBUG - overall connected num */
   int listenfd_be;            /* back end listening socket */
   int port_be;                /* back end port */
+  char* config_fn;            /* config filename */
 };
 
 /*
