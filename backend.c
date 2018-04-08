@@ -509,7 +509,7 @@ void handle_neighbors_rqt(int connfd, char* fname){
 
   char json_content[JSON_BUFSIZE] = "\0";
 
-  char* neighbor;
+  char* neighbor = malloc(sizeof(char) * BUFSIZE);
   char  node_name[BUFSIZE];
   char  neighbor_json[BUFSIZE];
   char* uuid = malloc(sizeof(char) * BUFSIZE);
@@ -543,6 +543,10 @@ void handle_neighbors_rqt(int connfd, char* fname){
     bzero(metric, strlen(metric));
 
     neighbor = get_config_field(fname, CF_TAG_PEER_INFO, i);
+
+    if(!neighbor) {
+      continue;
+    }
 
     printf("%s\n", neighbor);
     parse_neighbor_info(neighbor, uuid, hostname, fe_port, be_port, metric);
