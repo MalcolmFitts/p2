@@ -24,6 +24,7 @@
 #include "frontend.h"
 #include "configlib.h"
 #include "neighbor.h"
+#include "uuid/uuid.h"
 
 #include <stdio.h>
 #include <unistd.h>
