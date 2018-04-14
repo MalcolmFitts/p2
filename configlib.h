@@ -10,9 +10,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <uuid/uuid.h>
 
-#include </usr/include/uuid/uuid.h>
+
+#include "spcuuid/src/uuid.h"
 
 #include "parser.h"
 

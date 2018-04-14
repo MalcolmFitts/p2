@@ -24,7 +24,8 @@
 #include "frontend.h"
 #include "configlib.h"
 #include "neighbor.h"
-#include "uuid/uuid.h"
+
+#include "spcuuid/src/uuid.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -329,7 +330,7 @@ void *serve_client_thread(void *ptr) {
 
     case RQT_P_NEIGH:
       /* TODO: Handle peer NEIGHBORS request */
-      printf("Handling: ADD NEIGHBOR\n");
+      printf("Handling: PEER / NEIGHBOR\n");
       handle_neighbors_rqt(connfd, ct->config_fn);
       break;
 

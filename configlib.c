@@ -153,14 +153,14 @@ int check_default_config_file() {
       return 0;
     }
 
-    uuid_t new_uuid;
+    uuid__t* new_uuid = malloc(sizeof(uuid__t));
     char uuid_arr[CF_UUID_STR_LEN];
     char buf[CF_MAX_LINE_LEN];
     int len;
 
     /* Generating new UUID for node and parsing to char[] */
-    uuid_generate(new_uuid);
-    uuid_unparse_upper(new_uuid, uuid_arr);
+    uuidlib_v1(new_uuid, 1);
+    uuidlib_toa(new_uuid, uuid_arr, CF_UUID_STR_LEN);
 
     /* writing UUID to created file */
     len = sprintf(buf, "%s = %s\n", CF_TAG_UUID, uuid_arr);
@@ -361,7 +361,7 @@ int create_config_file(char* filename, char* node_name,
                         int fe_port, int be_port, char* content_dir) {
   /* local vars */
   FILE* fp;
-  uuid_t new_uuid;
+  uuid__t* new_uuid = malloc(sizeof(uuid__t));
   char uuid_arr[CF_UUID_STR_LEN];
   char buf[CF_MAX_LINE_LEN];
 
@@ -376,8 +376,8 @@ int create_config_file(char* filename, char* node_name,
   }
 
   /* Generating new UUID for node and parsing to char[] */
-  uuid_generate(new_uuid);
-  uuid_unparse_upper(new_uuid, uuid_arr);
+  uuidlib_v1(new_uuid, 1);
+  uuidlib_toa(new_uuid, uuid_arr, CF_UUID_STR_LEN);
 
   /* writing UUID to created file */
   sprintf(buf, "%s = %s", CF_TAG_UUID, uuid_arr);
