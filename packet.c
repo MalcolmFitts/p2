@@ -45,12 +45,12 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
       }
       else if(len < MAX_DATA_SIZE) {
         /* Reached EOF -- mark as DATA-FIN */
-        hdr->flag = (1 << PKT_FLAG_FIN) | (1 << PKT_FLAG_DATA);
+        hdr->flag = (1 << PKT_FLAG_FIN) | (PKT_FLAG_DATA);
         hdr->length = len;
       }
       else {
         /* Read Data normally */
-        hdr->flag = (1 << PKT_FLAG_DATA);
+        hdr->flag = (PKT_FLAG_DATA);
         hdr->length = len;
       }
       fclose(fp);
@@ -60,7 +60,7 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
   /* ACK packet */
   else if(flag == PKT_FLAG_ACK) {
     /* set flag to ACK and fill buffer*/
-    hdr->flag = (1 << PKT_FLAG_ACK);
+    hdr->flag = (1 << PKT_FLAG_ACK) >> 1;
 
     len = sprintf(packet->buf, "Ready to send: %s\n", filename);
     hdr->length = len;
@@ -69,7 +69,7 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
   /* SYN packet */
   else if(flag == PKT_FLAG_SYN) {
     /* set flag to SYN and fill buffer*/
-    hdr->flag =  (1 << PKT_FLAG_SYN);
+    hdr->flag =  (1 << PKT_FLAG_SYN) >> 1;
     /* TODO - Data offset here to pass options in the data buffer (hdr->data_offset) */
 
     len = sprintf(packet->buf, "Request: %s\n", filename);
@@ -79,7 +79,7 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
   /* SYN-ACK packet */
   else if(flag == PKT_FLAG_SYN_ACK) {
     /* set flag to SYN-ACK */
-    hdr->flag =  (1 << PKT_FLAG_SYN_ACK);
+    hdr->flag =  (1 << PKT_FLAG_SYN_ACK) >> 1;
 
     /* attempting to find file */
     FILE* fp = fopen(filename, "r");
@@ -115,17 +115,27 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
   /* FIN packet */
   else if(flag == PKT_FLAG_FIN) {
     /* set flag to FIN and store FIN info in buffer*/
-    hdr->flag = (1 << PKT_FLAG_FIN);
+    hdr->flag = (1 << PKT_FLAG_FIN) >> 1;
     hdr->length = sprintf(packet->buf, "FIN: %s\n", filename);
   }
 
-  else if(flag == PKT_FLAG_AD){
+  /* Advertisement packet */
+  else if(flag == PKT_FLAG_AD) {
     strcpy(packet->buf, filename);
+  }
+
+  /* Exchange packet  */
+  else if(flag == PKT_FLAG_EXC) {
+    len = sprintf(packet->buf, "Content: %s\nTTL: %d\nPeers: []\n", 
+      filename, CF_DEFAULT_SEARCH_TTL);
+
+    hdr->flag = (1 << PKT_FLAG_EXC) >> 2;
+    hdr->length = len;
   }
   
   /* invalid file creation flag */
   else {
-    hdr->flag = 0;
+    hdr->flag = PKT_FLAG_CORRUPT;
     hdr->length = 0;
   }
 
@@ -236,6 +246,10 @@ int get_packet_type(Pkt_t packet) {
 
   else if ((flag & PKT_DATA_MASK) > 0) {
     return PKT_FLAG_DATA;       /* DATA packet    */
+  }
+
+  else if ((flag & PKT_EXC_MASK) > 0) {
+    return PKT_FLAG_EXC;        /* EXC packet    */
   }
 
   else if ((flag & PKT_FIN_MASK) > 0){
