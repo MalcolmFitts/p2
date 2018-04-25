@@ -47,6 +47,9 @@ int check_request_type(char* buf) {
     else if(parse_peer_rank(buf, b1)){
       return RQT_P_RANK;
     }
+    else if(parse_peer_search(buf, b1)){
+      return RQT_P_SEARCH;
+    }
     else{
       return RQT_GET;       /*              Valid GET Request */
     }
@@ -222,6 +225,17 @@ int parse_peer_rank(char* buf, char* fp){
   return 1;
 }
 
+int parse_peer_search(char* buf, char* fp){
+
+  char extrabuf[MAXLINE];
+
+  int n = sscanf(buf, "GET /peer/search/%s %s", fp, extrabuf);
+
+  if (n != 2) return 0;
+
+  return 1;
+}
+
 void parse_neighbor_info(char* neighbor_info, char* uuid, char* hostname,
                         char* fe_port, char* be_port, char* metric){
   char *pt;
@@ -236,7 +250,7 @@ void parse_neighbor_info(char* neighbor_info, char* uuid, char* hostname,
   strcpy(be_port, pt);
   pt = strtok(NULL, ",");
   strcpy(metric, pt);
-  
+
   return;
 }
 

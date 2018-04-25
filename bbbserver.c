@@ -343,6 +343,16 @@ void *serve_client_thread(void *ptr) {
       /* TODO: Hanlde peer RANK request */
       break;
 
+    case RQT_P_SEARCH:
+      char* filepath = malloc(sizeof(char) * MAXLINE);
+
+      parse_peer_search(bufcopy, filepath);
+
+      printf("We are searching for: %s", filepath);
+      free(filepath);
+      /* TODO: Handle peer SEARCH request */
+      break;
+
     case RQT_INV:
       numthreads--;
       error("ERROR Invalid GET request");

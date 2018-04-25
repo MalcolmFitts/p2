@@ -30,7 +30,7 @@ struct Neighbor {
 typedef struct Neighbor_Directory {
   int cur_nbrs;
   int max_nbrs;
-  Neighbor* nbr_list;
+  struct Neighbor* nbr_list;
 } N_Dir;
 
 

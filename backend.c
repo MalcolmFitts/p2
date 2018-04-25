@@ -431,7 +431,7 @@ int handle_add_uuid_rqt(char* buf, char* fname){
   char* uuid = malloc(sizeof(char) * MAXLINE);
   char* rate = malloc(sizeof(char) * MAXLINE);
 
-  char* node;
+  char* node = NULL;
   char* peer_uuid = malloc(sizeof(char) * MAXLINE);
   char* hostname = malloc(sizeof(char) * MAXLINE);
   char* fe_port = malloc(sizeof(char) * MAXLINE);
@@ -574,7 +574,7 @@ void handle_add_neighbor_rqt(char* buf, char* fname){
   char* num_peers_c;
   int new_peer_num;
 
-  int update_flag = 0;
+  int update_flag;
 
   char value[BUFSIZE];
   char* uuid = malloc(sizeof(char) * BUFSIZE);
@@ -618,7 +618,7 @@ void* advertise(void* ptr){
   int sockfd = *(int*)ptr;        /* parsing sockfd from pointer arg */
   char buf[MAX_DATA_SIZE];
   int num_neighbors;
-  Neighbor* neighbors;
+  struct Neighbor* neighbors;
 
   char* neighbor;
   char neighbor_json[BUFSIZE];
@@ -671,9 +671,10 @@ void* advertise(void* ptr){
      int peer_port;
      char* peer_host;
      int n;
+
      for(i = 0; i < num_neighbors; i ++){
 
-       Neighbor peer = neighbors[i];
+       struct Neighbor peer = neighbors[i];
 
        peer_port = peer.port;
        peer_host = peer.hostname;
