@@ -1,7 +1,7 @@
 CC = gcc
 ARGS = -g -pthread -Wall -O2 -I .
 
-all: clean sl pa nd pkt dw be fe con bbbserver
+all: clean sl pa nd ne pkt dw be fe con bbbserver
 
 sl: serverlog.c serverlog.h
 	$(CC) $(ARGS) -o sllib.o -c serverlog.c
@@ -11,6 +11,9 @@ pa: parser.c parser.h
 
 nd: node.c node.h
 	$(CC) $(ARGS) -o nodelib.o -c node.c
+
+ne: neighbor.c neighbor.h
+	$(CC) $(ARGS) -o neighblib.o -c neighbor.c
 
 pkt: packet.c packet.h
 	$(CC) $(ARGS) -o pktlib.o -c packet.c
@@ -24,11 +27,11 @@ be: backend.c backend.h
 fe: frontend.c frontend.h
 	$(CC) $(ARGS) -o felib.o -c frontend.c
 
-con: configlib.c configlib.h
-	$(CC) $(ARGS) -o conlib.o -c configlib.c
+con: configlib.c configlib.h 
+	$(CC) $(ARGS) -o conlib.o -c configlib.c spcuuid/lib/libspcuuid.a
 
-bbbserver: bbbserver.c datawriter.h parser.h node.h packet.h serverlog.h backend.h frontend.h configlib.h
-	$(CC) $(ARGS) -o bbbserver bbbserver.c dwlib.o palib.o nodelib.o pktlib.o sllib.o belib.o felib.o conlib.o
+bbbserver: bbbserver.c datawriter.h parser.h node.h packet.h serverlog.h backend.h frontend.h spcuuid/src/uuid.h configlib.h neighbor.h
+	$(CC) $(ARGS) -o bbbserver bbbserver.c dwlib.o palib.o nodelib.o neighblib.o pktlib.o sllib.o belib.o felib.o conlib.o spcuuid/lib/libspcuuid.a
 
 clean:
-	rm -f *.o bbbserver send recv serv palib.o nodelib.o dwlib.o pktlib.o sllib.o belib.o felib.o conlib.o*~
+	rm -f *.o bbbserver send recv serv palib.o nodelib.o neighblib.o dwlib.o pktlib.o sllib.o belib.o felib.o conlib.o*~

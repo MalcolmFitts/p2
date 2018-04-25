@@ -10,14 +10,18 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <uuid/uuid.h>
+
+
+#include "spcuuid/src/uuid.h"
 
 #include "parser.h"
 
 /* default config file: filename */
 #define CF_DEFAULT_FILENAME "node.conf"
+
 /* default config file: front-end port */
 #define CF_DEFAULT_FE_PORT 9001
+
 /* default config file: back-end port */
 #define CF_DEFAULT_BE_PORT 9002
 /* default config file: content directory */
@@ -39,6 +43,10 @@
 #define CF_UUID_STR_LEN 37
 /* Max line length of config file */
 #define CF_MAX_LINE_LEN 512
+
+
+
+
 
 
 /*
@@ -141,6 +149,28 @@ int check_file(char* filename);
  */
 int update_config_file(char* filename, char* field_tag, int peer_num,
                         char* new_value, char* old_buf);
+
+
+
+
+
+
+
+/*
+ *  create_config_file
+ *    - attempts to create config file with given values
+ *    - NOTE: this fn will open file if it finds it and close the file once
+ *              its done so as to prevent bad scary things
+ *
+ *    return values:
+ *        0 --> failure to create config file or file with same name exists
+ *        1 --> created file
+ */
+
+int create_config_file(char* filename, char* node_name, 
+                        int fe_port, int be_port, char* content_dir);
+
+
 
 
 #endif

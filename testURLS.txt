@@ -1,0 +1,62 @@
+testing URLS:
+(using port 9001 as example)
+
+image:
+
+http://localhost:9001/images/image1.pn
+
+text:
+
+http://localhost:9001/texts/text1.txt
+http://localhost:9001/texts/text2.txt
+
+html:
+
+http://localhost:9001/webpages/page1.html
+http://localhost:9001/webpages/page3.htm
+
+gif:
+
+http://localhost:9001/gifs/gif1.gif
+http://localhost:9001/gifs/smallgif.gif
+
+videos:
+
+http://localhost:9001/videos/video1.mp4
+http://localhost:9001/videos/video2.mp4
+
+
+Project 2:
+(assume running master on 9001/9002 and slave on 128.237.166.75:9003/9004)
+
+peer add:
+http://localhost:8345/peer/add?path=content/texts/text1.txt&host=localhost&port=9004&rate=1600
+
+http://localhost:8345/peer/add?path=content/texts/text1.txt&host=172.19.137.178&port=8346&rate=1600
+
+peer view:
+http://localhost:8345/peer/view/content/texts/text1.txt
+
+
+—extra (p2 + p3)—————————————————
+
+
+
+
+
+    - add:
+http://localhost:9001/peer/add?path=content/texts/text1.txt&host=localhost&port=9004&rate=1600
+
+    - view:
+http://localhost:9001/peer/view/content/texts/text1.txt
+
+http://localhost:9001/peer/addneighbor?uuid=CD9B0EF4-8F03-4346-8D69-2CF0CA5A05EE&host=localhost&frontend=9010&backend=9004&metric=30
+
+http://localhost:9001/peer/neighbors
+
+
+
+
+
+
+—eof— —eof— —eof— —eof—

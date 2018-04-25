@@ -16,15 +16,18 @@
 #include "configlib.h"
 #include "parser.h"
 
+
 #define MAX_NBR_MAP_LEN 8192
 
-struct Neighbor {
+typedef struct Neighbor {
   char* uuid;
   char* nbr_metrics;
+  int port;
+  char* hostname;
   int seq_num;
   int num_missed;
   int active;
-};
+}Neighbor;
 
 
 typedef struct Neighbor_Directory {
@@ -45,7 +48,7 @@ int update_neighbor(N_Dir* n_dir, char* uuid,
                       char* new_neighbors, int s_num, int received);
 
 
-char* get_map(N_Dir n_dir, char* conf_file);
+char* get_map(N_Dir* n_dir, char* conf_file);
 
 
 

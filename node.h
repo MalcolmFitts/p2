@@ -36,10 +36,6 @@ typedef struct Node_Directory {
 	Node *n_array;        /* array of pointers to nodes       */
 } Node_Dir;
 
-
-
-
-
 /*
  *  create_node
  *		- allocates memory for and returns Node with values assigned

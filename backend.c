@@ -431,7 +431,7 @@ int handle_add_uuid_rqt(char* buf, char* fname){
   char* uuid = malloc(sizeof(char) * MAXLINE);
   char* rate = malloc(sizeof(char) * MAXLINE);
 
-  char* node = NULL;
+  char* node = malloc(sizeof(char) * MAXLINE);
   char* peer_uuid = malloc(sizeof(char) * MAXLINE);
   char* hostname = malloc(sizeof(char) * MAXLINE);
   char* fe_port = malloc(sizeof(char) * MAXLINE);
@@ -600,15 +600,17 @@ void handle_add_neighbor_rqt(char* buf, char* fname){
     new_peer_num = 0;
   }
 
-
   sprintf(value, "%s,%s,%s,%s,%s", uuid, host, fe_port, be_port, metric);
-
-  //printf("%s\n", value);
 
   update_flag = update_config_file(fname, CF_TAG_PEER_INFO,
                                    new_peer_num, value, NULL);
-
   return;
+}
+
+void handle_search_rqt(char* buf, char* fname){
+  char* filepath = malloc(sizeof(char) * MAXLINE);
+
+
 }
 
 void* advertise(void* ptr){

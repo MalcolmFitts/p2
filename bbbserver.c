@@ -23,6 +23,9 @@
 #include "backend.h"
 #include "frontend.h"
 #include "configlib.h"
+#include "neighbor.h"
+
+#include "spcuuid/src/uuid.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -94,9 +97,11 @@ int main(int argc, char **argv) {
   if(argc == 3) {
     config_filename = argv[2];
     /* Validating given config file */
-    if(validate_config_file(config_filename) != 1) {
+    config_init_flag = validate_config_file(config_filename);
+    if(config_init_flag != 1) {
       /* Checking default config file if given invalid filename */
-      if(!check_default_config_file) {
+      config_init_flag = check_default_config_file();
+      if(config_init_flag == 0) {
         printf("Error creating config file.\n");
         exit(0);
       }
@@ -107,8 +112,9 @@ int main(int argc, char **argv) {
   }
 
   else {
+    config_init_flag = check_default_config_file();
     /* Not given config file - find/create default */
-    if(!check_default_config_file) {
+    if(config_init_flag == 0) {
       printf("Error creating config file.\n");
       exit(0);
     }
@@ -324,7 +330,7 @@ void *serve_client_thread(void *ptr) {
 
     case RQT_P_NEIGH:
       /* TODO: Handle peer NEIGHBORS request */
-      printf("Handling: ADD NEIGHBOR\n");
+      printf("Handling: PEER / NEIGHBOR\n");
       handle_neighbors_rqt(connfd, ct->config_fn);
       break;
 
@@ -344,12 +350,7 @@ void *serve_client_thread(void *ptr) {
       break;
 
     case RQT_P_SEARCH:
-      char* filepath = malloc(sizeof(char) * MAXLINE);
-
-      parse_peer_search(bufcopy, filepath);
-
-      printf("We are searching for: %s", filepath);
-      free(filepath);
+      handle_search_rqt(buf, ct->config_fn);
       /* TODO: Handle peer SEARCH request */
       break;
 
