@@ -4,6 +4,7 @@
  */
 
 #include "configlib.h"
+#include "/usr/include/uuid/uuid.h"
 
 char* get_config_field(char* filename, char* field_tag, int peer_num) {
   FILE* fp;
@@ -115,6 +116,34 @@ char* get_config_field(char* filename, char* field_tag, int peer_num) {
       }
     }
 
+    /* Search TTL */
+    else if(strcmp(field_tag, CF_TAG_SEARCH_TTL) == 0) {
+      /* read lines until we find name */
+      while(fgets(buf, CF_MAX_LINE_LEN, (FILE*) fp)) {
+        /* Searching for tag and value */
+        if(sscanf(buf, "search_ttl = %d", &num) == 1) {
+          /* Found tag and value; close file and return data */
+          sprintf(res_buf, "%d", num);
+          fclose(fp);
+          return res_buf;
+        }
+      }
+    }
+
+    /* Search Interval */
+    else if(strcmp(field_tag, CF_TAG_SEARCH_INT) == 0) {
+      /* read lines until we find name */
+      while(fgets(buf, CF_MAX_LINE_LEN, (FILE*) fp)) {
+        /* Searching for tag and value */
+        if(sscanf(buf, "search_interval = %d", &num) == 1) {
+          /* Found tag and value; close file and return data */
+          sprintf(res_buf, "%d", num);
+          fclose(fp);
+          return res_buf;
+        }
+      }
+    }
+
     /* End of case statements */
   }
 
@@ -153,14 +182,20 @@ int check_default_config_file() {
       return 0;
     }
 
-    uuid__t* new_uuid = malloc(sizeof(uuid__t));
+    //uuid__t* new_uuid = malloc(sizeof(uuid__t));
+    uuid_t new_uuid;// = malloc(sizeof(uuid_t));
+
     char uuid_arr[CF_UUID_STR_LEN];
     char buf[CF_MAX_LINE_LEN];
     int len;
 
     /* Generating new UUID for node and parsing to char[] */
-    uuidlib_v1(new_uuid, 1);
-    uuidlib_toa(new_uuid, uuid_arr, CF_UUID_STR_LEN);
+
+    //uuidlib_v1(new_uuid, 1);
+    //uuidlib_toa(new_uuid, uuid_arr, CF_UUID_STR_LEN);
+
+    uuid_generate(new_uuid);
+    uuid_unparse(new_uuid, uuid_arr);
 
     /* writing UUID to created file */
     len = sprintf(buf, "%s = %s\n", CF_TAG_UUID, uuid_arr);
@@ -174,6 +209,16 @@ int check_default_config_file() {
 
     /* writing default back-end port to created file */
     len = sprintf(buf, "%s = %d\n", CF_TAG_BE_PORT, CF_DEFAULT_BE_PORT);
+    fputs(buf, cfp);
+    bzero(buf, CF_MAX_LINE_LEN);
+
+    /* writing default search TTL to created file */
+    len = sprintf(buf, "%s = %d\n", CF_TAG_SEARCH_TTL, CF_DEFAULT_SEARCH_TTL);
+    fputs(buf, cfp);
+    bzero(buf, CF_MAX_LINE_LEN);
+
+    /* writing default search interval to created file */
+    len = sprintf(buf, "%s = %d\n", CF_TAG_SEARCH_INT, CF_DEFAULT_SEARCH_INT);
     fputs(buf, cfp);
     bzero(buf, CF_MAX_LINE_LEN);
 
@@ -248,7 +293,7 @@ int update_config_file(char* filename, char* field_tag, int peer_num,
   }
 
   if(valid_flag == 0 && (strcmp(field_tag, CF_TAG_UUID) != 0)) {
-    /* Could not find UUID field in "filename"
+    /* Could not find UUID field in file "filename"
      * AND UUID field is not being added */
     free(read_buf);
     free(buf);
@@ -361,7 +406,10 @@ int create_config_file(char* filename, char* node_name,
                         int fe_port, int be_port, char* content_dir) {
   /* local vars */
   FILE* fp;
-  uuid__t* new_uuid = malloc(sizeof(uuid__t));
+
+  //uuid__t* new_uuid = malloc(sizeof(uuid__t));
+  uuid_t new_uuid;// = malloc(sizeof(uuid_t));
+
   char uuid_arr[CF_UUID_STR_LEN];
   char buf[CF_MAX_LINE_LEN];
 
@@ -376,8 +424,11 @@ int create_config_file(char* filename, char* node_name,
   }
 
   /* Generating new UUID for node and parsing to char[] */
-  uuidlib_v1(new_uuid, 1);
-  uuidlib_toa(new_uuid, uuid_arr, CF_UUID_STR_LEN);
+  //uuidlib_v1(new_uuid, 1);
+  //uuidlib_toa(new_uuid, uuid_arr, CF_UUID_STR_LEN);
+
+  uuid_generate(new_uuid);
+  uuid_unparse(new_uuid, uuid_arr);
 
   /* writing UUID to created file */
   sprintf(buf, "%s = %s", CF_TAG_UUID, uuid_arr);
@@ -399,12 +450,14 @@ int create_config_file(char* filename, char* node_name,
   fprintf(fp, "%s\n", buf);
   bzero(buf, CF_MAX_LINE_LEN);
 
+  
+
   /* writing default peer_count to created file */
   sprintf(buf, "%s = %d", CF_TAG_PEER_COUNT, 0);
   fprintf(fp, "%s\n", buf);
   bzero(buf, CF_MAX_LINE_LEN);
 
-  /* Done creating new default config file */
+  /* Done creating new config file */
   fclose(fp);
   return 1;
 

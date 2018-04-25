@@ -13,6 +13,7 @@
 #include <sys/stat.h>
 
 #include "parser.h"
+#include "configlib.h"
 
 /* Packet Size Constants (bytes) */
 #define P_HDR_SIZE 24
@@ -21,13 +22,14 @@
 
 
 /* Packet type flags */
-#define PKT_FLAG_CORRUPT  -1
+#define PKT_FLAG_CORRUPT  0
 #define PKT_FLAG_DATA     1
 #define PKT_FLAG_ACK      2
-#define PKT_FLAG_SYN 	  3
+#define PKT_FLAG_SYN 	    3
 #define PKT_FLAG_SYN_ACK  4
 #define PKT_FLAG_FIN      5
 #define PKT_FLAG_AD       6
+#define PKT_FLAG_EXC      7
 
 /* TODO add FIN implimentation */
 
@@ -45,6 +47,9 @@
  * PKT_FLAG_DATA:
     {data buffer}
 
+ * PKT_FLAG_EXC:
+    "Content: <filename>\nTTL: <ttl>\nPeers: []\n"
+
  * PKT_FLAG_UNKNOWN || PKT_FLAG_CORRUPT
     "File: Not Found\nContent Size: -1\n"
 
@@ -56,12 +61,13 @@
  *
  *  flag = |  DATA  | SYN-ACK |  SYN  | ACK  |
  */
-#define PKT_CORRUPT_MASK  0x0001    /* CORRUPT mask */
-#define PKT_DATA_MASK     0x0002    /* DATA mask    */
-#define PKT_ACK_MASK      0x0004
-#define PKT_SYN_MASK      0x0008    /* SYN mask     */
-#define PKT_SYN_ACK_MASK  0x0010    /* SYN-ACK mask */
-#define PKT_FIN_MASK      0x0020    /* DATA mask    */
+#define PKT_CORRUPT_MASK  0x0000    /* CORRUPT mask */
+#define PKT_DATA_MASK     0x0001    /* DATA mask    */
+#define PKT_ACK_MASK      0x0002    /* ACK mask     */
+#define PKT_SYN_MASK      0x0004    /* SYN mask     */
+#define PKT_SYN_ACK_MASK  0x0008    /* SYN-ACK mask */
+#define PKT_FIN_MASK      0x0010    /* DATA mask    */
+#define PKT_EXC_MASK      0x0020    /* Exchange mask    */
 
 /* Packet Header Struct */
 typedef struct Packet_Header {

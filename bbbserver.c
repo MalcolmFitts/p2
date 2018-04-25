@@ -25,7 +25,9 @@
 #include "configlib.h"
 #include "neighbor.h"
 
-#include "spcuuid/src/uuid.h"
+//#include "spcuuid/src/uuid.h"
+//#include <uuid/uuid.h>
+#include "/usr/include/uuid/uuid.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -138,7 +140,7 @@ int main(int argc, char **argv) {
   sockfd_fe = init_frontend(port_fe, &self_addr_fe);
   sockfd_be = init_backend(port_be, &self_addr_be);
 
-  printf("<BBBServer start-up info>\n\n");
+  //printf("<BBBServer start-up info>\n\n");
 
   int* be_sockfd_ptr = &sockfd_be;
 

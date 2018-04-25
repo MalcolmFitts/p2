@@ -12,22 +12,27 @@
 #include <string.h>
 
 
-#include "spcuuid/src/uuid.h"
+//#include "spcuuid/src/uuid.h"
+//#include <uuid/uuid.h>
+#include "/usr/include/uuid/uuid.h"
 
 #include "parser.h"
 
 /* default config file: filename */
 #define CF_DEFAULT_FILENAME "node.conf"
-
 /* default config file: front-end port */
 #define CF_DEFAULT_FE_PORT 9001
-
 /* default config file: back-end port */
 #define CF_DEFAULT_BE_PORT 9002
 /* default config file: content directory */
 #define CF_DEFAULT_CONTENT_DIR "content/"
 /* default config file: peer count */
 #define CF_DEFAULT_PEER_COUNT 0
+/* default config file: search TTL */
+#define CF_DEFAULT_SEARCH_TTL 15
+/* default config file: search interval (ms) */
+#define CF_DEFAULT_SEARCH_INT 100
+
 
 
 /* valid config file fields: */
@@ -38,12 +43,14 @@
 #define CF_TAG_CONTENT_DIR "content_dir"
 #define CF_TAG_PEER_COUNT "peer_count"
 #define CF_TAG_PEER_INFO "peer_"
+#define CF_TAG_SEARCH_TTL "search_ttl"
+#define CF_TAG_SEARCH_INT "search_interval"
+
 
 /* Length of char[] rep. of UUID */
 #define CF_UUID_STR_LEN 37
 /* Max line length of config file */
 #define CF_MAX_LINE_LEN 512
-
 
 
 
@@ -71,6 +78,8 @@
  *          CF_TAG_FE_PORT      --> res = "<port num>"
  *          CF_TAG_BE_PORT      --> res = "<port num>"
  *          CF_TAG_CONTENT_DIR  --> res = "<content dir filepath>"
+ *          CF_TAG_SEARCH_TTL  --> res = "<search ttl>"
+ *          CF_TAG_SEARCH_INT  --> res = "<search interval>"
  *          CF_TAG_PEER_COUNT   --> res = "<num peers>"
  *
  *          CF_TAG_PEER_INFO    --> res = "<peer info string>"
