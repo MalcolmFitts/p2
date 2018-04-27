@@ -4,7 +4,6 @@
  */
 
 #include "configlib.h"
-#include "/usr/include/uuid/uuid.h"
 
 char* get_config_field(char* filename, char* field_tag, int peer_num) {
   FILE* fp;
@@ -450,7 +449,7 @@ int create_config_file(char* filename, char* node_name,
   fprintf(fp, "%s\n", buf);
   bzero(buf, CF_MAX_LINE_LEN);
 
-  
+
 
   /* writing default peer_count to created file */
   sprintf(buf, "%s = %d", CF_TAG_PEER_COUNT, 0);

@@ -8,47 +8,47 @@ Last-Modified: Wed, 22 Jul 2009 19:15:56 GMT
 */
 
 /*      Status code headers
- * ex: 
+ * ex:
  *	HTTP/1.1 200 OK
  */
 void write_status_header(int fd, char* rc, char* def){
   char buf[SHORT_HEADER_LEN];
   sprintf(buf, "HTTP/1.1 %s %s\r\n", rc, def);
-  
+
   //sending to client
   write(fd, buf, strlen(buf));
 }
 
 
 /*	Date Headers
- * ex: 
+ * ex:
  *      Date: Mon, 27 Jul 2009 12:28:53 GMT
  */
 void write_date_header(int fd) {
   //getting GMT time
   time_t t = time(0);
   struct tm *timeptr = gmtime(&t);
-  
+
   //formatting raw time
   char raw_date[SHORT_HEADER_LEN];
   strftime(raw_date, MAX_HEADER_LEN, "%a, %d %b %Y %H:%M:%S %Z", timeptr);
-  
+
   //formatting header
   char buf[SHORT_HEADER_LEN];
   sprintf(buf, "Date: %s\r\n", raw_date);
-  
+
   write(fd, buf, strlen(buf));
 }
 
 
 /* 	Server Name Headers
- * ex: 
+ * ex:
  *	Server: Apache/2.2.14 (Win32)
  */
 void write_server_name_header(int fd, char* sn) {
   char buf[SHORT_HEADER_LEN];
   sprintf(buf, "Server: %s\r\n", sn);
-  
+
   write(fd, buf, strlen(buf));
 }
 
@@ -317,4 +317,3 @@ void error(char *msg) {
   perror(msg);
   exit(1);
 }
-

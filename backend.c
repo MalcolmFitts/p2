@@ -607,10 +607,49 @@ void handle_add_neighbor_rqt(char* buf, char* fname){
   return;
 }
 
-void handle_search_rqt(char* buf, char* fname){
-  char* filepath = malloc(sizeof(char) * MAXLINE);
+void handle_search_rqt(int connfd, char* path, char* fname){
+  char* my_uuid;
+  char* content_path = malloc(sizeof(char) * MAXLINE);
+  int my_port;
+  char* filepath;
+  char search_list[BUFSIZE];
+  char json_content[MAX_DATA_SIZE];
+  bzero(json_content, BUFSIZE);
+  int num_neighbors, TTL, search_interval;
 
+  char* gossip_buf = malloc(sizeof(char) * BUFSIZE);
+  my_uuid = get_config_field(fname, CF_TAG_UUID, 0);
+  my_port = atoi(get_config_field(fname, CF_TAG_BE_PORT, 0));
+  content_path = get_config_field(fname, CF_TAG_CONTENT_DIR, 0);
 
+  // See if filepath is in current node
+  filepath = strcat(content_path, path);
+  FILE *fp = fopen(filepath, "r");
+  bzero(search_list, BUFSIZE);
+  if(fp != NULL){
+    sprintf(search_list, "[\"%s\"]", my_uuid);
+  }
+  else{
+    strcpy(search_list, "[]");
+  }
+
+  TTL = atoi(get_config_field(fname, CF_TAG_SEARCH_TTL, 0));
+  search_interval = atoi(get_config_field(fname, CF_TAG_SEARCH_INT, 0));
+
+  // Get the number of current neighbors
+  num_neighbors = atoi(get_config_field(fname, CF_TAG_PEER_COUNT, 0));
+
+  if(num_neighbors == 0){
+    sprintf(json_content, "[{\“content\”:\“%s\”, \“peers\”:%s}]", path, search_list);
+    write_json_content(connfd, json_content);
+    return;
+  }
+
+  printf("3\n");
+  //while(TTL > 0){
+    //create_exchange_packet(n_port, my_port, TTL, path, gossip_buf, TTL, search_list);
+    //sleep(search_interval);
+  //}
 }
 
 void* advertise(void* ptr){
