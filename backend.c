@@ -273,6 +273,8 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
   node_dir = create_node_dir(MAX_NODES);
   /* Created neighbor dir */
   neighbor_dir = create_neighbor_dir(100);
+  /* Creating search directory */
+  search_dir = create_search_dir(1000);
 
   return sockfd_be;
 }
@@ -622,7 +624,7 @@ void handle_add_neighbor_rqt(char* buf, char* fname){
   return;
 }
 
-void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
+void handle_search_rqt(int connfd, int sockfd, char* path, char* fname) {
 
   char* my_uuid;
   int my_port;

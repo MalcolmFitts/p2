@@ -263,7 +263,7 @@ void *serve_client_thread(void *ptr) {
   switch(rqt){
     case RQT_P_ADD:
 
-      printf("Server recognized request type: peer add\n");
+      printf("Server recognized request type: Peer Add\n");
       resp_buf = malloc(sizeof(char) * BUFSIZE);
       flag_be = peer_add_response(buf);
 
@@ -280,7 +280,7 @@ void *serve_client_thread(void *ptr) {
 
     case RQT_P_VIEW:
       /* This goes to backend */
-      printf("Server recognized request type: peer view\n");
+      printf("Server recognized request type: Peer View\n");
       filepath = malloc(sizeof(char) * MAXLINE);
       file_type = malloc(sizeof(char) * MINLINE);
       uint16_t port_be = ct->port_be;
@@ -308,7 +308,7 @@ void *serve_client_thread(void *ptr) {
       break;
 
     case RQT_P_RATE:
-      printf("Server recognized request type: peer rate\n");
+      printf("Server recognized request type: Peer Rate\n");
 
       flag_be = peer_rate_response(connfd, buf, ct);
 
@@ -318,7 +318,8 @@ void *serve_client_thread(void *ptr) {
 
     case RQT_P_ADD_UUID:
       /* TODO: Handle peer ADD UUID request */
-      printf("Handling ADD UUID\n");
+      printf("Server recognized request type: Peer Add UUID\n");
+      //printf("Handling ADD UUID\n");
       flag_be = handle_add_uuid_rqt(bufcopy, ct->config_fn);
 
       if(flag_be == SERVER_ERROR) {
@@ -332,22 +333,26 @@ void *serve_client_thread(void *ptr) {
 
     case RQT_P_KILL:
       /* Handle peer KILL request */
+      printf("Server recognized request type: Kill\n");
       exit(EXIT_SUCCESS);
       break;
 
     case RQT_P_UUID:
       /* Handle peer UUID request*/
+      printf("Server recognized request type: Peer UUID (own UUID)\n");
       handle_uuid_rqt(connfd, ct->config_fn);
       break;
 
     case RQT_P_NEIGH:
       /* TODO: Handle peer NEIGHBORS request */
+      printf("Server recognized request type: Peer Neighbors\n");
       printf("Handling: PEER / NEIGHBOR\n");
       handle_neighbors_rqt(connfd, ct->config_fn);
       break;
 
     case RQT_P_ADD_NEIGH:
       /* TODO: Handle peer ADD NEIGHBOR request */
+      printf("Server recognized request type: Add Neighbor\n");
       handle_add_neighbor_rqt(bufcopy, ct->config_fn);
       write_status_header(connfd, SC_OK, ST_OK);
       write_empty_header(connfd);
@@ -355,13 +360,18 @@ void *serve_client_thread(void *ptr) {
 
     case RQT_P_MAP:
       /* TODO: Handle peer MAP request */
+      printf("Server recognized request type: Peer Map\n");
+      printf("Error: Unimplemented.\n");
       break;
 
     case RQT_P_RANK:
       /* TODO: Hanlde peer RANK request */
+      printf("Server recognized request type: Peer Rank\n");
+      printf("Error: Unimplemented.\n");
       break;
 
     case RQT_P_SEARCH:
+      printf("Server recognized request type: Peer Search\n");
       path = malloc(sizeof(char) * MAXLINE);
       parse_peer_search(buf, path);
       handle_search_rqt(connfd, ct->listenfd_be, path, ct->config_fn);
@@ -369,6 +379,7 @@ void *serve_client_thread(void *ptr) {
       break;
 
     case RQT_INV:
+      printf("Server did not recognize request type\n");
       numthreads--;
       error("ERROR Invalid GET request");
       break;

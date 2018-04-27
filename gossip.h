@@ -205,7 +205,7 @@ void add_uuid_to_list(char* list, char* uuid);
 
 /*  reset_search_dir_info
  *
- *  - attempts to reset search info saved for past search for content 
+ *  - attempts to reset search info saved for past search for content
  *      from info param
  *  - will add info to directory if info does not exist in directory
  *
@@ -227,6 +227,9 @@ int reset_search_dir_info(S_Dir* dir, S_Inf* info, char* new_peers);
 
 
 void* start_search(void* ptr);
+
+
+S_Dir* create_search_dir(int max_searches);
 
 
 #endif
