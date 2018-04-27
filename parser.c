@@ -256,11 +256,12 @@ void parse_neighbor_info(char* neighbor_info, char* uuid, char* hostname,
 
 char* parse_peer_info(char* peer_info, int flag){
 
-    char* uuid = NULL;
-    char* hostname = NULL;
-    char* fe_port = NULL;
-    char* be_port = NULL;
-    char* metric = NULL;
+    char uuid[MAXLINE];
+    char hostname[MAXLINE];
+    char fe_port[MAXLINE];
+    char be_port[MAXLINE];
+    char metric[MAXLINE];
+    char* result = NULL;
 
     bzero(uuid, MAXLINE);
     bzero(hostname, MAXLINE);

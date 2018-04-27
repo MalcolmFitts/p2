@@ -274,6 +274,8 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
   /* Created neighbor dir */
   neighbor_dir = create_neighbor_dir(100);
 
+  search_dir = create_search_dir(100);
+
   return sockfd_be;
 }
 
@@ -696,14 +698,12 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
       /* BUF has updated list */
       strcpy(search_list, merge_peer_lists(BUF, search_list));
     }
-
     if(n <= num_neighbors){
 
       n_info = get_config_field(fname, CF_TAG_PEER_INFO, n);
       n_port = atoi(parse_peer_info(n_info, BE_PORT));
       n_info = get_config_field(fname, CF_TAG_PEER_INFO, n);
       n_host = parse_peer_info(n_info, HOSTNAME);
-
 
       packet = create_exchange_packet(n_port, my_port, TTL, path, gossip_buf,
                                       search_list);
@@ -725,7 +725,7 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
 
       n ++;
     }
-    sleep(search_interval);
+    usleep(search_interval * 1000);
     TTL --;
   }
 

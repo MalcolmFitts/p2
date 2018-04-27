@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
   sockfd_be = init_backend(port_be, &self_addr_be);
 
   printf("\t<BBBServer start-up info>\n\n");
-  printf("Config file: %s\n", config_filename_global);
+//  printf("Config file: %s\n", config_filename_global);
   printf("Front-end Port: %d\n", port_fe);
   printf("Back-end Port: %d\n", port_be);
   printf("\n\t<End of start-up info>\n\n");
