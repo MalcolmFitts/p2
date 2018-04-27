@@ -476,19 +476,14 @@ void* start_search(void* ptr){
             (struct sockaddr *) &n_addr, n_addr_len);
       n ++;
     }
-<<<<<<< HEAD
     usleep(search_interval * 1000);
     TTL --;
-=======
-    TTL--;
-    usleep(search_interval * 1000);
->>>>>>> 909822017cae6199528ec744af4f95d261572cef
   }
   return NULL;
 }
 
 S_Dir* create_search_dir(int max_searches) {
-  
+
   S_Dir* dir = malloc(sizeof(struct Search_Directory));
 
   dir->cur_search = 0;
@@ -514,12 +509,12 @@ int add_search_to_dir(S_Dir* dir, S_Inf* info) {
 
     S_Inf* test_ptr;
 
-    test_ptr = memcpy((void*) &(dir->search_arr[index]), 
+    test_ptr = memcpy((void*) &(dir->search_arr[index]),
                       (void*) info, info_size);
 
-    if((strcmp(test_ptr->peers, info->peers) != 0) || 
-       (strcmp(test_ptr->content, info->content) != 0) || 
-       (strcmp((dir->search_arr[index]).peers, info->peers) != 0) || 
+    if((strcmp(test_ptr->peers, info->peers) != 0) ||
+       (strcmp(test_ptr->content, info->content) != 0) ||
+       (strcmp((dir->search_arr[index]).peers, info->peers) != 0) ||
        (strcmp((dir->search_arr[index]).content, info->content) != 0)) {
       printf("Add_search_to_dir is broken.\n");
     }
@@ -537,4 +532,3 @@ int add_search_to_dir(S_Dir* dir, S_Inf* info) {
 return 0;
 
 }
-
