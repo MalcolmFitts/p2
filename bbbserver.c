@@ -24,6 +24,7 @@
 #include "frontend.h"
 #include "configlib.h"
 #include "neighbor.h"
+#include "thread.h"
 
 //#include "spcuuid/src/uuid.h"
 #include <uuid/uuid.h>
@@ -386,7 +387,7 @@ void *serve_client_thread(void *ptr) {
     default:
       /* Standard FE response */
       printf("Server recognized request type: front-end request\n");
-      frontend_response(connfd, buf, ct);
+      frontend_response(connfd, buf, (void *) ct);
       break;
   }
 

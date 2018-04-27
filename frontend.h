@@ -6,6 +6,7 @@
 #include "serverlog.h"
 #include "backend.h"
 #include "node.h"
+#include "thread.h"
 
 #include <stdio.h>
 #include <unistd.h>
