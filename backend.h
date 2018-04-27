@@ -128,7 +128,7 @@ int handle_add_uuid_rqt(char* buf, char* fname);
 
 void handle_add_neighbor_rqt(char* buf, char* fname);
 
-void handle_search_rqt(int connfd, char* path, char* fname);
+void handle_search_rqt(int connfd, int sockfd, char* path, char* fname);
 
 void* advertise(void* ptr);
 

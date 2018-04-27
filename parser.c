@@ -254,6 +254,44 @@ void parse_neighbor_info(char* neighbor_info, char* uuid, char* hostname,
   return;
 }
 
+char* parse_peer_info(char* peer_info, int flag){
+
+    char* uuid = NULL;
+    char* hostname = NULL;
+    char* fe_port = NULL;
+    char* be_port = NULL;
+    char* metric = NULL;
+
+    char *pt;
+
+    pt = strtok(peer_info,",");
+    strcpy(uuid, pt);
+    pt = strtok(NULL, ",");
+    strcpy(hostname, pt);
+    pt = strtok(NULL, ",");
+    strcpy(fe_port, pt);
+    pt = strtok(NULL, ",");
+    strcpy(be_port, pt);
+    pt = strtok(NULL, ",");
+    strcpy(metric, pt);
+
+    switch (flag) {
+      case UUID:
+        return uuid;
+      case HOSTNAME:
+        return hostname;
+      case FE_PORT:
+        return fe_port;
+      case BE_PORT:
+        return be_port;
+      case METRIC:
+        return metric;
+      default:
+        return NULL;
+    }
+}
+
+
 int parse_str_2_int(char* str){
   int i = 0;
   int d = 0;

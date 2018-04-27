@@ -607,7 +607,7 @@ void handle_add_neighbor_rqt(char* buf, char* fname){
   return;
 }
 
-void handle_search_rqt(int connfd, char* path, char* fname){
+void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
   char* my_uuid;
   char* content_path = malloc(sizeof(char) * MAXLINE);
   int my_port;
@@ -617,11 +617,20 @@ void handle_search_rqt(int connfd, char* path, char* fname){
   bzero(json_content, BUFSIZE);
   int num_neighbors, TTL, search_interval;
 
+  int n, n_port;
+  char* n_info, n_host;
+  struct sockaddr_in n_addr;
+  struct hostent *n_server;
+  socklen_t n_addr_len;
+
+  char* BUF = malloc(sizeof(char) * BUFSIZE);
+  char* info = malloc(sizeof(char) * BUFSIZE);
+  char* data = malloc(sizeof(char) * BUFSIZE);
+
   char* gossip_buf = malloc(sizeof(char) * BUFSIZE);
   my_uuid = get_config_field(fname, CF_TAG_UUID, 0);
   my_port = atoi(get_config_field(fname, CF_TAG_BE_PORT, 0));
   content_path = get_config_field(fname, CF_TAG_CONTENT_DIR, 0);
-
   // See if filepath is in current node
   filepath = strcat(content_path, path);
   FILE *fp = fopen(filepath, "r");
@@ -635,7 +644,6 @@ void handle_search_rqt(int connfd, char* path, char* fname){
 
   TTL = atoi(get_config_field(fname, CF_TAG_SEARCH_TTL, 0));
   search_interval = atoi(get_config_field(fname, CF_TAG_SEARCH_INT, 0));
-
   // Get the number of current neighbors
   num_neighbors = atoi(get_config_field(fname, CF_TAG_PEER_COUNT, 0));
 
@@ -645,11 +653,58 @@ void handle_search_rqt(int connfd, char* path, char* fname){
     return;
   }
 
-  printf("3\n");
-  //while(TTL > 0){
-    //create_exchange_packet(n_port, my_port, TTL, path, gossip_buf, TTL, search_list);
-    //sleep(search_interval);
-  //}
+  Pkt_t packet;
+  n = 0;
+  while(TTL > 0){
+    bzero(BUF, CBUFSIZE);
+    bzero(info, BUFSIZE);
+    bzero(data, BUFSIZE);
+
+    pthread_mutex_lock(&mutex);
+    memcpy(BUF, gossip_buf);
+    memset(gossip_buf, '\0', BUFSIZE);
+    pthread_mutex_unlock(&mutex);
+
+    if (BUF[0] != '\0') {
+      /* BUF has info for FE; parse type of response and data */
+      
+    }
+
+    if(n <= num_neighbors){
+      printf("1\n");
+      n_info = get_config_field(fname, CF_TAG_PEER_INFO, n);
+      printf("2\n");
+      n_port = atoi(parse_peer_info(n_info, BE_PORT));
+      n_host = parse_peer_info(n_info, HOSTNAME);
+
+      printf("%s\n", n_info);
+      printf("%d\n", n_port);
+      printf("%s\n", n_host);
+
+      packet = create_exchange_packet(n_port, my_port, TTL, path, gossip_buf,
+                                      search_list);
+
+      /* build the neighbor's Internet address */
+      n_server = gethostbyname(n_host);
+      bzero((char *) &n_addr, sizeof(n_addr));
+      n_addr.sin_family = AF_INET;
+      bcopy((char *)n_server->h_addr,
+              (char *)&n_addr.sin_addr.s_addr, n_server->h_length);
+      n_addr.sin_port = htons(n_port);
+
+      /* send the message to the neighbor */
+      n_addr_len = sizeof(n_addr);
+
+      printf("SENDING HERE\n");
+      sendto(sockfd, &packet, sizeof(packet), 0,
+            (struct sockaddr *) &n_addr, n_addr_len);
+      n ++;
+    }
+    sleep(search_interval);
+  }
+
+  sprintf(json_content, "[{\“content\”:\“%s\”, \“peers\”:%s}]", path, search_list);
+  write_json_content(connfd, json_content);
 }
 
 void* advertise(void* ptr){

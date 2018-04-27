@@ -32,6 +32,12 @@
 #define RQT_P_UUID 12           /* Peer node UUID request               */
 #define RQT_P_SEARCH 13         /* Peer node SEARCH request             */
 
+#define UUID 1
+#define HOSTNAME 2
+#define FE_PORT 3
+#define BE_PORT 4
+#define METRIC 5
+
 /*
  *	check_request_type
  *    - checks the type of request stored in buf
@@ -110,6 +116,14 @@ int parse_peer_search(char* buf, char* fp);
 void parse_neighbor_info(char* neigbor_info, char* uuid, char* hostname, char* fe_port,
                         char* be_port, char* metric);
 
+/* flag = UUID
+ *			  HOST
+ * 				FE_PORT
+ *				BE_PORT
+ *				METRIC
+ */
+
+char* parse_peer_info(char* peer_info, int flag);
 /*
  *  str_2_int
  *       - Converts type char* to type int;

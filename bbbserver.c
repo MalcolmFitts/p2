@@ -355,7 +355,7 @@ void *serve_client_thread(void *ptr) {
     case RQT_P_SEARCH:
       path = malloc(sizeof(char) * MAXLINE);
       parse_peer_search(buf, path);
-      handle_search_rqt(connfd, path, ct->config_fn);
+      handle_search_rqt(connfd, ct->listenfd_be, path, ct->config_fn);
       free(path);
       break;
 

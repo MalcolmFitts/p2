@@ -22,16 +22,16 @@ dw: datawriter.c datawriter.h
 	$(CC) $(ARGS) -o dwlib.o -c datawriter.c
 
 be: backend.c backend.h
-	$(CC) $(ARGS) -o belib.o -c backend.c
+	$(CC) $(ARGS) -w -o belib.o -c backend.c
 
 fe: frontend.c frontend.h
 	$(CC) $(ARGS) -o felib.o -c frontend.c
 
-con: configlib.c configlib.h 
+con: configlib.c configlib.h
 	$(CC) $(ARGS) -o conlib.o -c configlib.c
 
 bbbserver: bbbserver.c datawriter.h parser.h node.h packet.h serverlog.h backend.h frontend.h configlib.h neighbor.h
-	$(CC) $(ARGS) -o bbbserver bbbserver.c dwlib.o palib.o nodelib.o neighblib.o pktlib.o sllib.o belib.o felib.o conlib.o 
+	$(CC) $(ARGS) -o bbbserver bbbserver.c dwlib.o palib.o nodelib.o neighblib.o pktlib.o sllib.o belib.o felib.o conlib.o
 
 clean:
 	rm -f *.o bbbserver send recv serv palib.o nodelib.o neighblib.o dwlib.o pktlib.o sllib.o belib.o felib.o conlib.o*~

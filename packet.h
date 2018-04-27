@@ -20,7 +20,6 @@
 #define MAX_DATA_SIZE 1472
 #define MAX_PACKET_SIZE 1496
 
-
 /* Packet type flags */
 #define PKT_FLAG_CORRUPT  0
 #define PKT_FLAG_DATA     1
@@ -185,5 +184,9 @@ int get_packet_type (Pkt_t packet);
  *
  */
 uint16_t calc_checksum(P_Hdr hdr);
+
+Pkt_t create_exchange_packet(uint16_t d_port, uint16_t s_port,
+                             unsigned int TTL, char* filename,
+                             char* gossip_buf, char* search_list);
 
 #endif
