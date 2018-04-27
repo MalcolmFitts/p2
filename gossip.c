@@ -246,13 +246,62 @@ char* sync_peer_info(S_Dir* dir, S_Inf* info) {
   return NULL;
 }
 
+void add_uuid_to_list(char* list, char* uuid) {
+  char read_uuid[CF_UUID_STR_LEN + 2];
+  char list_uuid[CF_UUID_STR_LEN];
+  char* res_ptr;
+  char* ptr;
+  char* end_ptr;
 
+  int f_flag;
 
+  if(strcmp(list, "") == 0){
+    sprintf(list, "{%s}", uuid);
+    return;
+  }
+
+  /* Initializing flag to 1 --> assumes uuid not in list */
+  f_flag = 1;
+
+  ptr = strstr(list, "{");
+  /* Iterating through all UUIDs in list */
+  while(ptr) {
+    /* Store pointer to end of found UUID for easier iteration */
+    end_ptr = strstr(ptr, "}");
+
+    memcpy(read_uuid, ptr, CF_UUID_STR_LEN + 2);
+    read_uuid[38] = '\0';
+    strncpy(list_uuid, read_uuid + 1, CF_UUID_STR_LEN);
+    list_uuid[CF_UUID_STR_LEN] = '\0';
+
+    /* Comparing found UUID with parameter */
+    if(strcmp(uuid, list_uuid) == 0){
+      /* Parameter UUID already exists in list;
+       * --> set flag and stop iterating */
+      f_flag = 0;
+      break;
+    }
+
+    ptr = strstr(end_ptr, "{");
+  }
+
+  char* formatted_uuid = malloc(sizeof(char) * (CF_UUID_STR_LEN * 2));
+  bzero(formatted_uuid, CF_UUID_STR_LEN * 2);
+
+  /* If flag = 1 then add UUID to list and return */
+  if(f_flag) {
+
+      /* List is not emptny so add a comma for formatting */
+      sprintf(formatted_uuid, ", {%s}", uuid);
+      strcat(list, formatted_uuid);
+  }
+}
 
 char* merge_peer_lists(char* p_list1, char* p_list2) {
   char* res_list = malloc(sizeof(char) * BUFSIZE);
   char* res_formatted = malloc(sizeof(char) * BUFSIZE);
-  char* read_uuid = malloc(sizeof(char) * CF_UUID_STR_LEN);
+  char* read_uuid = malloc(sizeof(char) * CF_UUID_STR_LEN + 2);
+  char* uuid = malloc(sizeof(char) * CF_UUID_STR_LEN);
   char* ptr;
   char* end_ptr;
 
@@ -268,34 +317,40 @@ char* merge_peer_lists(char* p_list1, char* p_list2) {
   }
 
   /* Search first peer list for beginning of first peer uuid */
-  ptr = strstr(p_list1, '{');
+  ptr = strstr(p_list1, "{");
 
   while(ptr) {
     /* Store pointer to end of found UUID */
-    end_ptr = strstr(ptr, '}');
+    end_ptr = strstr(ptr, "}");
 
-    /* Scanning UUID into read_uuid var */
-    if(sscanf(ptr, "{%s}", read_uuid)) {
-      add_uuid_to_list(res_list, read_uuid);
-    }
+    memcpy(read_uuid, ptr, CF_UUID_STR_LEN + 2);
+    read_uuid[38] = '\0';
+    strncpy(uuid, read_uuid + 1, CF_UUID_STR_LEN);
+    uuid[CF_UUID_STR_LEN] = '\0';
+
+    add_uuid_to_list(res_list, uuid);
 
     /* Search for next UUID */
     bzero(read_uuid, CF_UUID_STR_LEN);
-    ptr = strstr(end_ptr, '{');
+    ptr = strstr(end_ptr, "{");
   }
 
   /* Repeat same process with second list */
-  ptr = strstr(p_list2, '{');
+  ptr = strstr(p_list2, "{");
 
   while(ptr) {
-    end_ptr = strstr(ptr, '}');
+    end_ptr = strstr(ptr, "}");
 
-    if(sscanf(ptr, "{%s}", read_uuid)) {
-      add_uuid_to_list(res_list, read_uuid);
-    }
+    memcpy(read_uuid, ptr, CF_UUID_STR_LEN + 2);
+    read_uuid[38] = '\0';
+    strncpy(uuid, read_uuid + 1, CF_UUID_STR_LEN);
+    uuid[CF_UUID_STR_LEN] = '\0';
 
+    add_uuid_to_list(res_list, uuid);
+
+    /* Search for next UUID */
     bzero(read_uuid, CF_UUID_STR_LEN);
-    ptr = strstr(end_ptr, '{');
+    ptr = strstr(end_ptr, "{");
   }
 
   sprintf(res_formatted, "[%s]", res_list);
@@ -305,69 +360,6 @@ char* merge_peer_lists(char* p_list1, char* p_list2) {
 
 
 
-char* add_uuid_to_list(char* list, char* uuid) {
-  char* read_uuid = malloc(sizeof(char) * CF_UUID_STR_LEN);
-  char* res_ptr;
-  char* ptr;
-  char* end_ptr;
-
-  int f_flag;
-  int s_flag;
-
-  bzero(read_uuid, CF_UUID_STR_LEN);
-
-  /* Initializing flag to 1 --> assumes uuid not in list */
-  f_flag = 1;
-
-  ptr = strstr(list, '{');
-
-  /* Iterating through all UUIDs in list */
-  while(ptr) {
-    /* Store pointer to end of found UUID for easier iteration */
-    end_ptr = strstr(ptr, '}');
-
-    s_flag = sscanf(ptr, "{%s}", read_uuid);
-
-    /* Comparing found UUID with parameter */
-    if((s_flag == 1) && (strcmp(read_uuid, uuid) == 0)) {
-      /* Parameter UUID already exists in list;
-       * --> set flag and stop iterating */
-      f_flag = 0;
-      break;
-    }
-
-    /* Searching for beginning of next UUID */
-    bzero(read_uuid, CF_UUID_STR_LEN);
-    ptr = strstr(end_ptr, '{');
-  }
-
-  char* formatted_uuid = malloc(sizeof(char) * (CF_UUID_STR_LEN * 2));
-  bzero(formatted_uuid, CF_UUID_STR_LEN * 2);
-
-  /* If flag = 1 then add UUID to list and return */
-  if(f_flag) {
-
-    if(strlen(list) > 0) {
-      /* List is not empty so add a comma for formatting */
-      sprintf(formatted_uuid, ", {%s}", uuid);
-      res_ptr = strcat(list, formatted_uuid);
-    }
-
-    else {
-      /* List is empty so just return formatted uuid as the new list */
-      sprintf(formatted_uuid, "{%s}", uuid);
-      res_ptr = formatted_uuid;
-    }
-
-  }
-
-  /* Else UUID was in list so just return original list */
-  else {
-    res_ptr = list;
-  }
-
-  return res_ptr;
-}
 
 
 
@@ -480,3 +472,5 @@ void* start_search(void* ptr){
     sleep(search_interval);
   }
 }
+
+

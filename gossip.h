@@ -77,6 +77,7 @@ typedef struct Search_Directory {
  *    sender_addr - sender of packet
  *
  */
+
 int handle_exchange_msg(Pkt_t pkt, int sockfd,
                         struct sockaddr_in sender_addr, S_Dir* s_dir);
 
@@ -199,7 +200,7 @@ char* merge_peer_lists(char* p_list1, char* p_list2);
  *    char* - list (with UUID added if not already included in list)
  *
  */
-char* add_uuid_to_list(char* list, char* uuid);
+void add_uuid_to_list(char* list, char* uuid);
 
 
 /*  reset_search_dir_info

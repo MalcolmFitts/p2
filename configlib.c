@@ -186,7 +186,7 @@ int check_default_config_file() {
     //uuid__t* new_uuid = malloc(sizeof(uuid__t));
     uuid_t new_uuid;// = malloc(sizeof(uuid_t));
 
-    char uuid_arr[CF_UUID_STR_LEN];
+    char uuid_arr[CF_UUID_STR_LEN + 2];
     char buf[CF_MAX_LINE_LEN];
     int len;
 
@@ -411,7 +411,7 @@ int create_config_file(char* filename, char* node_name,
   //uuid__t* new_uuid = malloc(sizeof(uuid__t));
   uuid_t new_uuid;// = malloc(sizeof(uuid_t));
 
-  char uuid_arr[CF_UUID_STR_LEN];
+  char uuid_arr[CF_UUID_STR_LEN + 2];
   char buf[CF_MAX_LINE_LEN];
 
   if(check_file(filename)) {
