@@ -322,10 +322,10 @@ int parse_str_2_int(char* str){
 void list_2_json(char* L){
   int i = 0;
 
-  while(strcmp(&L[i], "\0") != 0){
+  while(L[i] != '\0'){
 
-    if (!strcmp(&L[i], "{") || !(strcmp(&L[i], "}"))){
-      strcpy(&L[i], "\"");
+    if (L[i] == '{' || L[i] == '}'){
+      L[i] = '\"';
     }
 
     i ++;

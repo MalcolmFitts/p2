@@ -706,6 +706,7 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
     sleep(search_interval);
   }
 
+  list_2_json(search_list);
   sprintf(json_content, "[{\“content\”:\“%s\”, \“peers\”:%s}]", path, search_list);
   write_json_content(connfd, json_content);
 }
