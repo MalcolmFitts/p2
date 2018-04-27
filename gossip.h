@@ -147,7 +147,7 @@ char* merge_peer_lists(char* p_list1, char* p_list2);
  *
  */
 
-char* add_uuid_to_list(char* list, char* uuid);
+void add_uuid_to_list(char* list, char* uuid);
 
 
 

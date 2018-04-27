@@ -47,7 +47,7 @@
 
 
 /* Length of char[] rep. of UUID */
-#define CF_UUID_STR_LEN 37
+#define CF_UUID_STR_LEN 36
 /* Max line length of config file */
 #define CF_MAX_LINE_LEN 512
 
