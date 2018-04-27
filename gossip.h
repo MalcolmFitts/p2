@@ -232,4 +232,7 @@ void* start_search(void* ptr);
 S_Dir* create_search_dir(int max_searches);
 
 
+int add_search_to_dir(S_Dir* dir, S_Inf* info);
+
+
 #endif

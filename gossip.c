@@ -476,8 +476,13 @@ void* start_search(void* ptr){
             (struct sockaddr *) &n_addr, n_addr_len);
       n ++;
     }
+<<<<<<< HEAD
     usleep(search_interval * 1000);
     TTL --;
+=======
+    TTL--;
+    usleep(search_interval * 1000);
+>>>>>>> 909822017cae6199528ec744af4f95d261572cef
   }
   return NULL;
 }
@@ -497,3 +502,39 @@ S_Dir* create_search_dir(int max_searches) {
 
   return dir;
 }
+
+
+
+int add_search_to_dir(S_Dir* dir, S_Inf* info) {
+  if((dir->cur_search) < (dir->max_search)) {
+    /* directory not full - add the node */
+
+    int index = (dir->cur_search);
+    int info_size = sizeof(struct Search_Info);
+
+    S_Inf* test_ptr;
+
+    test_ptr = memcpy((void*) &(dir->search_arr[index]), 
+                      (void*) info, info_size);
+
+    if((strcmp(test_ptr->peers, info->peers) != 0) || 
+       (strcmp(test_ptr->content, info->content) != 0) || 
+       (strcmp((dir->search_arr[index]).peers, info->peers) != 0) || 
+       (strcmp((dir->search_arr[index]).content, info->content) != 0)) {
+      printf("Add_search_to_dir is broken.\n");
+    }
+
+    // (dir->search_arr[index]).max_recv_ttl = info->max_recv_ttl;
+    // (dir->search_arr[index]).active_timer = info->active_timer;
+    // (dir->search_arr[index]).content = info->content;
+    // (dir->search_arr[index]).peers = info->peers;
+
+    dir->cur_search = index + 1;
+    return 1;
+  }
+
+/* max nbr of nodes in directory already reached */
+return 0;
+
+}
+

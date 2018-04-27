@@ -273,6 +273,8 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
   node_dir = create_node_dir(MAX_NODES);
   /* Created neighbor dir */
   neighbor_dir = create_neighbor_dir(100);
+  /* Creating search directory */
+  search_dir = create_search_dir(100);
 
   search_dir = create_search_dir(100);
 
@@ -526,7 +528,7 @@ void handle_neighbors_rqt(int connfd, char* fname){
 
   char json_content[JSON_BUFSIZE] = "\0";
 
-  char* neighbor;
+  char* neighbor = malloc(sizeof(char) * BUFSIZE);
   char  node_name[BUFSIZE];
   char  neighbor_json[BUFSIZE];
   char* uuid = malloc(sizeof(char) * BUFSIZE);
@@ -547,6 +549,8 @@ void handle_neighbors_rqt(int connfd, char* fname){
     num_peers = 0;
   }
 
+  printf("Number of neighbors found: %d\n", num_peers);
+
   strcat(json_content, "[");
   while(i < num_peers){
 
@@ -561,11 +565,10 @@ void handle_neighbors_rqt(int connfd, char* fname){
 
     neighbor = get_config_field(fname, CF_TAG_PEER_INFO, i);
 
-    printf("%s\n", neighbor);
     parse_neighbor_info(neighbor, uuid, hostname, fe_port, be_port, metric);
 
     /* TODO: Find Node name */
-    sprintf(node_name, "name_%d", i);
+    sprintf(node_name, "node_%d", i);
     sprintf(neighbor_json, "{\"uuid\":\"%s\", \"name\":\"%s\", \"host\":\"%s\", \"frontend\":%s, \"backend\":%s, \"metric\":%s}",
             uuid, node_name, hostname, fe_port, be_port, metric);
 
@@ -574,8 +577,12 @@ void handle_neighbors_rqt(int connfd, char* fname){
     if(i < num_peers){
       strcat(json_content, ", ");
     }
+    printf("Neighbor #%d:\n", i);
+    printf("JSON: %s\n", neighbor_json);
   }
   strcat(json_content, "]");
+
+  printf("\nServer writing JSON object to client...\n");
 
   write_json_content(connfd, json_content);
 
@@ -584,6 +591,9 @@ void handle_neighbors_rqt(int connfd, char* fname){
   free(fe_port);
   free(be_port);
   free(metric);
+
+  printf("Server successfully handled request.\n");
+  printf("Server closing connection with client...\n");
 }
 
 void handle_add_neighbor_rqt(char* buf, char* fname){
@@ -628,7 +638,10 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
 
   char* my_uuid;
   int my_port;
-  char* content_path = malloc(sizeof(char) * MAXLINE);
+  //char* content_path = malloc(sizeof(char) * MAXLINE);
+  char* content_path;
+
+  S_Inf* search_info;
 
   char* filepath;
   char* search_list = malloc(sizeof(char) * BUFSIZE);
@@ -651,24 +664,52 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
 
   my_port = atoi(get_config_field(fname, CF_TAG_BE_PORT, 0));
 
-  // See if filepath is in current node
-  content_path = get_config_field(fname, CF_TAG_CONTENT_DIR, 0);
-  filepath = strcat(content_path, path);
-  FILE *fp = fopen(filepath, "r");
-  bzero(search_list, BUFSIZE);
-  if(fp != NULL){
-    sprintf(search_list, "[{%s}]", my_uuid);
-  }
-  else{
-    strcpy(search_list, "[]");
-  }
-
   // Get the TTL and search_interval (ms) from config
   TTL = atoi(get_config_field(fname, CF_TAG_SEARCH_TTL, 0));
   search_interval = atoi(get_config_field(fname, CF_TAG_SEARCH_INT, 0));
 
   // Get the number of current neighbors
   num_neighbors = atoi(get_config_field(fname, CF_TAG_PEER_COUNT, 0));
+
+
+  // See if filepath is in current node
+  content_path = get_config_field(fname, CF_TAG_CONTENT_DIR, 0);
+  filepath = strcat(content_path, path);
+  FILE *fp = fopen(filepath, "r");
+  bzero(search_list, BUFSIZE);
+
+  printf("Search Request info:\n");
+  printf("Content: %s\n", filepath);
+  printf("TTL: %d\n", TTL);
+  printf("Search Interval: %d (ms)\n\n", search_interval);
+
+  printf("Server checking for content locally...\n");
+
+  if(fp){
+    printf("Server found content locally!\n");
+    sprintf(search_list, "[{%s}]", my_uuid);
+    fclose(fp);
+  }
+  else{
+    printf("Server did not find content locally!\n");
+    strcpy(search_list, "[]");
+  }
+
+  printf("Server adding search info to directory.\n");
+
+
+  /* Adding search to Directory */
+  search_info = malloc(sizeof(struct Search_Info));
+  search_info->max_recv_ttl = TTL;
+  search_info->active_timer = TTL;
+  search_info->content = filepath;
+  search_info->peers = search_list;
+
+  int add_flag = add_search_to_dir(search_dir, search_info);
+
+  if(add_flag == 0) {
+    printf("{handle_search_rqt} Failed to add search to directory.\n");
+  }
 
   // If no neighbors then end
   if(num_neighbors == 0){
@@ -681,10 +722,14 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
   }
 
   Pkt_t packet;
+  char* merge_ptr;
   n = 0;
+
+  printf("Iterating until TTL is over:\n");
 
   // Wait for TTL to go to 0
   while(TTL > 0){
+    printf("TTL = %d\n", TTL);
 
     // Check the gossip buffer for updates
     bzero(BUF, BUFSIZE);
@@ -696,7 +741,8 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
 
     if (BUF[0] != '\0') {
       /* BUF has updated list */
-      strcpy(search_list, merge_peer_lists(BUF, search_list));
+      merge_ptr = merge_peer_lists(BUF, search_list);
+      strcpy(search_list, merge_ptr);
     }
     if(n <= num_neighbors){
 
@@ -704,6 +750,9 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
       n_port = atoi(parse_peer_info(n_info, BE_PORT));
       n_info = get_config_field(fname, CF_TAG_PEER_INFO, n);
       n_host = parse_peer_info(n_info, HOSTNAME);
+
+      printf("Sending exchange request to: %s:%d\n", n_host, n_port);
+
 
       packet = create_exchange_packet(n_port, my_port, TTL, path, gossip_buf,
                                       search_list);
@@ -725,6 +774,7 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
 
       n ++;
     }
+    printf("<sleeping for %d ms>\n\n", search_interval);
     usleep(search_interval * 1000);
     TTL --;
   }

@@ -1,6 +1,80 @@
 testing URLS:
 (using port 9001 as example)
 
+
+
+[p4]  ——————————————————————————————————————————————	
+
+	(9001 / 9002 -> master1.conf)  
+	(9003 / 9004 -> slave1.conf)
+	(9005 / 9006 -> slave2.conf)
+
+
+p1:
+{
+
+  http://localhost:9001/texts/text1.txt
+
+
+}
+
+
+p2:
+{
+
+  http://localhost:9001/peer/add?path=content/texts/text1.txt&host=localhost&port=9004&rate=1600
+
+  http://localhost:9001/peer/add?path=content/videos/video1.mp4&host=localhost&port=9006&rate=1600
+
+* fails for peer view *
+
+  http://localhost:9001/peer/view/content/texts/text1.txt
+
+  http://localhost:9001/peer/view/content/videos/video1.mp4
+
+}
+
+
+p3:
+{
+
+  http://localhost:9001/peer/uuid  
+
+  http://localhost:9001/peer/addneighbor?uuid=454B2A14-5B86-41FE-8BA1-50D0ACE9ABA0&host=localhost&frontend=9003&backend=9004&metric=10
+
+  http://localhost:9001/peer/addneighbor?uuid=24f22a83-16f4-4bd5-af63-9b5c6e979dbb&host=localhost&frontend=9005&backend=9006&metric=10
+
+  http://localhost:9001/peer/neighbors
+
+}
+
+
+p4:
+{
+
+  http://localhost:9001/peer/search/texts/text1.txt
+
+  http://localhost:9001/peer/search/videos/video1.mp4
+
+}
+
+
+
+
+
+
+
+[p4]  ——————————————————————————————————————————————	
+
+
+
+
+
+
+
+
+
+
 image:
 
 http://localhost:9001/images/image1.pn
@@ -53,6 +127,13 @@ http://localhost:9001/peer/view/content/texts/text1.txt
 http://localhost:9001/peer/addneighbor?uuid=CD9B0EF4-8F03-4346-8D69-2CF0CA5A05EE&host=localhost&frontend=9010&backend=9004&metric=30
 
 http://localhost:9001/peer/neighbors
+
+
+
+
+
+
+
 
 
 
