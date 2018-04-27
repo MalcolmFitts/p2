@@ -229,4 +229,7 @@ int reset_search_dir_info(S_Dir* dir, S_Inf* info, char* new_peers);
 void* start_search(void* ptr);
 
 
+S_Dir* create_search_dir(int max_searches);
+
+
 #endif

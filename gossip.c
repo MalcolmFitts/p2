@@ -474,3 +474,18 @@ void* start_search(void* ptr){
 }
 
 
+S_Dir* create_search_dir(int max_searches) {
+  S_Dir* dir = malloc(sizeof(struct Search_Directory));
+
+  dir->cur_search = 0;
+  dir->max_search = max_searches;
+
+  dir->search_arr = malloc(max_searches * sizeof(S_Inf *));
+  int i;
+  for(i = 0; i < max_searches; i++) {
+    dir->search_arr[i] = *((S_Inf *) malloc(sizeof(S_Inf)));
+  }
+
+  return dir;
+}
+
