@@ -29,17 +29,26 @@ typedef struct Search_Info {
   char* content;
   char* peers;
 } S_Inf;
-  
+
+// search thread content
+typedef struct search_tc{
+  int sock;
+  int ttl;
+  char path[MAXLINE];
+  char config_name[MAXLINE];
+  char search_list[BUFSIZE];
+} s_tc;
+
 /*   Search_Info struct values:
  *
- *  content 
+ *  content
  *      - keep track of what content was searched for
  *
  *  max_recv_ttl
  *      - keep track of the max received ttl:
- *         -- if recv request for same content with lower ttl, dont start another search 
+ *         -- if recv request for same content with lower ttl, dont start another search
  *               b/c we already started one
- *         -- calculate when search will end based on max recvd ttl 
+ *         -- calculate when search will end based on max recvd ttl
  *
  *  peers
  *     - keep track of peers that have content
@@ -59,7 +68,7 @@ typedef struct Search_Directory {
 /*  handle_exchange_msg
  *
  *  - handles packets flagged as exchange messages
- *        
+ *
  *  params:
  *
  *    pkt - exchange packet
@@ -68,13 +77,13 @@ typedef struct Search_Directory {
  *
  */
 
-int handle_exchange_msg(Pkt_t pkt, int sockfd, 
+int handle_exchange_msg(Pkt_t pkt, int sockfd,
                         struct sockaddr_in sender_addr, S_Dir* s_dir);
 
 /*  parse_search_info
  *
- *  - creates search info struct 
- *        
+ *  - creates search info struct
+ *
  *  params:
  *
  *    pkt - exchange packet to be parsed
@@ -87,7 +96,7 @@ S_Inf* parse_search_info(Pkt_t pkt);
 /*  check_search_dir
  *
  *  - checks search directory for records of matching search info
- *        
+ *
  *  return values:
  *
  *    0 - did not find content from info in any element of dir
@@ -102,11 +111,11 @@ int check_search_dir(S_Dir* dir, S_Inf* info);
 /*  sync_peer_info
  *
  *  - syncs peer info for search in directory matching parameter 'info'
- *        
+ *
  *  return values:
  *
  *    NULL  - some error
- *    char* - merged peer list 
+ *    char* - merged peer list
  *
  */
 
@@ -115,11 +124,11 @@ char* sync_peer_info(S_Dir* dir, S_Inf* info);
 /*  merge_peer_lists
  *
  *  - actually merges peer lists without duplicates
- *        
+ *
  *  return values:
  *
  *    NULL  - some error
- *    char* - merged peer list 
+ *    char* - merged peer list
  *
  */
 
@@ -130,7 +139,7 @@ char* merge_peer_lists(char* p_list1, char* p_list2);
  *
  *  - attempts to add a UUID to existing list of peer UUIDs
  *  - will not add if already exists in list
- *        
+ *
  *  return values:
  *
  *    NULL  - some error

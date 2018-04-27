@@ -5,7 +5,7 @@
 //  PSEUDO - handle exchange message
 
 /*
-  
+
   // 1. parse search info from packet
   recv_search = parse_exchange_pkt(pkt)
 
@@ -13,9 +13,9 @@
   check_searches(recv_search)
 
   // 3. case - this is not a new search
-  if(search struct exists for this content && 
+  if(search struct exists for this content &&
       struct's active timer != 0) {
-    
+
     // 3.1 - update search structs record of peers
     update_search_peers(recv_search peers, search struct)
 
@@ -28,10 +28,10 @@
 
   // 4. case - this is new search
   else  {
-    
+
     // 4.1 - if struct exists but search had ended, reset the struct
     if(struct's active timer = 0) {
-    
+
 
       reset_search(search struct, recvd info);
 
@@ -40,7 +40,7 @@
 
     // 4.2 - create new struct
     else {
-    
+
       create_new_search(...)
 
     }
@@ -57,8 +57,7 @@
 */
 
 
-
-int handle_exchange_msg(Pkt_t pkt, int sockfd, 
+int handle_exchange_msg(Pkt_t pkt, int sockfd,
                           struct sockaddr_in sender_addr, S_Dir* s_dir) {
 
   /* Local variables */
@@ -122,7 +121,7 @@ S_Inf* parse_search_info(Pkt_t pkt) {
   }
 
   /* Scan packet for relevant data */
-  n_scan = sscanf(packet.buf, "Content: %s\nPeers: [%s]\n", 
+  n_scan = sscanf(pkt.buf, "Content: %s\nPeers: [%s]\n",
     filename, peers);
 
   if (n_scan != 2) {
@@ -133,8 +132,8 @@ S_Inf* parse_search_info(Pkt_t pkt) {
   /* Allocate memory for struct and fill with data */
   info = malloc(sizeof(struct Search_Info));
 
-  info->max_recv_ttl = packet.header.seq_num;
-  info->active_timer = packet.header.seq_num;
+  info->max_recv_ttl = pkt.header.seq_num;
+  info->active_timer = pkt.header.seq_num;
   info->content = filename;
   info->peers = peers;
 
@@ -211,6 +210,13 @@ char* merge_peer_lists(char* p_list1, char* p_list2) {
   bzero(res_formatted, BUFSIZE);
   bzero(read_uuid, CF_UUID_STR_LEN);
 
+  if(!strcmp(p_list1, "[]")){
+    return p_list2;
+  }
+  if(!strcmp(p_list2, "[]")){
+    return p_list1;
+  }
+
   /* Search first peer list for beginning of first peer uuid */
   ptr = strstr(p_list1, '{');
 
@@ -222,7 +228,7 @@ char* merge_peer_lists(char* p_list1, char* p_list2) {
     if(sscanf(ptr, "{%s}", read_uuid)) {
       add_uuid_to_list(res_list, read_uuid);
     }
-    
+
     /* Search for next UUID */
     bzero(read_uuid, CF_UUID_STR_LEN);
     ptr = strstr(end_ptr, '{');
@@ -259,7 +265,7 @@ char* add_uuid_to_list(char* list, char* uuid) {
   int s_flag;
 
   bzero(read_uuid, CF_UUID_STR_LEN);
-  
+
   /* Initializing flag to 1 --> assumes uuid not in list */
   f_flag = 1;
 
@@ -271,7 +277,7 @@ char* add_uuid_to_list(char* list, char* uuid) {
     end_ptr = strstr(ptr, '}');
 
     s_flag = sscanf(ptr, "{%s}", read_uuid);
-    
+
     /* Comparing found UUID with parameter */
     if((s_flag == 1) && (strcmp(read_uuid, uuid) == 0)) {
       /* Parameter UUID already exists in list;
@@ -302,7 +308,7 @@ char* add_uuid_to_list(char* list, char* uuid) {
       sprintf(formatted_uuid, "{%s}", uuid);
       res_ptr = formatted_uuid;
     }
-    
+
   }
 
   /* Else UUID was in list so just return original list */
@@ -312,25 +318,3 @@ char* add_uuid_to_list(char* list, char* uuid) {
 
   return res_ptr;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

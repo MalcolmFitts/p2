@@ -27,6 +27,7 @@
 #include "node.h"
 #include "configlib.h"
 #include "neighbor.h"
+#include "gossip.h"
 
 #define COM_BUFSIZE 1500
 #define JSON_BUFSIZE 4096

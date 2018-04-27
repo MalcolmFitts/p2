@@ -318,3 +318,16 @@ int parse_str_2_int(char* str){
 
   return x * neg;
 }
+
+void list_2_json(char* L){
+  int i = 0;
+
+  while(strcmp(&L[i], "\0") != 0){
+
+    if (!strcmp(&L[i], "{") || !(strcmp(&L[i], "}"))){
+      strcpy(&L[i], "\"");
+    }
+
+    i ++;
+  }
+}

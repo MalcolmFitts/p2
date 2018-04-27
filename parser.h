@@ -130,4 +130,6 @@ char* parse_peer_info(char* peer_info, int flag);
  */
 int parse_str_2_int(char* str);
 
+void list_2_json(char* list);
+
 #endif
