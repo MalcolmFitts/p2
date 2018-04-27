@@ -636,7 +636,8 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
 
   // Neighbor Info
   int num_neighbors, n, n_port;
-  char* n_info = NULL, n_host = NULL;
+  char* n_info = NULL;
+  char* n_host = NULL;
   struct sockaddr_in n_addr;
   struct hostent *n_server;
   socklen_t n_addr_len;
