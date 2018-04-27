@@ -626,7 +626,6 @@ void handle_add_neighbor_rqt(char* buf, char* fname){
 
 void handle_search_rqt(int connfd, int sockfd, char* path, char* fname) {
 
-  printf("0\n");
   char* my_uuid;
   int my_port;
   char* content_path = malloc(sizeof(char) * MAXLINE);
@@ -648,13 +647,9 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname) {
   char* gossip_buf = malloc(sizeof(char) * BUFSIZE);
   char* json_content[BUFSIZE];
 
-  printf("0.1\n");
-
   my_uuid = get_config_field(fname, CF_TAG_UUID, 0);
-  printf("0.2\n");
-  my_port = atoi(get_config_field(fname, CF_TAG_BE_PORT, 0));
 
-  printf("1\n");
+  my_port = atoi(get_config_field(fname, CF_TAG_BE_PORT, 0));
 
   // See if filepath is in current node
   content_path = get_config_field(fname, CF_TAG_CONTENT_DIR, 0);
@@ -668,7 +663,6 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname) {
     strcpy(search_list, "[]");
   }
 
-  printf("2\n");
   // Get the TTL and search_interval (ms) from config
   TTL = atoi(get_config_field(fname, CF_TAG_SEARCH_TTL, 0));
   search_interval = atoi(get_config_field(fname, CF_TAG_SEARCH_INT, 0));
@@ -685,8 +679,6 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname) {
     return;
 
   }
-
-  printf("2\n");
 
   Pkt_t packet;
   n = 0;
@@ -707,27 +699,16 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname) {
       strcpy(search_list, merge_peer_lists(BUF, search_list));
     }
 
-    printf("3\n");
-
     if(n <= num_neighbors){
-      printf("3.1\n");
+
       n_info = get_config_field(fname, CF_TAG_PEER_INFO, n);
-      printf("3.2\n");
       n_port = atoi(parse_peer_info(n_info, BE_PORT));
-      printf("%d\n", n_port);
-      printf("3.3\n");
       n_info = get_config_field(fname, CF_TAG_PEER_INFO, n);
       n_host = parse_peer_info(n_info, HOSTNAME);
 
-      printf("%s\n", n_host);
-
-
-      printf("3.5\n");
 
       packet = create_exchange_packet(n_port, my_port, TTL, path, gossip_buf,
                                       search_list);
-
-      printf("4\n");
 
       /* build the neighbor's Internet address */
       n_server = gethostbyname(n_host);
@@ -739,16 +720,15 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname) {
 
       /* send the message to the neighbor */
       n_addr_len = sizeof(n_addr);
-      printf("5\n");
 
       sendto(sockfd, &packet, sizeof(packet), 0,
             (struct sockaddr *) &n_addr, n_addr_len);
+      printf("Packet Sent!\n");
+
       n ++;
     }
     sleep(search_interval);
   }
-
-  printf("6\n");
 
   list_2_json(search_list);
   sprintf(json_content, "[{\“content\”:\“%s\”, \“peers\”:%s}]", path, search_list);

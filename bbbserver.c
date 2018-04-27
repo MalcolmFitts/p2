@@ -197,7 +197,7 @@ void *serve_client_thread(void *ptr) {
   numthreads++;
 
   /* parse data back out of the ptr*/
-  struct thread_data *ct = ptr;
+  struct thread_data *ct = (struct thread_data*) ptr;
   struct sockaddr_in clientaddr = ct->c_addr;
   int connfd = ct->connfd;
   int tid = ct->tid;
