@@ -47,7 +47,7 @@
     {data buffer}
 
  * PKT_FLAG_EXC:
-    "Content: <filename>\nTTL: <ttl>\nPeers: []\n"
+    "Content: <filename>\nPeers: []\n"
 
  * PKT_FLAG_UNKNOWN || PKT_FLAG_CORRUPT
     "File: Not Found\nContent Size: -1\n"
@@ -76,7 +76,7 @@ typedef struct Packet_Header {
   uint16_t length;			/* length		- 2 bytes */
   uint16_t checksum;			/* checksum		- 2 bytes */
 
-  uint32_t seq_num;                     /* sequence num - 4 bytes */
+  uint32_t seq_num;       /* sequence num - 4 bytes */
 
   uint16_t flag;        /* flag  - 2 bytes */
   uint16_t data_offset; /* data offset - 2 bytes */

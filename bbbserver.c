@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
   /* front-end (client) vars */
   int sockfd_fe;                    /* listening socket */
   short port_fe;                    /* client port to listen on */
-  struct sockaddr_in self_addr_fe; /* front end address */
+  struct sockaddr_in self_addr_fe;  /* front end address */
   int connfd;                       /* connection socket */
 
   /* back-end (node) vars */
