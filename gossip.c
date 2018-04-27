@@ -2,74 +2,25 @@
 #include "gossip.h"
 
 
-//  PSEUDO - handle exchange message
-
-/*
-  
-  // 1. parse search info from packet
-  recv_search = parse_exchange_pkt(pkt)
-
-  // 2. check if content was seen (search struct exists)
-  check_searches(recv_search)
-
-  // 3. case - this is not a new search
-  if(search struct exists for this content && 
-      struct's active timer != 0) {
-    
-    // 3.1 - update search structs record of peers
-    update_search_peers(recv_search peers, search struct)
-
-    update_own_neighbors?
-
-    // 3.2 - respond to message with synced list of peers
-    respond_to_exchange(...)
-
-  }
-
-  // 4. case - this is new search
-  else  {
-    
-    // 4.1 - if struct exists but search had ended, reset the struct
-    if(struct's active timer = 0) {
-    
-
-      reset_search(search struct, recvd info);
-
-    }
-
-
-    // 4.2 - create new struct
-    else {
-    
-      create_new_search(...)
-
-    }
-
-    // 4.3 - respond with synced peer list
-    respond_to_exchange(...)
-
-    // 4.4 - start new search for content
-    start_search(...)
-
-
-  }
-
-*/
 
 
 
-int handle_exchange_msg(Pkt_t pkt, int sockfd, 
+int handle_exchange_msg(Pkt_t pkt, int sockfd,
                           struct sockaddr_in sender_addr, S_Dir* s_dir) {
 
   /* Local variables */
   Pkt_t response_pkt;
   P_Hdr p_hdr;
   S_Inf* recv_search;
-  S_inf* info_ptr;
+  S_Inf* info_ptr;
+  s_tc* s_thd_info;
+  pthread_t search_tid;
+
   char* merged_peers;
   char* self_uuid;
   char* formatted_uuid;
   char filename[MAX_FILEPATH_LEN];
+
   int dir_check_flag;
   int n_sent;
   socklen_t sender_addr_len;
@@ -87,17 +38,24 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
   /* Parse packet for search info */
   recv_search = parse_search_info(pkt);
 
+  printf("Server parsed search request info.\n");
+
   /* Check search directory for status of received search */
   dir_check_flag = check_search_dir(s_dir, recv_search);
+
+  printf("Server checking status of search request...\n");
 
   /* Casing on search results: */
 
   /* 2 --> Server is already running search for content */
   if(dir_check_flag == 2) {
+    printf("Server recognized search as: Currently Running\n");
+    printf("Server updating peers for search...\n");
+
     /* Merge the received peer list and the list in the search dir*/
     merged_peers = sync_peer_info(s_dir, recv_search);
 
-    /* RESPONSE MESSAGE WITH UPDATED PEER INFO */
+    /* Create and send response packet to sender of exchange message */
     response_pkt = create_exchange_packet(p_hdr.source_port, 
                         p_hdr.dest_port, p_hdr.seq_num, 
                         recv_search->content, p_hdr.com_buf, merged_peers);
@@ -112,6 +70,7 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     merged_peers = sync_peer_info(s_dir, recv_search);
 
     /* RESET MATCHING SEARCH INFO STRUCT IN DIRECTORY */
+    reset_search_dir_info(s_dir, recv_search, merged_peers);
 
     /* SEND RESPONSE MESSAGE WITH UPDATED PEER INFO */
     response_pkt = create_exchange_packet(p_hdr.source_port, 
@@ -122,6 +81,15 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
      (struct sockaddr *) &sender_addr, sender_addr_len);
 
     /* START NEW SEARCH PROTOCOL FOR REQUESTED CONTENT */
+    s_thd_info = malloc(sizeof(struct search_tc));
+
+    s_thd_info->sock = sockfd;
+    s_thd_info->ttl = p_hdr.seq_num;
+    sprintf(s_thd_info->path, "%s", recv_search->content);
+    sprintf(s_thd_info->config_name, "%s", config_filename_global);
+    sprintf(s_thd_info->search_list, "%s", merged_peers);
+
+    pthread_create(&(search_tid), NULL, start_search, s_thd_info);
   }
 
   /* 0 --> Document this search in Search Directory and start search protocol */
@@ -172,7 +140,18 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
      (struct sockaddr *) &sender_addr, sender_addr_len);
 
     /* START NEW SEARCH PROTOCOL FOR REQUESTED CONTENT */
+    s_thd_info = malloc(sizeof(struct search_tc));
+
+    s_thd_info->sock = sockfd;
+    s_thd_info->ttl = p_hdr.seq_num;
+    sprintf(s_thd_info->path, "%s", recv_search->content);
+    sprintf(s_thd_info->config_name, "%s", config_filename_global);
+    sprintf(s_thd_info->search_list, "%s", merged_peers);
+
+    pthread_create(&(search_tid), NULL, start_search, s_thd_info);
   }
+
+  return 1;
 }
 
 
@@ -193,7 +172,7 @@ S_Inf* parse_search_info(Pkt_t pkt) {
   }
 
   /* Scan packet for relevant data */
-  n_scan = sscanf(packet.buf, "Content: %s\nPeers: %[^\n]\n", 
+  n_scan = sscanf(pkt.buf, "Content: %s\nPeers: %[^\n]\n", 
     filename, peers);
 
   if (n_scan != 2) {
@@ -204,8 +183,8 @@ S_Inf* parse_search_info(Pkt_t pkt) {
   /* Allocate memory for struct and fill with data */
   info = malloc(sizeof(struct Search_Info));
 
-  info->max_recv_ttl = packet.header.seq_num;
-  info->active_timer = packet.header.seq_num;
+  info->max_recv_ttl = pkt.header.seq_num;
+  info->active_timer = pkt.header.seq_num;
   info->content = filename;
   info->peers = peers;
 
@@ -281,6 +260,13 @@ char* merge_peer_lists(char* p_list1, char* p_list2) {
   bzero(res_formatted, BUFSIZE);
   bzero(read_uuid, CF_UUID_STR_LEN);
 
+  if(!strcmp(p_list1, "[]")){
+    return p_list2;
+  }
+  if(!strcmp(p_list2, "[]")){
+    return p_list1;
+  }
+
   /* Search first peer list for beginning of first peer uuid */
   ptr = strstr(p_list1, '{');
 
@@ -292,7 +278,7 @@ char* merge_peer_lists(char* p_list1, char* p_list2) {
     if(sscanf(ptr, "{%s}", read_uuid)) {
       add_uuid_to_list(res_list, read_uuid);
     }
-    
+
     /* Search for next UUID */
     bzero(read_uuid, CF_UUID_STR_LEN);
     ptr = strstr(end_ptr, '{');
@@ -329,7 +315,7 @@ char* add_uuid_to_list(char* list, char* uuid) {
   int s_flag;
 
   bzero(read_uuid, CF_UUID_STR_LEN);
-  
+
   /* Initializing flag to 1 --> assumes uuid not in list */
   f_flag = 1;
 
@@ -341,7 +327,7 @@ char* add_uuid_to_list(char* list, char* uuid) {
     end_ptr = strstr(ptr, '}');
 
     s_flag = sscanf(ptr, "{%s}", read_uuid);
-    
+
     /* Comparing found UUID with parameter */
     if((s_flag == 1) && (strcmp(read_uuid, uuid) == 0)) {
       /* Parameter UUID already exists in list;
@@ -372,7 +358,7 @@ char* add_uuid_to_list(char* list, char* uuid) {
       sprintf(formatted_uuid, "{%s}", uuid);
       res_ptr = formatted_uuid;
     }
-    
+
   }
 
   /* Else UUID was in list so just return original list */
@@ -385,22 +371,112 @@ char* add_uuid_to_list(char* list, char* uuid) {
 
 
 
+int reset_search_dir_info(S_Dir* dir, S_Inf* info, char* new_peers) {
+  /* NULL checks */
+  if(!dir || !info || !new_peers) {
+    return -1;
+  }
+
+  S_Inf* info_ptr;
+  int max = dir->cur_search;
+
+  /* Iterating through all searches in directory */
+  for(int i = 0; i < max; i++) {
+    S_Inf cur_info = dir->search_arr[i];
+
+    /* Finding matching search based on content field */
+    if(strcmp(cur_info.content, info->content) == 0) {
+      /* Creating memory reference to directory's search struct */
+      info_ptr = (S_Inf*) (&(dir->search_arr[i]));
+
+      info_ptr->max_recv_ttl = info->max_recv_ttl;
+      info_ptr->active_timer = info->active_timer;
+      info_ptr->content = info->content;
+      info_ptr->peers = new_peers;
+
+      return 1;
+    }
+  }
+
+  return 0;
+}
 
 
+void* start_search(void* ptr){
+  s_tc* p = (s_tc*) ptr;
+  int sockfd = p->sock;
+  char* path = p->path;
+  char* fname = p->config_name;
+  char* search_list = p->search_list;
+  int TTL = p->ttl;
 
+  char* my_uuid;
+  int my_port;
+  char* content_path = malloc(sizeof(char) * MAXLINE);
 
+  int search_interval;
 
+  char json_content[BUFSIZE];
+  // Neighbor Info
+  int num_neighbors, n, n_port;
+  char* n_info, n_host;
+  struct sockaddr_in n_addr;
+  struct hostent *n_server;
+  socklen_t n_addr_len;
 
+  char* BUF = malloc(sizeof(char) * BUFSIZE);
+  char* gossip_buf = malloc(sizeof(char) * BUFSIZE);
 
+  my_uuid = get_config_field(fname, CF_TAG_UUID, 0);
+  my_port = atoi(get_config_field(fname, CF_TAG_BE_PORT, 0));
 
+  search_interval = atoi(get_config_field(fname, CF_TAG_SEARCH_INT, 0));
 
+  // Get the number of current neighbors
+  num_neighbors = atoi(get_config_field(fname, CF_TAG_PEER_COUNT, 0));
 
+  Pkt_t packet;
+  n = 0;
 
+  // Wait for TTL to go to 0
+  while(TTL > 0){
 
+    // Check the gossip buffer for updates
+    bzero(BUF, BUFSIZE);
 
+    pthread_mutex_lock(&mutex);
+    strcpy(BUF, gossip_buf);
+    memset(gossip_buf, '\0', BUFSIZE);
+    pthread_mutex_unlock(&mutex);
 
+    if (BUF[0] != '\0') {
+      /* BUF has updated list */
+      strcpy(search_list, merge_peer_lists(BUF, search_list));
+    }
 
+    if(n <= num_neighbors){
+      n_info = get_config_field(fname, CF_TAG_PEER_INFO, n);
+      n_port = atoi(parse_peer_info(n_info, BE_PORT));
+      n_host = parse_peer_info(n_info, HOSTNAME);
 
+      packet = create_exchange_packet(n_port, my_port, TTL, path, gossip_buf,
+                                      search_list);
 
+      /* build the neighbor's Internet address */
+      n_server = gethostbyname(n_host);
+      bzero((char *) &n_addr, sizeof(n_addr));
+      n_addr.sin_family = AF_INET;
+      bcopy((char *)n_server->h_addr,
+              (char *)&n_addr.sin_addr.s_addr, n_server->h_length);
+      n_addr.sin_port = htons(n_port);
 
+      /* send the message to the neighbor */
+      n_addr_len = sizeof(n_addr);
 
+      sendto(sockfd, &packet, sizeof(packet), 0,
+            (struct sockaddr *) &n_addr, n_addr_len);
+      n ++;
+    }
+    sleep(search_interval);
+  }
+}

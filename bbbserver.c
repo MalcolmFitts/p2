@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
   printf("Config file: %s\n", config_filename_global);
   printf("Front-end Port: %d\n", port_fe);
   printf("Back-end Port: %d\n", port_be);
-  printf("\t<End of start-up info>\n\n");
+  printf("\n\t<End of start-up info>\n\n");
 
 
   int* be_sockfd_ptr = &sockfd_be;
@@ -364,7 +364,7 @@ void *serve_client_thread(void *ptr) {
     case RQT_P_SEARCH:
       path = malloc(sizeof(char) * MAXLINE);
       parse_peer_search(buf, path);
-      handle_search_rqt(connfd, path, ct->config_fn);
+      handle_search_rqt(connfd, ct->listenfd_be, path, ct->config_fn);
       free(path);
       break;
 

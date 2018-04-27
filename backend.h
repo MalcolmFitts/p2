@@ -27,6 +27,7 @@
 #include "node.h"
 #include "configlib.h"
 #include "neighbor.h"
+#include "gossip.h"
 
 #define COM_BUFSIZE 1500
 #define JSON_BUFSIZE 4096
@@ -128,7 +129,9 @@ int handle_add_uuid_rqt(char* buf, char* fname);
 
 void handle_add_neighbor_rqt(char* buf, char* fname);
 
-void handle_search_rqt(int connfd, char* path, char* fname);
+void handle_search_rqt(int connfd, int sockfd, char* path, char* fname);
+
+
 
 void* advertise(void* ptr);
 

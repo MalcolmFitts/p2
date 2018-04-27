@@ -10,6 +10,7 @@
 /* Global - Directory for node referencing   */
 Node_Dir* node_dir;
 N_Dir* neighbor_dir;
+S_Dir* search_dir;
 
 void* handle_be(void* ptr) {
 
@@ -20,6 +21,7 @@ void* handle_be(void* ptr) {
 
   int sent_status;                /* sent bytes */
   int recv_status;                /* received bytes */
+  int exc_response;
 
   while(1) {
     printf("Waiting for packet on backend...\n");
@@ -40,10 +42,23 @@ void* handle_be(void* ptr) {
     /* parsing out the type of packet that was received */
     int type = get_packet_type(packet);
 
-    /* checking for corrupt or unknown flagged packets */
+
+
+    /* checking for FIN packets */
     if(type == PKT_FLAG_FIN) {
       printf("Server received FIN packet.\n");
       printf("Finished serving.\n\n");
+      continue;
+    }
+
+    /* Checking for search request (exchange) messages */
+    else if(type == PKT_FLAG_EXC) {
+      printf("Server received Exchange Message.\n");
+      exc_response = handle_exchange_msg(packet, 
+                      sockfd, sender_addr, search_dir);
+      if(exc_response == 1) {
+        printf("Server handled Exchange Message.\n");
+      }
       continue;
     }
 
@@ -607,50 +622,111 @@ void handle_add_neighbor_rqt(char* buf, char* fname){
   return;
 }
 
-void handle_search_rqt(int connfd, char* path, char* fname){
-  char* my_uuid;
-  char* content_path = malloc(sizeof(char) * MAXLINE);
-  int my_port;
-  char* filepath;
-  char search_list[BUFSIZE];
-  char json_content[MAX_DATA_SIZE];
-  bzero(json_content, BUFSIZE);
-  int num_neighbors, TTL, search_interval;
+void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
 
+  char* my_uuid;
+  int my_port;
+  char* content_path = malloc(sizeof(char) * MAXLINE);
+
+  char* filepath;
+  char search_list = malloc(sizeof(char) * BUFSIZE);
+  bzero(search_list, BUFSIZE);
+  int TTL, search_interval;
+
+  // Neighbor Info
+  int num_neighbors, n, n_port;
+  char* n_info, n_host;
+  struct sockaddr_in n_addr;
+  struct hostent *n_server;
+  socklen_t n_addr_len;
+
+  char* BUF = malloc(sizeof(char) * BUFSIZE);
   char* gossip_buf = malloc(sizeof(char) * BUFSIZE);
+  char* json_content[BUFSIZE];
+
   my_uuid = get_config_field(fname, CF_TAG_UUID, 0);
   my_port = atoi(get_config_field(fname, CF_TAG_BE_PORT, 0));
-  content_path = get_config_field(fname, CF_TAG_CONTENT_DIR, 0);
 
   // See if filepath is in current node
+  content_path = get_config_field(fname, CF_TAG_CONTENT_DIR, 0);
   filepath = strcat(content_path, path);
   FILE *fp = fopen(filepath, "r");
   bzero(search_list, BUFSIZE);
   if(fp != NULL){
-    sprintf(search_list, "[\"%s\"]", my_uuid);
+    sprintf(search_list, "[{%s}]", my_uuid);
   }
   else{
     strcpy(search_list, "[]");
   }
 
+  // Get the TTL and search_interval (ms) from config
   TTL = atoi(get_config_field(fname, CF_TAG_SEARCH_TTL, 0));
   search_interval = atoi(get_config_field(fname, CF_TAG_SEARCH_INT, 0));
 
   // Get the number of current neighbors
   num_neighbors = atoi(get_config_field(fname, CF_TAG_PEER_COUNT, 0));
 
+  // If no neighbors then end
   if(num_neighbors == 0){
+
+    list_2_json(search_list);
     sprintf(json_content, "[{\“content\”:\“%s\”, \“peers\”:%s}]", path, search_list);
     write_json_content(connfd, json_content);
     return;
+
   }
 
-  printf("3\n");
-  //while(TTL > 0){
-    //create_exchange_packet(n_port, my_port, TTL, path, gossip_buf, TTL, search_list);
-    //sleep(search_interval);
-  //}
+  Pkt_t packet;
+  n = 0;
+
+  // Wait for TTL to go to 0
+  while(TTL > 0){
+
+    // Check the gossip buffer for updates
+    bzero(BUF, BUFSIZE);
+
+    pthread_mutex_lock(&mutex);
+    strcpy(BUF, gossip_buf);
+    memset(gossip_buf, '\0', BUFSIZE);
+    pthread_mutex_unlock(&mutex);
+
+    if (BUF[0] != '\0') {
+      /* BUF has updated list */
+      strcpy(search_list, merge_peer_lists(BUF, search_list));
+    }
+
+    if(n <= num_neighbors){
+      n_info = get_config_field(fname, CF_TAG_PEER_INFO, n);
+      n_port = atoi(parse_peer_info(n_info, BE_PORT));
+      n_host = parse_peer_info(n_info, HOSTNAME);
+
+      packet = create_exchange_packet(n_port, my_port, TTL, path, gossip_buf,
+                                      search_list);
+
+      /* build the neighbor's Internet address */
+      n_server = gethostbyname(n_host);
+      bzero((char *) &n_addr, sizeof(n_addr));
+      n_addr.sin_family = AF_INET;
+      bcopy((char *)n_server->h_addr,
+              (char *)&n_addr.sin_addr.s_addr, n_server->h_length);
+      n_addr.sin_port = htons(n_port);
+
+      /* send the message to the neighbor */
+      n_addr_len = sizeof(n_addr);
+
+      sendto(sockfd, &packet, sizeof(packet), 0,
+            (struct sockaddr *) &n_addr, n_addr_len);
+      n ++;
+    }
+    sleep(search_interval);
+  }
+
+  sprintf(json_content, "[{\“content\”:\“%s\”, \“peers\”:%s}]", path, search_list);
+  write_json_content(connfd, json_content);
 }
+
+
+
 
 void* advertise(void* ptr){
   printf("About to advertise: \n");
