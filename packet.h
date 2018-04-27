@@ -159,6 +159,7 @@ char* writeable_packet(Pkt_t* packet);
  *		=  2 --> ACK packet
  *		=  3 --> SYN packet
  *		=  4 --> SYN-ACK packet
+ *    =  7 --> EXC packet
  *
  */
 int get_packet_type (Pkt_t packet);

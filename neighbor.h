@@ -27,7 +27,7 @@ typedef struct Neighbor {
   int seq_num;
   int num_missed;
   int active;
-}Neighbor;
+} Neighbor;
 
 
 typedef struct Neighbor_Directory {
