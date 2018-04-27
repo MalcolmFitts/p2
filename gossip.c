@@ -62,11 +62,17 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
 
   /* 1 --> Start running new search for content since old search expired */
   else if(dir_check_flag == 1) {
+    printf("Server recognized search as: Expired Search\n");
+    printf("Server updating peers for search and restarting search protocol...\n");
     /* Merge the received peer list and the list in the search dir*/
     merged_peers = sync_peer_info(s_dir, recv_search);
 
+    printf("Server created merged peers list!\n");
+
     /* RESET MATCHING SEARCH INFO STRUCT IN DIRECTORY */
     reset_search_dir_info(s_dir, recv_search, merged_peers);
+
+    printf("Server reset search info for this search.\n");
 
     /* SEND RESPONSE MESSAGE WITH UPDATED PEER INFO */
     response_pkt = create_exchange_packet(p_hdr.source_port,
@@ -75,6 +81,8 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
 
     n_sent = sendto(sockfd, &response_pkt, sizeof(response_pkt), 0,
      (struct sockaddr *) &sender_addr, sender_addr_len);
+
+    printf("Server sent response exchange message to sender.\n");
 
     /* START NEW SEARCH PROTOCOL FOR REQUESTED CONTENT */
     s_thd_info = malloc(sizeof(struct search_tc));
@@ -85,11 +93,15 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     sprintf(s_thd_info->config_name, "%s", config_filename_global);
     sprintf(s_thd_info->search_list, "%s", merged_peers);
 
+    printf("Server starting search protocol...\n");
+
     pthread_create(&(search_tid), NULL, start_search, s_thd_info);
   }
 
   /* 0 --> Document this search in Search Directory and start search protocol */
   else {
+    printf("Server recognized search as: New Search\n");
+    printf("Server adding search to directory and starting search protocol...\n");
     /* FILL NEW (next empty) SEARCH INFO STRUCT IN DIRECTORY */
     int index = s_dir->cur_search;
 
@@ -99,16 +111,17 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
       return 0;
     }
 
-    bzero(info_ptr, sizeof(S_Inf));
-
     info_ptr->max_recv_ttl = recv_search->max_recv_ttl;
     info_ptr->active_timer = recv_search->active_timer;
     info_ptr->content = recv_search->content;
+
+    printf("Server added search info to directory.\n");
 
     sprintf(filename, "content/%s", recv_search->content);
 
     /* If content was found locally */
     if(check_file(filename)) {
+      printf("Server found searched file: adding self to response peer list...\n");
       /* Get own UUID to add to exchange's peer list and format for use */
       self_uuid = get_config_field(config_filename_global, CF_TAG_UUID, 0);
 
@@ -122,6 +135,7 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
 
     /* If content was not found locally */
     else {
+      printf("Server did not find file locally.\n");
       merged_peers = recv_search->peers;
     }
 
@@ -135,6 +149,8 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     n_sent = sendto(sockfd, &response_pkt, sizeof(response_pkt), 0,
      (struct sockaddr *) &sender_addr, sender_addr_len);
 
+    printf("Server sent response exchange message to sender.\n");
+
     /* START NEW SEARCH PROTOCOL FOR REQUESTED CONTENT */
     s_thd_info = malloc(sizeof(struct search_tc));
 
@@ -143,6 +159,8 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     strcpy(s_thd_info->path, recv_search->content);
     strcpy(s_thd_info->config_name, config_filename_global);
     strcpy(s_thd_info->search_list, merged_peers);
+
+    printf("Server starting search protocol...\n");
 
     pthread_create(&(search_tid), NULL, start_search, s_thd_info);
   }
