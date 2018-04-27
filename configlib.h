@@ -13,8 +13,7 @@
 
 
 //#include "spcuuid/src/uuid.h"
-//#include <uuid/uuid.h>
-#include "/usr/include/uuid/uuid.h"
+#include <uuid/uuid.h>
 
 #include "parser.h"
 
@@ -60,7 +59,7 @@
  *  get_config_field
  *    - searches for certain info in config file
  *    - stores requested info in char buffer
- *    - NOTE: this fn will open and close file once its done so as to prevent 
+ *    - NOTE: this fn will open and close file once its done so as to prevent
  *              bad scary things
  *
  *    params:
@@ -94,7 +93,7 @@ char* get_config_field(char* filename, char* field_tag, int peer_num);
  *
  *    - searches for config file UUID tag using get_config_field
  *
- *    - NOTE: this fn will open and close file once its done so as to prevent 
+ *    - NOTE: this fn will open and close file once its done so as to prevent
  *              bad scary things
  *
  *    return values:
@@ -176,7 +175,7 @@ int update_config_file(char* filename, char* field_tag, int peer_num,
  *        1 --> created file
  */
 
-int create_config_file(char* filename, char* node_name, 
+int create_config_file(char* filename, char* node_name,
                         int fe_port, int be_port, char* content_dir);
 
 

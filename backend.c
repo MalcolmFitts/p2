@@ -509,7 +509,7 @@ void handle_neighbors_rqt(int connfd, char* fname){
 
   char json_content[JSON_BUFSIZE] = "\0";
 
-  char* neighbor = malloc(sizeof(char) * BUFSIZE);
+  char* neighbor;
   char  node_name[BUFSIZE];
   char  neighbor_json[BUFSIZE];
   char* uuid = malloc(sizeof(char) * BUFSIZE);
@@ -544,10 +544,6 @@ void handle_neighbors_rqt(int connfd, char* fname){
 
     neighbor = get_config_field(fname, CF_TAG_PEER_INFO, i);
 
-    if(!neighbor) {
-      continue;
-    }
-
     printf("%s\n", neighbor);
     parse_neighbor_info(neighbor, uuid, hostname, fe_port, be_port, metric);
 
@@ -578,7 +574,7 @@ void handle_add_neighbor_rqt(char* buf, char* fname){
   char* num_peers_c;
   int new_peer_num;
 
-  int update_flag = 0;
+  int update_flag;
 
   char value[BUFSIZE];
   char* uuid = malloc(sizeof(char) * BUFSIZE);
@@ -604,15 +600,56 @@ void handle_add_neighbor_rqt(char* buf, char* fname){
     new_peer_num = 0;
   }
 
-
   sprintf(value, "%s,%s,%s,%s,%s", uuid, host, fe_port, be_port, metric);
-
-  //printf("%s\n", value);
 
   update_flag = update_config_file(fname, CF_TAG_PEER_INFO,
                                    new_peer_num, value, NULL);
-
   return;
+}
+
+void handle_search_rqt(int connfd, char* path, char* fname){
+  char* my_uuid;
+  char* content_path = malloc(sizeof(char) * MAXLINE);
+  int my_port;
+  char* filepath;
+  char search_list[BUFSIZE];
+  char json_content[MAX_DATA_SIZE];
+  bzero(json_content, BUFSIZE);
+  int num_neighbors, TTL, search_interval;
+
+  char* gossip_buf = malloc(sizeof(char) * BUFSIZE);
+  my_uuid = get_config_field(fname, CF_TAG_UUID, 0);
+  my_port = atoi(get_config_field(fname, CF_TAG_BE_PORT, 0));
+  content_path = get_config_field(fname, CF_TAG_CONTENT_DIR, 0);
+
+  // See if filepath is in current node
+  filepath = strcat(content_path, path);
+  FILE *fp = fopen(filepath, "r");
+  bzero(search_list, BUFSIZE);
+  if(fp != NULL){
+    sprintf(search_list, "[\"%s\"]", my_uuid);
+  }
+  else{
+    strcpy(search_list, "[]");
+  }
+
+  TTL = atoi(get_config_field(fname, CF_TAG_SEARCH_TTL, 0));
+  search_interval = atoi(get_config_field(fname, CF_TAG_SEARCH_INT, 0));
+
+  // Get the number of current neighbors
+  num_neighbors = atoi(get_config_field(fname, CF_TAG_PEER_COUNT, 0));
+
+  if(num_neighbors == 0){
+    sprintf(json_content, "[{\“content\”:\“%s\”, \“peers\”:%s}]", path, search_list);
+    write_json_content(connfd, json_content);
+    return;
+  }
+
+  printf("3\n");
+  //while(TTL > 0){
+    //create_exchange_packet(n_port, my_port, TTL, path, gossip_buf, TTL, search_list);
+    //sleep(search_interval);
+  //}
 }
 
 void* advertise(void* ptr){
@@ -675,9 +712,10 @@ void* advertise(void* ptr){
      int peer_port;
      char* peer_host;
      int n;
+
      for(i = 0; i < num_neighbors; i ++){
 
-       Neighbor peer = neighbors[i];
+       struct Neighbor peer = neighbors[i];
 
        peer_port = peer.port;
        peer_host = peer.hostname;

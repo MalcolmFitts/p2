@@ -31,6 +31,8 @@
 #define COM_BUFSIZE 1500
 #define JSON_BUFSIZE 4096
 
+#define CONTENT_PATH "./content"
+
 extern pthread_mutex_t mutex;
 
 struct thread_data {
@@ -125,6 +127,8 @@ void handle_neighbors_rqt(int connfd, char* fname);
 int handle_add_uuid_rqt(char* buf, char* fname);
 
 void handle_add_neighbor_rqt(char* buf, char* fname);
+
+void handle_search_rqt(int connfd, char* path, char* fname);
 
 void* advertise(void* ptr);
 

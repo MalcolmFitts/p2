@@ -17,12 +17,12 @@
 #define MAXLINE 8192
 
 /* request type flags for check request type func */
-#define RQT_INV 0		/* Invalid GET request 			*/
-#define RQT_GET 1		/* Valid GET request 		        */
-#define RQT_C_RNG 2		/* Client GET request w/ Range req 	*/
-#define RQT_P_ADD 3		/* Peer node ADD request 		*/
-#define RQT_P_VIEW 4	        /* Peer node VIEW request 		*/
-#define RQT_P_RATE 5	        /* Peer node CONFIG RATE request 	*/
+#define RQT_INV 0		            /* Invalid GET request 			            */
+#define RQT_GET 1		            /* Valid GET request 		                */
+#define RQT_C_RNG 2		          /* Client GET request w/ Range req 	    */
+#define RQT_P_ADD 3		          /* Peer node ADD request 		            */
+#define RQT_P_VIEW 4	          /* Peer node VIEW request 		          */
+#define RQT_P_RATE 5	          /* Peer node CONFIG RATE request 	      */
 #define RQT_P_ADD_UUID 6        /* Peer node ADD UUID request           */
 #define RQT_P_KILL 7            /* Peer node KILL request               */
 #define RQT_P_NEIGH 8           /* Peer node NEIGHBORS request          */
@@ -30,6 +30,7 @@
 #define RQT_P_MAP 10            /* Peer node MAP request                */
 #define RQT_P_RANK 11           /* Peer node RANK request               */
 #define RQT_P_UUID 12           /* Peer node UUID request               */
+#define RQT_P_SEARCH 13         /* Peer node SEARCH request             */
 
 /*
  *	check_request_type
@@ -103,6 +104,8 @@ int parse_peer_add_neighbor(char* buf, char* uuid, char* host, char* fe_port,
 int parse_peer_map(char* buf);
 
 int parse_peer_rank(char* buf, char* fp);
+
+int parse_peer_search(char* buf, char* fp);
 
 void parse_neighbor_info(char* neigbor_info, char* uuid, char* hostname, char* fe_port,
                         char* be_port, char* metric);

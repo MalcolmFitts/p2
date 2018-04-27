@@ -26,8 +26,7 @@
 #include "neighbor.h"
 
 //#include "spcuuid/src/uuid.h"
-//#include <uuid/uuid.h>
-#include "/usr/include/uuid/uuid.h"
+#include <uuid/uuid.h>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -209,6 +208,8 @@ void *serve_client_thread(void *ptr) {
   int flag_be = 0;               /* Flag coming from peer functions */
   int rqt;                       /* Request Type */
 
+  char* path = NULL;
+
   /* gethostbyaddr: determine who sent the message */
   hostp = gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr,
         sizeof(clientaddr.sin_addr.s_addr), AF_INET);
@@ -349,6 +350,13 @@ void *serve_client_thread(void *ptr) {
 
     case RQT_P_RANK:
       /* TODO: Hanlde peer RANK request */
+      break;
+
+    case RQT_P_SEARCH:
+      path = malloc(sizeof(char) * MAXLINE);
+      parse_peer_search(buf, path);
+      handle_search_rqt(connfd, path, ct->config_fn);
+      free(path);
       break;
 
     case RQT_INV:
