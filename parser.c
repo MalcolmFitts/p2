@@ -285,7 +285,7 @@ char* parse_peer_info(char* peer_info, int flag){
       case UUID:
         return uuid;
       case HOSTNAME:
-        printf("%s\n", hostname);
+        //printf("%s\n", hostname);
         return hostname;
       case FE_PORT:
         return fe_port;

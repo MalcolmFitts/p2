@@ -259,7 +259,6 @@ void *serve_client_thread(void *ptr) {
 
   /* checking type of received request */
   rqt = check_request_type(bufcopy);
-  printf("%d\n", rqt);
 
   switch(rqt){
     case RQT_P_ADD:
@@ -347,7 +346,6 @@ void *serve_client_thread(void *ptr) {
     case RQT_P_NEIGH:
       /* TODO: Handle peer NEIGHBORS request */
       printf("Server recognized request type: Peer Neighbors\n");
-      printf("Handling: PEER / NEIGHBOR\n");
       handle_neighbors_rqt(connfd, ct->config_fn);
       break;
 
