@@ -290,7 +290,7 @@ Pkt_t create_exchange_packet(uint16_t d_port, uint16_t s_port, unsigned int TTL,
     hdr->source_port = s_port;
     hdr->dest_port = d_port;
     hdr->seq_num = TTL;
-    hdr->flag = (1 << PKT_FLAG_EXC) >> 1;
+    hdr->flag = (1 << PKT_FLAG_EXC) >> 2;
 
     /* initializing length of packet's buffer to max size */
     hdr->length = MAX_PACKET_SIZE;

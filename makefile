@@ -22,10 +22,10 @@ dw: datawriter.c datawriter.h
 	$(CC) $(ARGS) -o dwlib.o -c datawriter.c
 
 gos: gossip.c gossip.h
-	$(CC) $(ARGS) -w -o goslib.o -c gossip.c
+	$(CC) $(ARGS) -o goslib.o -c gossip.c
 
 be: backend.c backend.h
-	$(CC) $(ARGS) -w -o belib.o -c backend.c
+	$(CC) $(ARGS) -o belib.o -c backend.c
 
 fe: frontend.c frontend.h
 	$(CC) $(ARGS) -o felib.o -c frontend.c

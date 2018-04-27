@@ -1,10 +1,6 @@
 
 #include "gossip.h"
 
-
-
-
-
 int handle_exchange_msg(Pkt_t pkt, int sockfd,
                           struct sockaddr_in sender_addr, S_Dir* s_dir) {
 
@@ -25,7 +21,7 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
   int n_sent;
   socklen_t sender_addr_len;
 
-  
+
   /* Ensuring this is exchange packet */
   if(get_packet_type(pkt) != PKT_FLAG_EXC) {
     return -1;
@@ -56,8 +52,8 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     merged_peers = sync_peer_info(s_dir, recv_search);
 
     /* Create and send response packet to sender of exchange message */
-    response_pkt = create_exchange_packet(p_hdr.source_port, 
-                        p_hdr.dest_port, p_hdr.seq_num, 
+    response_pkt = create_exchange_packet(p_hdr.source_port,
+                        p_hdr.dest_port, p_hdr.seq_num,
                         recv_search->content, p_hdr.com_buf, merged_peers);
 
     n_sent = sendto(sockfd, &response_pkt, sizeof(response_pkt), 0,
@@ -73,8 +69,8 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     reset_search_dir_info(s_dir, recv_search, merged_peers);
 
     /* SEND RESPONSE MESSAGE WITH UPDATED PEER INFO */
-    response_pkt = create_exchange_packet(p_hdr.source_port, 
-                        p_hdr.dest_port, p_hdr.seq_num, 
+    response_pkt = create_exchange_packet(p_hdr.source_port,
+                        p_hdr.dest_port, p_hdr.seq_num,
                         recv_search->content, p_hdr.com_buf, merged_peers);
 
     n_sent = sendto(sockfd, &response_pkt, sizeof(response_pkt), 0,
@@ -132,8 +128,8 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     info_ptr->peers = merged_peers;
 
     /* SEND RESPONSE MESSAGE WITH UPDATED PEER INFO */
-    response_pkt = create_exchange_packet(p_hdr.source_port, 
-                        p_hdr.dest_port, p_hdr.seq_num, 
+    response_pkt = create_exchange_packet(p_hdr.source_port,
+                        p_hdr.dest_port, p_hdr.seq_num,
                         recv_search->content, p_hdr.com_buf, merged_peers);
 
     n_sent = sendto(sockfd, &response_pkt, sizeof(response_pkt), 0,
@@ -162,7 +158,6 @@ S_Inf* parse_search_info(Pkt_t pkt) {
 
   char* filename = malloc(MAX_FILEPATH_LEN);
   char* peers = malloc(BUFSIZE);
-  int ttl;
 
   int n_scan;
 
@@ -172,7 +167,7 @@ S_Inf* parse_search_info(Pkt_t pkt) {
   }
 
   /* Scan packet for relevant data */
-  n_scan = sscanf(pkt.buf, "Content: %s\nPeers: %[^\n]\n", 
+  n_scan = sscanf(pkt.buf, "Content: %s\nPeers: %[^\n]\n",
     filename, peers);
 
   if (n_scan != 2) {
@@ -200,7 +195,8 @@ int check_search_dir(S_Dir* dir, S_Inf* info) {
   int max = dir->cur_search;
 
   /* Iterate through directory */
-  for(int i = 0; i < max; i++) {
+  int i;
+  for(i = 0; i < max; i++) {
     S_Inf cur_info = dir->search_arr[i];
 
     /* Checking for searches for same content */
@@ -249,7 +245,6 @@ char* sync_peer_info(S_Dir* dir, S_Inf* info) {
 void add_uuid_to_list(char* list, char* uuid) {
   char read_uuid[CF_UUID_STR_LEN + 2];
   char list_uuid[CF_UUID_STR_LEN];
-  char* res_ptr;
   char* ptr;
   char* end_ptr;
 
@@ -472,5 +467,3 @@ void* start_search(void* ptr){
     sleep(search_interval);
   }
 }
-
-
