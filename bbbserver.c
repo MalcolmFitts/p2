@@ -155,6 +155,7 @@ int main(int argc, char **argv) {
   /* spin-off thread for listening on back-end port and serving content */
   pthread_t tid_be;
   pthread_create(&(tid_be), NULL, handle_be, be_sockfd_ptr);
+  pthread_detach(tid_be);
 
   //pthread_t tid_ad;
   //pthread_create(&(tid_ad), NULL, advertise, be_sockfd_ptr);
