@@ -33,7 +33,7 @@ fe: frontend.c frontend.h
 con: configlib.c configlib.h
 	$(CC) $(ARGS) -o conlib.o -c configlib.c
 
-bbbserver: bbbserver.c datawriter.h parser.h node.h packet.h serverlog.h backend.h frontend.h configlib.h neighbor.h gossip.h
+bbbserver: bbbserver.c datawriter.h parser.h node.h packet.h serverlog.h backend.h frontend.h configlib.h neighbor.h gossip.h thread.h
 	$(CC) $(ARGS) -o bbbserver bbbserver.c dwlib.o palib.o nodelib.o neighblib.o pktlib.o sllib.o belib.o felib.o conlib.o goslib.o
 
 clean:

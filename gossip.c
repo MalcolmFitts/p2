@@ -252,8 +252,8 @@ char* sync_peer_info(S_Dir* dir, S_Inf* info) {
 }
 
 void add_uuid_to_list(char* list, char* uuid) {
-  char read_uuid[CF_UUID_STR_LEN + 2];
-  char list_uuid[CF_UUID_STR_LEN];
+  char read_uuid[CF_UUID_STR_LEN + 3];
+  char list_uuid[CF_UUID_STR_LEN + 1];
   char* ptr;
   char* end_ptr;
 
@@ -304,8 +304,8 @@ void add_uuid_to_list(char* list, char* uuid) {
 char* merge_peer_lists(char* p_list1, char* p_list2) {
   char* res_list = malloc(sizeof(char) * BUFSIZE);
   char* res_formatted = malloc(sizeof(char) * BUFSIZE);
-  char* read_uuid = malloc(sizeof(char) * CF_UUID_STR_LEN + 2);
-  char* uuid = malloc(sizeof(char) * CF_UUID_STR_LEN);
+  char* read_uuid = malloc(sizeof(char) * (CF_UUID_STR_LEN + 3));
+  char* uuid = malloc(sizeof(char) * (CF_UUID_STR_LEN + 1));
   char* ptr;
   char* end_ptr;
 
@@ -404,11 +404,9 @@ void* start_search(void* ptr){
 
   char* my_uuid;
   int my_port;
-  char* content_path = malloc(sizeof(char) * MAXLINE);
 
   int search_interval;
 
-  char json_content[BUFSIZE];
   // Neighbor Info
   int num_neighbors, n, n_port;
   char* n_info = NULL;
@@ -480,7 +478,9 @@ void* start_search(void* ptr){
       n ++;
     }
     sleep(search_interval);
+    TTL --;
   }
+  return NULL;
 }
 
 S_Dir* create_search_dir(int max_searches) {
@@ -492,7 +492,7 @@ S_Dir* create_search_dir(int max_searches) {
   dir->search_arr = malloc(max_searches * sizeof(S_Inf *));
   int i;
   for(i = 0; i < max_searches; i++) {
-    dir->search_arr[i] = malloc(sizeof(S_Inf));
+    dir->search_arr[i] = *((S_Inf *) malloc(sizeof(S_Inf)));
   }
 
   return dir;

@@ -28,6 +28,7 @@
 #include "configlib.h"
 #include "neighbor.h"
 #include "gossip.h"
+#include "thread.h"
 
 #define COM_BUFSIZE 1500
 #define JSON_BUFSIZE 4096
@@ -35,16 +36,6 @@
 #define CONTENT_PATH "./content"
 
 extern pthread_mutex_t mutex;
-
-struct thread_data {
-  struct sockaddr_in c_addr;  /* client address struct */
-  int connfd;                 /* connection fd */
-  int tid;                    /* thread id tag */
-  int num;                    /* DEBUG - overall connected num */
-  int listenfd_be;            /* back end listening socket */
-  int port_be;                /* back end port */
-  char* config_fn;            /* config filename */
-};
 
 /*
  *	### FOR REFERENCE ###

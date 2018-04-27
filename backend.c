@@ -643,7 +643,7 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
 
   char* BUF = malloc(sizeof(char) * BUFSIZE);
   char* gossip_buf = malloc(sizeof(char) * BUFSIZE);
-  char* json_content[BUFSIZE];
+  char* json_content = malloc(sizeof(char) * BUFSIZE);
 
   my_uuid = get_config_field(fname, CF_TAG_UUID, 0);
 
@@ -672,7 +672,7 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
   if(num_neighbors == 0){
 
     list_2_json(search_list);
-    sprintf(json_content, "[{\“content\”:\“%s\”, \“peers\”:%s}]", path, search_list);
+    sprintf(json_content, "[{\\“content\\”:\\“%s\\”, \\“peers\\”:%s}]", path, search_list);
     write_json_content(connfd, json_content);
     return;
 
@@ -730,7 +730,7 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
   }
 
   list_2_json(search_list);
-  sprintf(json_content, "[{\“content\”:\“%s\”, \“peers\”:%s}]", path, search_list);
+  sprintf(json_content, "[{\\“content\\”:\\“%s\\”, \\“peers\\”:%s}]", path, search_list);
   write_json_content(connfd, json_content);
 }
 
