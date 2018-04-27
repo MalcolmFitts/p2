@@ -124,14 +124,14 @@ Pkt_t create_packet (uint16_t dest_port, uint16_t s_port, unsigned int s_num,
     strcpy(packet->buf, filename);
   }
 
-  /* Exchange packet  */
-  else if(flag == PKT_FLAG_EXC) {
-    len = sprintf(packet->buf, "Content: %s\nTTL: %d\nPeers: []\n",
-      filename, CF_DEFAULT_SEARCH_TTL);
+  // /* Exchange packet  */
+  // else if(flag == PKT_FLAG_EXC) {
+  //   len = sprintf(packet->buf, "Content: %s\nTTL: %d\nPeers: []\n",
+  //     filename, CF_DEFAULT_SEARCH_TTL);
 
-    hdr->flag = (1 << PKT_FLAG_EXC) >> 2;
-    hdr->length = len;
-  }
+  //   hdr->flag = (1 << PKT_FLAG_EXC) >> 2;
+  //   hdr->length = len;
+  // }
 
   /* invalid file creation flag */
   else {
@@ -297,7 +297,7 @@ Pkt_t create_exchange_packet(uint16_t d_port, uint16_t s_port, unsigned int TTL,
     hdr->com_buf = gossip_buf;
     bzero(packet->buf, MAX_DATA_SIZE);
 
-    len = sprintf(packet->buf, "content: %s\npeers: %s\n", filename, search_list);
+    len = sprintf(packet->buf, "Content: %s\nPeers: %s\n", filename, search_list);
     hdr->length = len;
 
     /* calculate checksum value */

@@ -51,8 +51,8 @@
 /* Max line length of config file */
 #define CF_MAX_LINE_LEN 512
 
-
-
+/* GLOBAL - variable to hold config filename */
+char config_filename_global[MAX_FILEPATH_LEN];
 
 
 /*

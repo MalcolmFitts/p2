@@ -62,15 +62,27 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
                           struct sockaddr_in sender_addr, S_Dir* s_dir) {
 
   /* Local variables */
+  Pkt_t response_pkt;
+  P_Hdr p_hdr;
   S_Inf* recv_search;
+  S_inf* info_ptr;
   char* merged_peers;
+  char* self_uuid;
+  char* formatted_uuid;
+  char filename[MAX_FILEPATH_LEN];
   int dir_check_flag;
+  int n_sent;
+  socklen_t sender_addr_len;
 
-
+  
   /* Ensuring this is exchange packet */
   if(get_packet_type(pkt) != PKT_FLAG_EXC) {
     return -1;
   }
+
+  /* Initializing some locals */
+  sender_addr_len = sizeof(sender_addr);
+  p_hdr = pkt.header;
 
   /* Parse packet for search info */
   recv_search = parse_search_info(pkt);
@@ -86,6 +98,12 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     merged_peers = sync_peer_info(s_dir, recv_search);
 
     /* RESPONSE MESSAGE WITH UPDATED PEER INFO */
+    response_pkt = create_exchange_packet(p_hdr.source_port, 
+                        p_hdr.dest_port, p_hdr.seq_num, 
+                        recv_search->content, p_hdr.com_buf, merged_peers);
+
+    n_sent = sendto(sockfd, &response_pkt, sizeof(response_pkt), 0,
+     (struct sockaddr *) &sender_addr, sender_addr_len);
   }
 
   /* 1 --> Start running new search for content since old search expired */
@@ -93,14 +111,67 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     /* Merge the received peer list and the list in the search dir*/
     merged_peers = sync_peer_info(s_dir, recv_search);
 
-    /* RESPONSE MESSAGE WITH UPDATED PEER INFO */
+    /* RESET MATCHING SEARCH INFO STRUCT IN DIRECTORY */
+
+    /* SEND RESPONSE MESSAGE WITH UPDATED PEER INFO */
+    response_pkt = create_exchange_packet(p_hdr.source_port, 
+                        p_hdr.dest_port, p_hdr.seq_num, 
+                        recv_search->content, p_hdr.com_buf, merged_peers);
+
+    n_sent = sendto(sockfd, &response_pkt, sizeof(response_pkt), 0,
+     (struct sockaddr *) &sender_addr, sender_addr_len);
 
     /* START NEW SEARCH PROTOCOL FOR REQUESTED CONTENT */
   }
 
   /* 0 --> Document this search in Search Directory and start search protocol */
   else {
+    /* FILL NEW (next empty) SEARCH INFO STRUCT IN DIRECTORY */
+    int index = s_dir->cur_search;
 
+    info_ptr = (S_Inf*) (&(s_dir->search_arr[index]));
+
+    if(!info_ptr) {
+      return 0;
+    }
+
+    bzero(info_ptr, sizeof(S_Inf));
+
+    info_ptr->max_recv_ttl = recv_search->max_recv_ttl;
+    info_ptr->active_timer = recv_search->active_timer;
+    info_ptr->content = recv_search->content;
+
+    sprintf(filename, "content/%s", recv_search->content);
+
+    /* If content was found locally */
+    if(check_file(filename)) {
+      /* Get own UUID to add to exchange's peer list and format for use */
+      self_uuid = get_config_field(config_filename_global, CF_TAG_UUID, 0);
+
+      formatted_uuid = malloc(sizeof(char) * (CF_UUID_STR_LEN * 2));
+      bzero(formatted_uuid, CF_UUID_STR_LEN * 2);
+      sprintf(formatted_uuid, "{%s}", self_uuid);
+
+      /* Store new merged list of peers and self */
+      merged_peers = merge_peer_lists(recv_search->peers, formatted_uuid);
+    }
+
+    /* If content was not found locally */
+    else {
+      merged_peers = recv_search->peers;
+    }
+
+    info_ptr->peers = merged_peers;
+
+    /* SEND RESPONSE MESSAGE WITH UPDATED PEER INFO */
+    response_pkt = create_exchange_packet(p_hdr.source_port, 
+                        p_hdr.dest_port, p_hdr.seq_num, 
+                        recv_search->content, p_hdr.com_buf, merged_peers);
+
+    n_sent = sendto(sockfd, &response_pkt, sizeof(response_pkt), 0,
+     (struct sockaddr *) &sender_addr, sender_addr_len);
+
+    /* START NEW SEARCH PROTOCOL FOR REQUESTED CONTENT */
   }
 }
 
@@ -122,7 +193,7 @@ S_Inf* parse_search_info(Pkt_t pkt) {
   }
 
   /* Scan packet for relevant data */
-  n_scan = sscanf(packet.buf, "Content: %s\nPeers: [%s]\n", 
+  n_scan = sscanf(packet.buf, "Content: %s\nPeers: %[^\n]\n", 
     filename, peers);
 
   if (n_scan != 2) {
@@ -187,7 +258,7 @@ char* sync_peer_info(S_Dir* dir, S_Inf* info) {
       new_peer_list = merge_peer_lists(info->peers, cur_info.peers);
 
       /* Update Search's Peer List */
-      cur_info.peers = new_peer_list;
+      sprintf((dir->search_arr[i]).peers, "%s", new_peer_list);
 
       return new_peer_list;
     }
@@ -205,7 +276,6 @@ char* merge_peer_lists(char* p_list1, char* p_list2) {
   char* read_uuid = malloc(sizeof(char) * CF_UUID_STR_LEN);
   char* ptr;
   char* end_ptr;
-  int scan_flag;
 
   bzero(res_list, BUFSIZE);
   bzero(res_formatted, BUFSIZE);

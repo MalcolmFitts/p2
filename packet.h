@@ -186,4 +186,7 @@ int get_packet_type (Pkt_t packet);
  */
 uint16_t calc_checksum(P_Hdr hdr);
 
+Pkt_t create_exchange_packet(uint16_t d_port, uint16_t s_port, 
+  unsigned int TTL, char* filename, char* gossip_buf, char* search_list);
+
 #endif

@@ -50,6 +50,7 @@
 
 pthread_mutex_t mutex;
 
+
 char lb[MAX_PRINT_LEN];       /* buffer for logging               */
 int numthreads;               /* number of current threads        */
 
@@ -123,6 +124,9 @@ int main(int argc, char **argv) {
     sprintf(config_filename, "%s", CF_DEFAULT_FILENAME);
   }
 
+  /* Storing config filename in global variable */
+  sprintf(config_filename_global, "%s", config_filename);
+
   /* assigning front and backend ports */
   cf_port_fe = get_config_field(config_filename, CF_TAG_FE_PORT, 0);
   cf_port_be = get_config_field(config_filename, CF_TAG_BE_PORT, 0);
@@ -139,7 +143,12 @@ int main(int argc, char **argv) {
   sockfd_fe = init_frontend(port_fe, &self_addr_fe);
   sockfd_be = init_backend(port_be, &self_addr_be);
 
-  //printf("<BBBServer start-up info>\n\n");
+  printf("\t<BBBServer start-up info>\n\n");
+  printf("Config file: %s\n", config_filename_global);
+  printf("Front-end Port: %d\n", port_fe);
+  printf("Back-end Port: %d\n", port_be);
+  printf("\t<End of start-up info>\n\n");
+
 
   int* be_sockfd_ptr = &sockfd_be;
 
