@@ -54,6 +54,16 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     /* Merge the received peer list and the list in the search dir*/
     merged_peers = sync_peer_info(s_dir, recv_search);
 
+    printf("pre mem_cpy\n");
+
+    pthread_mutex_lock(&mutex);
+    bzero(p_hdr.com_buf, BUFSIZE);
+    strcpy(p_hdr.com_buf, merged_peers);
+    pthread_mutex_unlock(&mutex);    
+    
+
+    printf("post mem_pcy :') \n");
+
     /* Create and send response packet to sender of exchange message */
     response_pkt = create_exchange_packet(p_hdr.source_port,
                         p_hdr.dest_port, p_hdr.seq_num - 1,
@@ -133,14 +143,6 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     add_search_to_dir(s_dir, recv_search);
 
     printf("Server added search info to directory.\n");
-
-    /* Storing search info in com buf */
-    char* gos_ptr = NULL;
-    gos_ptr = p_hdr.com_buf;
-
-    strcpy(gos_ptr, merged_peers);
-    //sprintf(p_hdr.com_buf, "%s", merged_peers);
-
 
     /* SEND RESPONSE MESSAGE WITH UPDATED PEER INFO */
     response_pkt = create_exchange_packet(p_hdr.source_port,
@@ -232,16 +234,26 @@ char* sync_peer_info(S_Dir* dir, S_Inf* info) {
   int max = dir->cur_search;
   char* new_peer_list;
 
+  printf("dir current size: %d\n", max);
+
   /* Iterate through directory */
   for(int i = 0; i < max; i++) {
     S_Inf cur_info = dir->search_arr[i];
+
+    printf("checking dir info:\n");
+    printf("i: %d\ncontent: %s\npeers: %s\n", i, cur_info.content, cur_info.peers);
+    printf("info content: %s\n", info->content);
 
     /* Checking for searches for same content */
     if(strcmp(info->content, cur_info.content) == 0) {
       new_peer_list = merge_peer_lists(info->peers, cur_info.peers);
 
+      printf("new_peer_list: %s\n", new_peer_list);
+
       /* Update Search's Peer List */
-      sprintf((dir->search_arr[i]).peers, "%s", new_peer_list);
+      strcpy((dir->search_arr[i]).peers, new_peer_list);
+
+      
 
       return new_peer_list;
     }

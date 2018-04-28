@@ -703,7 +703,7 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
   search_info = malloc(sizeof(struct Search_Info));
   search_info->max_recv_ttl = TTL;
   search_info->active_timer = TTL;
-  search_info->content = filepath;
+  search_info->content = path;
   search_info->peers = search_list;
 
   int add_flag = add_search_to_dir(search_dir, search_info);
