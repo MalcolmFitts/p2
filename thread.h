@@ -12,4 +12,6 @@ struct thread_data {
   char* config_fn;            /* config filename */
 };
 
+int is_searching;
+
 #endif

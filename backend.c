@@ -42,8 +42,6 @@ void* handle_be(void* ptr) {
     /* parsing out the type of packet that was received */
     int type = get_packet_type(packet);
 
-
-
     /* checking for FIN packets */
     if(type == PKT_FLAG_FIN) {
       printf("Server received FIN packet.\n");
@@ -275,6 +273,8 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
   neighbor_dir = create_neighbor_dir(100);
   /* Creating search directory */
   search_dir = create_search_dir(100);
+
+  is_searching = 0;
 
   search_dir = create_search_dir(100);
 
@@ -636,6 +636,7 @@ void handle_add_neighbor_rqt(char* buf, char* fname){
 
 void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
 
+  is_searching = 1;
   char* my_uuid;
   int my_port;
   //char* content_path = malloc(sizeof(char) * MAXLINE);
@@ -744,7 +745,7 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
       merge_ptr = merge_peer_lists(BUF, search_list);
       strcpy(search_list, merge_ptr);
     }
-    if(n <= num_neighbors){
+    if(n < num_neighbors){
 
       n_info = get_config_field(fname, CF_TAG_PEER_INFO, n);
       n_port = atoi(parse_peer_info(n_info, BE_PORT));
@@ -782,8 +783,8 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
   list_2_json(search_list);
   sprintf(json_content, "[{\"content\":\"%s\", \"peers\":%s}]", path, search_list);
   write_json_content(connfd, json_content);
+  is_searching = 0;
 }
-
 
 void* advertise(void* ptr){
   printf("About to advertise: \n");

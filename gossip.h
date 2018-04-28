@@ -22,6 +22,7 @@
 #include "configlib.h"
 #include "neighbor.h"
 #include "backend.h"
+#include "thread.h"
 
 
 typedef struct Search_Info {

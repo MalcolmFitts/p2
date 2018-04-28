@@ -44,7 +44,7 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
   /* Casing on search results: */
 
   /* 2 --> Server is already running search for content */
-  if(dir_check_flag == 2) {
+  if(is_searching) {
     printf("Server recognized search as: Currently Running\n");
     printf("Server updating peers for search...\n");
 
@@ -393,6 +393,7 @@ int reset_search_dir_info(S_Dir* dir, S_Inf* info, char* new_peers) {
 }
 
 void* start_search(void* ptr){
+  is_searching = 1;
   printf("START_SEARCH 0\n");
   s_tc* p = (s_tc*) ptr;
   int sockfd = p->sock;
@@ -449,7 +450,7 @@ void* start_search(void* ptr){
     }
 
     printf("START_SEARCH 4\n");
-    if(n <= num_neighbors){
+    if(n < num_neighbors){
       n_info = get_config_field(fname, CF_TAG_PEER_INFO, n);
       n_port = atoi(parse_peer_info(n_info, BE_PORT));
       n_info = get_config_field(fname, CF_TAG_PEER_INFO, n);
@@ -479,6 +480,7 @@ void* start_search(void* ptr){
     usleep(search_interval * 1000);
     TTL --;
   }
+  is_searching = 0;
   return NULL;
 }
 
