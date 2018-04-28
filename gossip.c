@@ -54,6 +54,8 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     /* Merge the received peer list and the list in the search dir*/
     merged_peers = sync_peer_info(s_dir, recv_search);
 
+    memcpy(p_hdr.com_buf, merged_peers, BUFSIZE);
+
     /* Create and send response packet to sender of exchange message */
     response_pkt = create_exchange_packet(p_hdr.source_port,
                         p_hdr.dest_port, p_hdr.seq_num - 1,
@@ -133,13 +135,6 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     add_search_to_dir(s_dir, recv_search);
 
     printf("Server added search info to directory.\n");
-
-    /* Storing search info in com buf */
-    char* gos_ptr = NULL;
-    gos_ptr = p_hdr.com_buf;
-
-    strcpy(gos_ptr, merged_peers);
-    //sprintf(p_hdr.com_buf, "%s", merged_peers);
 
 
     /* SEND RESPONSE MESSAGE WITH UPDATED PEER INFO */
@@ -246,7 +241,7 @@ char* sync_peer_info(S_Dir* dir, S_Inf* info) {
       return new_peer_list;
     }
   }
-
+  
   return NULL;
 }
 
