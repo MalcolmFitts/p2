@@ -52,8 +52,7 @@ void* handle_be(void* ptr) {
     /* Checking for search request (exchange) messages */
     else if(type == PKT_FLAG_EXC) {
       printf("Server received Exchange Message.\n");
-      exc_response = handle_exchange_msg(packet,
-                      sockfd, sender_addr, search_dir);
+      exc_response = handle_exchange_msg(packet, sockfd, sender_addr, search_dir);
       if(exc_response == 1) {
         printf("Server handled Exchange Message.\n");
       }
@@ -275,8 +274,6 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
   search_dir = create_search_dir(100);
 
   is_searching = 0;
-
-  search_dir = create_search_dir(100);
 
   return sockfd_be;
 }
@@ -657,12 +654,9 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
   struct hostent *n_server;
   socklen_t n_addr_len;
 
-  char* BUF = malloc(sizeof(char) * BUFSIZE);
-  char* gossip_buf = malloc(sizeof(char) * BUFSIZE);
   char* json_content = malloc(sizeof(char) * BUFSIZE);
 
   my_uuid = get_config_field(fname, CF_TAG_UUID, 0);
-
   my_port = atoi(get_config_field(fname, CF_TAG_BE_PORT, 0));
 
   // Get the TTL and search_interval (ms) from config
@@ -672,11 +666,9 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
   // Get the number of current neighbors
   num_neighbors = atoi(get_config_field(fname, CF_TAG_PEER_COUNT, 0));
 
-
   // See if filepath is in current node
   content_path = get_config_field(fname, CF_TAG_CONTENT_DIR, 0);
   filepath = strcat(content_path, path);
-  FILE *fp = fopen(filepath, "r");
   bzero(search_list, BUFSIZE);
 
   printf("Search Request info:\n");
@@ -686,10 +678,9 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
 
   printf("Server checking for content locally...\n");
 
-  if(fp){
+  if(check_file(filepath)){
     printf("Server found content locally!\n");
     sprintf(search_list, "[{%s}]", my_uuid);
-    fclose(fp);
   }
   else{
     printf("Server did not find content locally!\n");
@@ -723,7 +714,6 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
   }
 
   Pkt_t packet;
-  char* merge_ptr;
   n = 0;
 
   printf("Iterating until TTL is over:\n");
@@ -732,26 +722,10 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
   while(TTL > 0){
     printf("TTL = %d\n", TTL);
 
-    // Check the gossip buffer for updates
-    bzero(BUF, BUFSIZE);
+    bzero(search_list, BUFSIZE);
+    strcpy(search_list, get_peer_list(search_dir, path));
 
-    pthread_mutex_lock(&mutex);
-    strcpy(BUF, gossip_buf);
-    bzero(gossip_buf, BUFSIZE);
-    pthread_mutex_unlock(&mutex);
-
-    if (BUF[0] != '\0') {
-      printf("Gossip Buffer has info!\n");
-      /* BUF has updated list */
-      merge_ptr = merge_peer_lists(BUF, search_list);
-      if(!merge_ptr) {
-        printf("Found a bug; making it work.\n");
-        strcpy(search_list, "[]");
-      }
-      else{
-        strcpy(search_list, merge_ptr);
-      }
-    }
+    printf("1\n");
     if(n < num_neighbors){
 
       n_info = get_config_field(fname, CF_TAG_PEER_INFO, n);
@@ -762,9 +736,10 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
       printf("Sending exchange request to: %s:%d\n", n_host, n_port);
 
 
-      packet = create_exchange_packet(n_port, my_port, TTL, path, gossip_buf,
-                                      search_list);
+      packet = create_exchange_packet(n_port, my_port, TTL, path, search_list);
 
+
+      printf("2\n");
       /* build the neighbor's Internet address */
       n_server = gethostbyname(n_host);
       bzero((char *) &n_addr, sizeof(n_addr));
@@ -786,6 +761,8 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
     usleep(search_interval * 1000);
     TTL --;
   }
+
+  strcpy(search_list, get_peer_list(search_dir, path));
 
   list_2_json(search_list);
   sprintf(json_content, "[{\"content\":\"%s\", \"peers\":%s}]", path, search_list);

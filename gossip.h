@@ -24,6 +24,7 @@
 #include "backend.h"
 #include "thread.h"
 
+extern pthread_mutex_t mutex;
 
 typedef struct Search_Info {
   int max_recv_ttl;
@@ -32,13 +33,19 @@ typedef struct Search_Info {
   char* peers;
 } S_Inf;
 
+typedef struct Search_Directory {
+  int cur_search;
+  int max_search;
+  S_Inf* search_arr;
+} S_Dir;
+
 // search thread content
 typedef struct search_tc{
   int sock;
   int ttl;
   char path[MAXLINE];
   char config_name[MAXLINE];
-  char search_list[BUFSIZE];
+  S_Dir* search_directory;
 } s_tc;
 
 /*   Search_Info struct values:
@@ -58,13 +65,6 @@ typedef struct search_tc{
  *  active_timer
  *     - keep track of how many gossip cycles passed
  */
-
-
-typedef struct Search_Directory {
-  int cur_search;
-  int max_search;
-  S_Inf* search_arr;
-} S_Dir;
 
 
 /*  handle_exchange_msg
@@ -234,6 +234,8 @@ S_Dir* create_search_dir(int max_searches);
 
 
 int add_search_to_dir(S_Dir* dir, S_Inf* info);
+
+char* get_peer_list(S_Dir* dir, char* content);
 
 
 #endif

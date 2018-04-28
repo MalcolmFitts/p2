@@ -11,7 +11,7 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
   s_tc* s_thd_info;
   pthread_t search_tid;
 
-  char* merged_peers;
+  char merged_peers[BUFSIZE];
   char* self_uuid;
   char* formatted_uuid;
   char filename[MAX_FILEPATH_LEN];
@@ -52,22 +52,12 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     printf("Server updating peers for search...\n");
 
     /* Merge the received peer list and the list in the search dir*/
-    merged_peers = sync_peer_info(s_dir, recv_search);
-
-    printf("pre mem_cpy\n");
-
-    pthread_mutex_lock(&mutex);
-    bzero(p_hdr.com_buf, BUFSIZE);
-    strcpy(p_hdr.com_buf, merged_peers);
-    pthread_mutex_unlock(&mutex);
-
-
-    printf("post mem_pcy :') \n");
+    strcpy(merged_peers, sync_peer_info(s_dir, recv_search));
 
     /* Create and send response packet to sender of exchange message */
     response_pkt = create_exchange_packet(p_hdr.source_port,
                         p_hdr.dest_port, p_hdr.seq_num - 1,
-                        recv_search->content, p_hdr.com_buf, merged_peers);
+                        recv_search->content, merged_peers);
 
     n_sent = sendto(sockfd, &response_pkt, sizeof(response_pkt), 0,
      (struct sockaddr *) &sender_addr, sender_addr_len);
@@ -78,7 +68,7 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     printf("Server recognized search as: Expired Search\n");
     printf("Server updating peers for search and restarting search protocol...\n");
     /* Merge the received peer list and the list in the search dir*/
-    merged_peers = sync_peer_info(s_dir, recv_search);
+    strcpy(merged_peers, sync_peer_info(s_dir, recv_search));
 
     printf("Server created merged peers list!\n");
 
@@ -90,7 +80,7 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     /* SEND RESPONSE MESSAGE WITH UPDATED PEER INFO */
     response_pkt = create_exchange_packet(p_hdr.source_port,
                         p_hdr.dest_port, p_hdr.seq_num - 1,
-                        recv_search->content, p_hdr.com_buf, merged_peers);
+                        recv_search->content, merged_peers);
 
     n_sent = sendto(sockfd, &response_pkt, sizeof(response_pkt), 0,
      (struct sockaddr *) &sender_addr, sender_addr_len);
@@ -104,7 +94,7 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     s_thd_info->ttl = p_hdr.seq_num - 1;
     sprintf(s_thd_info->path, "%s", recv_search->content);
     sprintf(s_thd_info->config_name, "%s", config_filename_global);
-    sprintf(s_thd_info->search_list, "%s", merged_peers);
+    s_thd_info->search_directory = s_dir;
 
     printf("Server starting search protocol...\n");
 
@@ -130,23 +120,24 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
       sprintf(formatted_uuid, "{%s}", self_uuid);
 
       /* Store new merged list of peers and self */
-      merged_peers = merge_peer_lists(recv_search->peers, formatted_uuid);
+      strcpy(merged_peers, merge_peer_lists(recv_search->peers, formatted_uuid));
     }
 
     /* If content was not found locally */
     else {
       printf("Server did not find file locally.\n");
-      merged_peers = recv_search->peers;
+      strcpy(merged_peers, recv_search->peers);
     }
 
     sprintf(recv_search->peers, "%s", merged_peers);
     add_search_to_dir(s_dir, recv_search);
 
     printf("Server added search info to directory.\n");
-/* SEND RESPONSE MESSAGE WITH UPDATED PEER INFO */
+
+    /* SEND RESPONSE MESSAGE WITH UPDATED PEER INFO */
     response_pkt = create_exchange_packet(p_hdr.source_port,
                         p_hdr.dest_port, p_hdr.seq_num - 1,
-                        recv_search->content, p_hdr.com_buf, merged_peers);
+                        recv_search->content, merged_peers);
 
     n_sent = sendto(sockfd, &response_pkt, sizeof(response_pkt), 0,
      (struct sockaddr *) &sender_addr, sender_addr_len);
@@ -160,7 +151,7 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     s_thd_info->ttl = p_hdr.seq_num - 1;
     strcpy(s_thd_info->path, recv_search->content);
     strcpy(s_thd_info->config_name, config_filename_global);
-    strcpy(s_thd_info->search_list, merged_peers);
+    s_thd_info->search_directory = s_dir;
 
     printf("Server starting search protocol...\n");
 
@@ -182,6 +173,8 @@ S_Inf* parse_search_info(Pkt_t pkt) {
     /* Not an exchange packet */
     return NULL;
   }
+
+  printf("parse_search_info(): Filename: %s\nparse_search_info(): %s\n", filename, peers);
 
   /* Scan packet for relevant data */
   n_scan = sscanf(pkt.buf, "Content: %s\nPeers: %[^\n]\n",
@@ -409,7 +402,8 @@ void* start_search(void* ptr){
   int sockfd = p->sock;
   char* path = p->path;
   char* fname = p->config_name;
-  char* search_list = p->search_list;
+  S_Dir* search_directory = p->search_directory;
+  char* search_list = malloc(sizeof(char) * BUFSIZE);
   int TTL = p->ttl;
 
   char* my_uuid;
@@ -427,9 +421,6 @@ void* start_search(void* ptr){
 
   printf("START_SEARCH 1\n");
 
-  char* BUF = malloc(sizeof(char) * BUFSIZE);
-  char* gossip_buf = malloc(sizeof(char) * BUFSIZE);
-
   my_uuid = get_config_field(fname, CF_TAG_UUID, 0);
   my_port = atoi(get_config_field(fname, CF_TAG_BE_PORT, 0));
 
@@ -446,20 +437,7 @@ void* start_search(void* ptr){
   // Wait for TTL to go to 0
   while(TTL > 0){
 
-    // Check the gossip buffer for updates
-    bzero(BUF, BUFSIZE);
-
-    pthread_mutex_lock(&mutex);
-    strcpy(BUF, gossip_buf);
-    bzero(gossip_buf, BUFSIZE);
-    pthread_mutex_unlock(&mutex);
-
-    if (BUF[0] != '\0') {
-      /* BUF has updated list */
-      strcpy(search_list, merge_peer_lists(BUF, search_list));
-    }
-
-    printf("START_SEARCH 4\n");
+    strcpy(search_list, get_peer_list(search_directory, path));
 
     if(n < num_neighbors) {
 
@@ -468,8 +446,7 @@ void* start_search(void* ptr){
       n_info = get_config_field(fname, CF_TAG_PEER_INFO, n);
       n_host = parse_peer_info(n_info, HOSTNAME);
 
-      packet = create_exchange_packet(n_port, my_port, TTL, path, gossip_buf,
-                                      search_list);
+      packet = create_exchange_packet(n_port, my_port, TTL, path, search_list);
 
       printf("START_SEARCH 5\n");
       /* build the neighbor's Internet address */
@@ -482,8 +459,6 @@ void* start_search(void* ptr){
 
       /* send the message to the neighbor */
       n_addr_len = sizeof(n_addr);
-
-      printf("START_SEARCH 6\n");
 
       sendto(sockfd, &packet, sizeof(packet), 0,
             (struct sockaddr *) &n_addr, n_addr_len);
@@ -513,7 +488,6 @@ S_Dir* create_search_dir(int max_searches) {
 }
 
 
-
 int add_search_to_dir(S_Dir* dir, S_Inf* info) {
   if((dir->cur_search) < (dir->max_search)) {
     /* directory not full - add the node */
@@ -521,12 +495,10 @@ int add_search_to_dir(S_Dir* dir, S_Inf* info) {
     int index = (dir->cur_search);
     int info_size = sizeof(struct Search_Info);
 
-    memcpy((void*) &(dir->search_arr[index]), (void*) info, info_size);
-
-    // (dir->search_arr[index]).max_recv_ttl = info->max_recv_ttl;
-    // (dir->search_arr[index]).active_timer = info->active_timer;
-    // (dir->search_arr[index]).content = info->content;
-    // (dir->search_arr[index]).peers = info->peers;
+    (dir->search_arr[index]).max_recv_ttl = info->max_recv_ttl;
+    (dir->search_arr[index]).active_timer = info->active_timer;
+    (dir->search_arr[index]).content = info->content;
+    (dir->search_arr[index]).peers = info->peers;
 
     dir->cur_search = index + 1;
     return 1;
@@ -535,4 +507,23 @@ int add_search_to_dir(S_Dir* dir, S_Inf* info) {
 /* max nbr of nodes in directory already reached */
 return 0;
 
+}
+
+
+char* get_peer_list(S_Dir* dir, char* content){
+  int max = dir->cur_search;
+
+  /* Iterate through directory */
+  int i;
+  for(i = 0; i < max; i++) {
+    S_Inf cur_info = dir->search_arr[i];
+    /* Checking for searches for same content */
+    if(strcmp(cur_info.content, content) == 0) {
+      printf("%s\n", cur_info.peers);
+      return cur_info.peers;
+    }
+  }
+
+  /* Did not find any searches for the same content */
+  return NULL;
 }

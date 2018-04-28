@@ -282,7 +282,7 @@ uint16_t calc_checksum(P_Hdr hdr) {
   return res;
 }
 
-Pkt_t create_exchange_packet(uint16_t d_port, uint16_t s_port, unsigned int TTL, char* filename, char* gossip_buf, char* search_list){
+Pkt_t create_exchange_packet(uint16_t d_port, uint16_t s_port, unsigned int TTL, char* filename, char* search_list){
     int len;
     Pkt_t *packet = malloc(sizeof(struct Packet));
     P_Hdr *hdr = malloc(sizeof(struct Packet_Header));
@@ -294,7 +294,6 @@ Pkt_t create_exchange_packet(uint16_t d_port, uint16_t s_port, unsigned int TTL,
 
     /* initializing length of packet's buffer to max size */
     hdr->length = MAX_PACKET_SIZE;
-    hdr->com_buf = gossip_buf;
     bzero(packet->buf, MAX_DATA_SIZE);
 
     len = sprintf(packet->buf, "Content: %s\nPeers: %s\n", filename, search_list);
