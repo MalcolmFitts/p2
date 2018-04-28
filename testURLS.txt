@@ -56,6 +56,10 @@ p4:
 
   http://localhost:9001/peer/search/videos/video1.mp4
 
+  http://localhost:9003/peer/search/texts/text1.txt
+
+  http://localhost:9005/peer/search/videos/video1.mp4
+
 }
 
 

@@ -713,7 +713,7 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
   if(num_neighbors == 0){
 
     list_2_json(search_list);
-    sprintf(json_content, "[{\\“content\\”:\\“%s\\”, \\“peers\\”:%s}]", path, search_list);
+    sprintf(json_content, "[{\"content\":\"%s\", \"peers\":\"%s\"}]", path, search_list);
     write_json_content(connfd, json_content);
     return;
 
@@ -738,9 +738,16 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
     pthread_mutex_unlock(&mutex);
 
     if (BUF[0] != '\0') {
+      printf("Gossip Buffer has info!\n");
       /* BUF has updated list */
       merge_ptr = merge_peer_lists(BUF, search_list);
-      strcpy(search_list, merge_ptr);
+      if(!merge_ptr) {
+        printf("Found a bug; making it work.\n");
+        strcpy(search_list, "[]");
+      }
+      else{
+        strcpy(search_list, merge_ptr);
+      }
     }
 
     if(n <= num_neighbors) {
