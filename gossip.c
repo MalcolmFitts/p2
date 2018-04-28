@@ -8,7 +8,6 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
   Pkt_t response_pkt;
   P_Hdr p_hdr;
   S_Inf* recv_search;
-  S_Inf* info_ptr;
   s_tc* s_thd_info;
   pthread_t search_tid;
 
@@ -34,7 +33,11 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
   /* Parse packet for search info */
   recv_search = parse_search_info(pkt);
 
-  printf("Server parsed search request info.\n");
+  printf("Server parsed search request info:\n");
+  printf("Requested content: %s\n", recv_search->content);
+  printf("Known Peers: %s\n", recv_search->peers);
+  printf("Search's TTL: %d\n\n", recv_search->max_recv_ttl);
+
 
   /* Check search directory for status of received search */
   dir_check_flag = check_search_dir(s_dir, recv_search);
@@ -53,7 +56,7 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
 
     /* Create and send response packet to sender of exchange message */
     response_pkt = create_exchange_packet(p_hdr.source_port,
-                        p_hdr.dest_port, p_hdr.seq_num,
+                        p_hdr.dest_port, p_hdr.seq_num - 1,
                         recv_search->content, p_hdr.com_buf, merged_peers);
 
     n_sent = sendto(sockfd, &response_pkt, sizeof(response_pkt), 0,
@@ -76,7 +79,7 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
 
     /* SEND RESPONSE MESSAGE WITH UPDATED PEER INFO */
     response_pkt = create_exchange_packet(p_hdr.source_port,
-                        p_hdr.dest_port, p_hdr.seq_num,
+                        p_hdr.dest_port, p_hdr.seq_num - 1,
                         recv_search->content, p_hdr.com_buf, merged_peers);
 
     n_sent = sendto(sockfd, &response_pkt, sizeof(response_pkt), 0,
@@ -88,7 +91,7 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     s_thd_info = malloc(sizeof(struct search_tc));
 
     s_thd_info->sock = sockfd;
-    s_thd_info->ttl = p_hdr.seq_num;
+    s_thd_info->ttl = p_hdr.seq_num - 1;
     sprintf(s_thd_info->path, "%s", recv_search->content);
     sprintf(s_thd_info->config_name, "%s", config_filename_global);
     sprintf(s_thd_info->search_list, "%s", merged_peers);
@@ -102,20 +105,7 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
   else {
     printf("Server recognized search as: New Search\n");
     printf("Server adding search to directory and starting search protocol...\n");
-    /* FILL NEW (next empty) SEARCH INFO STRUCT IN DIRECTORY */
-    int index = s_dir->cur_search;
 
-    info_ptr = (S_Inf*) (&(s_dir->search_arr[index]));
-
-    if(!info_ptr) {
-      return 0;
-    }
-
-    info_ptr->max_recv_ttl = recv_search->max_recv_ttl;
-    info_ptr->active_timer = recv_search->active_timer;
-    info_ptr->content = recv_search->content;
-
-    printf("Server added search info to directory.\n");
 
     sprintf(filename, "content/%s", recv_search->content);
 
@@ -139,11 +129,22 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
       merged_peers = recv_search->peers;
     }
 
-    info_ptr->peers = merged_peers;
+    sprintf(recv_search->peers, "%s", merged_peers);
+    add_search_to_dir(s_dir, recv_search);
+
+    printf("Server added search info to directory.\n");
+
+    /* Storing search info in com buf */
+    char* gos_ptr = NULL;
+    gos_ptr = p_hdr.com_buf;
+
+    strcpy(gos_ptr, merged_peers);
+    //sprintf(p_hdr.com_buf, "%s", merged_peers);
+
 
     /* SEND RESPONSE MESSAGE WITH UPDATED PEER INFO */
     response_pkt = create_exchange_packet(p_hdr.source_port,
-                        p_hdr.dest_port, p_hdr.seq_num,
+                        p_hdr.dest_port, p_hdr.seq_num - 1,
                         recv_search->content, p_hdr.com_buf, merged_peers);
 
     n_sent = sendto(sockfd, &response_pkt, sizeof(response_pkt), 0,
@@ -155,7 +156,7 @@ int handle_exchange_msg(Pkt_t pkt, int sockfd,
     s_thd_info = malloc(sizeof(struct search_tc));
 
     s_thd_info->sock = sockfd;
-    s_thd_info->ttl = p_hdr.seq_num;
+    s_thd_info->ttl = p_hdr.seq_num - 1;
     strcpy(s_thd_info->path, recv_search->content);
     strcpy(s_thd_info->config_name, config_filename_global);
     strcpy(s_thd_info->search_list, merged_peers);
@@ -202,17 +203,16 @@ S_Inf* parse_search_info(Pkt_t pkt) {
 }
 
 int check_search_dir(S_Dir* dir, S_Inf* info) {
-
   int max = dir->cur_search;
 
   /* Iterate through directory */
   int i;
   for(i = 0; i < max; i++) {
-
+    S_Inf cur_info = dir->search_arr[i];
     /* Checking for searches for same content */
-    if(strcmp(info->content, (dir->search_arr[i]).content) == 0) {
+    if(strcmp(info->content, cur_info.content) == 0) {
 
-      if((dir->search_arr[i]).active_timer > 0) {
+      if(cur_info.active_timer > 0) {
         /* Found an active search */
         return 2;
       }
@@ -391,7 +391,6 @@ int reset_search_dir_info(S_Dir* dir, S_Inf* info, char* new_peers) {
   return 0;
 }
 
-
 void* start_search(void* ptr){
   printf("START_SEARCH 0\n");
   s_tc* p = (s_tc*) ptr;
@@ -449,7 +448,7 @@ void* start_search(void* ptr){
     }
 
     printf("START_SEARCH 4\n");
-    if(n <= num_neighbors){
+    if(n < num_neighbors) {
       n_info = get_config_field(fname, CF_TAG_PEER_INFO, n);
       n_port = atoi(parse_peer_info(n_info, BE_PORT));
       n_info = get_config_field(fname, CF_TAG_PEER_INFO, n);
@@ -476,19 +475,20 @@ void* start_search(void* ptr){
             (struct sockaddr *) &n_addr, n_addr_len);
       n ++;
     }
-    TTL--;
     usleep(search_interval * 1000);
+    TTL --;
   }
   return NULL;
 }
 
 S_Dir* create_search_dir(int max_searches) {
+
   S_Dir* dir = malloc(sizeof(struct Search_Directory));
 
   dir->cur_search = 0;
   dir->max_search = max_searches;
-
   dir->search_arr = malloc(max_searches * sizeof(S_Inf *));
+
   int i;
   for(i = 0; i < max_searches; i++) {
     dir->search_arr[i] = *((S_Inf *) malloc(sizeof(S_Inf)));
@@ -508,6 +508,11 @@ int add_search_to_dir(S_Dir* dir, S_Inf* info) {
 
     memcpy((void*) &(dir->search_arr[index]), (void*) info, info_size);
 
+    // (dir->search_arr[index]).max_recv_ttl = info->max_recv_ttl;
+    // (dir->search_arr[index]).active_timer = info->active_timer;
+    // (dir->search_arr[index]).content = info->content;
+    // (dir->search_arr[index]).peers = info->peers;
+
     dir->cur_search = index + 1;
     return 1;
   }
@@ -516,4 +521,3 @@ int add_search_to_dir(S_Dir* dir, S_Inf* info) {
 return 0;
 
 }
-

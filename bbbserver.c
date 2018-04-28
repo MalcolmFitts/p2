@@ -90,6 +90,9 @@ int main(int argc, char **argv) {
 
   char* cf_port_fe = NULL;
   char* cf_port_be = NULL;
+  char* uuid_ptr = NULL;
+  char* peer_num_ptr = NULL;
+  char* peer_inf_ptr = NULL;
 
   /* check command line args */
   if (argc != 1 && argc != 3) {
@@ -126,6 +129,7 @@ int main(int argc, char **argv) {
   }
 
   /* Storing config filename in global variable */
+  config_filename_global = malloc(sizeof(char) * MAX_FILEPATH_LEN);
   sprintf(config_filename_global, "%s", config_filename);
 
   /* assigning front and backend ports */
@@ -144,10 +148,21 @@ int main(int argc, char **argv) {
   sockfd_fe = init_frontend(port_fe, &self_addr_fe);
   sockfd_be = init_backend(port_be, &self_addr_be);
 
-  printf("\t<BBBServer start-up info>\n\n");
-  printf("Config file: %s\n", config_filename_global);
+  uuid_ptr = get_config_field(config_filename, CF_TAG_UUID, 0);
+  peer_num_ptr = get_config_field(config_filename, CF_TAG_PEER_COUNT, 0);
+  int peer_num = atoi(peer_num_ptr);
+  int i;
+
+  printf("\n\t<BBBServer start-up info>\n\n");
+  printf("Config file name: %s\n", config_filename_global);
+  printf("Server's UUID: %s\n", uuid_ptr);
   printf("Front-end Port: %d\n", port_fe);
   printf("Back-end Port: %d\n", port_be);
+  printf("Peer Count: %d\n", peer_num);
+  for(i = 0; i < peer_num; i++) {
+    peer_inf_ptr = get_config_field(config_filename_global, CF_TAG_PEER_INFO, i);
+    printf("Peer %d Info: %s\n", i, peer_inf_ptr);
+  }
   printf("\n\t<End of start-up info>\n\n");
 
 

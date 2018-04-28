@@ -276,6 +276,8 @@ int init_backend(short port_be, struct sockaddr_in* self_addr) {
   /* Creating search directory */
   search_dir = create_search_dir(100);
 
+  search_dir = create_search_dir(100);
+
   return sockfd_be;
 }
 
@@ -639,7 +641,7 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
   //char* content_path = malloc(sizeof(char) * MAXLINE);
   char* content_path;
 
-  S_Inf* search_info; 
+  S_Inf* search_info;
 
   char* filepath;
   char* search_list = malloc(sizeof(char) * BUFSIZE);
@@ -694,7 +696,7 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
   }
 
   printf("Server adding search info to directory.\n");
-  
+
 
   /* Adding search to Directory */
   search_info = malloc(sizeof(struct Search_Info));
@@ -713,7 +715,7 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
   if(num_neighbors == 0){
 
     list_2_json(search_list);
-    sprintf(json_content, "[{\"content\":\"%s\", \"peers\":\"%s\"}]", path, search_list);
+    sprintf(json_content, "[{\"content\":\"%s\", \"peers\":%s}]", path, search_list);
     write_json_content(connfd, json_content);
     return;
 
@@ -749,8 +751,7 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
         strcpy(search_list, merge_ptr);
       }
     }
-
-    if(n <= num_neighbors) {
+    if(n < num_neighbors){
 
       n_info = get_config_field(fname, CF_TAG_PEER_INFO, n);
       n_port = atoi(parse_peer_info(n_info, BE_PORT));
@@ -786,7 +787,7 @@ void handle_search_rqt(int connfd, int sockfd, char* path, char* fname){
   }
 
   list_2_json(search_list);
-  sprintf(json_content, "[{\\“content\\”:\\“%s\\”, \\“peers\\”:%s}]", path, search_list);
+  sprintf(json_content, "[{\"content\":\"%s\", \"peers\":%s}]", path, search_list);
   write_json_content(connfd, json_content);
 }
 

@@ -256,11 +256,11 @@ void parse_neighbor_info(char* neighbor_info, char* uuid, char* hostname,
 
 char* parse_peer_info(char* peer_info, int flag){
 
-    char* uuid = NULL;
-    char* hostname = NULL;
-    char* fe_port = NULL;
-    char* be_port = NULL;
-    char* metric = NULL;
+    char* uuid = malloc(sizeof(char) * MAXLINE);
+    char* hostname = malloc(sizeof(char) * MAXLINE);
+    char* fe_port = malloc(sizeof(char) * MAXLINE);
+    char* be_port = malloc(sizeof(char) * MAXLINE);;
+    char* metric = malloc(sizeof(char) * MAXLINE);;
 
     bzero(uuid, MAXLINE);
     bzero(hostname, MAXLINE);
@@ -283,14 +283,34 @@ char* parse_peer_info(char* peer_info, int flag){
 
     switch (flag) {
       case UUID:
+        free(hostname);
+        free(fe_port);
+        free(be_port);
+        free(metric);
         return uuid;
       case HOSTNAME:
+        free(uuid);
+        free(fe_port);
+        free(be_port);
+        free(metric);
         return hostname;
       case FE_PORT:
+        free(uuid);
+        free(hostname);
+        free(be_port);
+        free(metric);
         return fe_port;
       case BE_PORT:
+        free(uuid);
+        free(hostname);
+        free(fe_port);
+        free(metric);
         return be_port;
       case METRIC:
+        free(uuid);
+        free(hostname);
+        free(fe_port);
+        free(be_port);
         return metric;
       default:
         return NULL;
